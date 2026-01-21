@@ -8,6 +8,9 @@ $projects = $collection->find([], [
     'typeMap' => ['root' => 'array', 'document' => 'array', 'array' => 'array']
 ]);
 ?>
+<head>
+    <link rel="stylesheet" href="/./style/project_grid_style.css">
+</head>
 
 <div class="project-grid">
     <?php if (empty($projects)): ?>
