@@ -1,5 +1,7 @@
 <?php
-require __DIR__ . '/../vendor/autoload.php';
+if (!class_exists('MongoDB\Client')) {
+    require __DIR__ . '/../vendor/autoload.php';
+}
 
 use MongoDB\BSON\UTCDateTime;
 use MongoDB\Client;

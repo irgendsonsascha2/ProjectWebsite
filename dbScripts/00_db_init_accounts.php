@@ -1,12 +1,21 @@
 <?php
-require __DIR__ . '/../vendor/autoload.php';
+// Nur Autoload laden, wenn Klassen nicht bereits durch Master geladen wurden
+if (!class_exists('MongoDB\Client')) {
+    require __DIR__ . '/../vendor/autoload.php';
+}
 
 use MongoDB\BSON\UTCDateTime;
 use MongoDB\Client;
 
 try {
-    $client = new Client("mongodb://localhost:27017");
-    $db = $client->portfolio_db;
+    // HYBRIDE VERBINDUNG: Prüfen ob Master bereits $db bereitgestellt hat
+    if (!isset($db)) {
+        $client = new Client("mongodb://localhost:27017");
+        $db = $client->portfolio_db;
+        echo "<i>(Eigenständiger Modus: Neue Verbindung aufgebaut)</i><br>";
+    } else {
+        echo "<i>(Master-Modus: Bestehende Verbindung wird genutzt)</i><br>";
+    }
 
     echo "<h1>Initialisierung: Account Management</h1>";
 
@@ -29,7 +38,7 @@ try {
     ]);
     echo "✅ Rollen & Rechte definiert.<br>";
 
-    // --- B. REGISTRATION_CODES (Einmal-Einladungen) ---
+    // --- B. REGISTRATION_CODES ---
     $db->dropCollection("registration_codes");
     $db->createCollection("registration_codes", [
         'validator' => [
@@ -48,7 +57,7 @@ try {
     $db->registration_codes->createIndex(['code' => 1], ['unique' => true]);
     echo "✅ Einmal-Code System bereit.<br>";
 
-    // --- C. USERS (Die eigentlichen Accounts) ---
+    // --- C. USERS ---
     $db->dropCollection("users");
     $db->createCollection("users", [
         'validator' => [
@@ -77,6 +86,6 @@ try {
     echo "✅ Users-Collection & Master-Admin erstellt.<br>";
 
 } catch (Exception $e) {
-    echo "❌ Fehler: " . $e->getMessage();
+    echo "❌ Fehler in " . basename(__FILE__) . ": " . $e->getMessage() . "<br>";
 }
 ?>
