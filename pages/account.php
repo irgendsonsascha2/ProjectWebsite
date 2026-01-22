@@ -88,7 +88,6 @@ if (isset($_POST['generate_code']) && can('generate_codes')) {
     $message = "✅ Neuer Code generiert: <b>$newCode</b>";
 }
 
-// Prüfung, ob ein Registrierungs-Link geklickt wurde
 $prefilledCode = isset($_GET['reg_token']) ? htmlspecialchars($_GET['reg_token']) : '';
 ?>
 
@@ -99,17 +98,77 @@ $prefilledCode = isset($_GET['reg_token']) ? htmlspecialchars($_GET['reg_token']
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Account Management</title>
     <style>
-        body { font-family: sans-serif; line-height: 1.6; padding: 20px; background: #f9f9f9; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .alert { padding: 10px; background: #e3f2fd; border-left: 5px solid #2196f3; margin-bottom: 20px; }
-        .auth-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
-        input, select, button { width: 100%; padding: 10px; margin: 5px 0; box-sizing: border-box; }
-        button { background: #333; color: white; border: none; cursor: pointer; }
-        button:hover { background: #555; }
-        .admin-panel { background: #fff3e0; padding: 15px; border-radius: 5px; margin-top: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { text-align: left; padding: 8px; border-bottom: 1px solid #ddd; font-size: 0.9em; }
-        code { background: #eee; padding: 2px 4px; }
+        /* Basis: 1rem entspricht i.d.R. 16px */
+        body { 
+            font-family: sans-serif; 
+            line-height: 1.6; 
+            padding: 1.25rem; 
+            background: #f9f9f9; 
+            font-size: 1rem;
+        }
+        .container { 
+            max-width: 50rem; 
+            margin: 2rem auto; 
+            background: white; 
+            padding: 1.25rem; 
+            border-radius: 0.625rem; 
+            box-shadow: 0 0.125rem 0.625rem rgba(0,0,0,0.1); 
+        }
+        .alert { 
+            padding: 0.625rem; 
+            background: #e3f2fd; 
+            border-left: 0.3125rem solid #2196f3; 
+            margin-bottom: 1.25rem; 
+        }
+        .auth-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 2.5rem; 
+        }
+        input, select, button { 
+            width: 100%; 
+            padding: 0.625rem; 
+            margin: 0.3125rem 0; 
+            box-sizing: border-box; 
+            font-size: 1rem;
+        }
+        button { 
+            background: #333; 
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+            transition: background 0.2s;
+        }
+        button:hover { 
+            background: #555; 
+        }
+        .admin-panel { 
+            background: #fff3e0; 
+            padding: 0.9375rem; 
+            border-radius: 0.3125rem; 
+            margin-top: 1.25rem; 
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 0.625rem; 
+        }
+        th, td { 
+            text-align: left; 
+            padding: 0.5rem; 
+            border-bottom: 0.0625rem solid #ddd; 
+            font-size: 0.875rem; 
+        }
+        code { 
+            background: #eee; 
+            padding: 0.125rem 0.25rem; 
+            border-radius: 0.1875rem;
+        }
+        
+        /* Responsive Anpassung für schmale Bildschirme */
+        @media (max-width: 40rem) {
+            .auth-grid { grid-template-columns: 1fr; gap: 1.25rem; }
+        }
     </style>
 </head>
 <body>
@@ -144,48 +203,50 @@ $prefilledCode = isset($_GET['reg_token']) ? htmlspecialchars($_GET['reg_token']
         </div>
 
     <?php else: ?>
-        <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
             <p>Eingeloggt als: <strong><?php echo $_SESSION['email']; ?></strong> (Rolle: <?php echo $_SESSION['role']; ?>)</p>
             <a href="?logout=1">Abmelden</a>
         </div>
 
-        <hr>
+        <hr style="border: 0; border-top: 0.0625rem solid #eee; margin: 1.25rem 0;">
 
         <?php if (can('generate_codes')): ?>
             <section class="admin-panel">
                 <h3>Einladungscodes & Links</h3>
-                <form method="POST" style="display: flex; gap: 10px;">
-                    <select name="target_role" style="flex: 2;">
+                <form method="POST" style="display: flex; gap: 0.625rem; flex-wrap: wrap;">
+                    <select name="target_role" style="flex: 2; min-width: 12.5rem;">
                         <option value="content_manager">Content Manager</option>
                         <option value="viewer">Viewer</option>
                         <option value="admin">Admin</option>
                     </select>
-                    <button type="submit" name="generate_code" style="flex: 1;">Code generieren</button>
+                    <button type="submit" name="generate_code" style="flex: 1; min-width: 9.375rem;">Code generieren</button>
                 </form>
 
-                <table>
-                    <tr>
-                        <th>Rolle</th>
-                        <th>Code</th>
-                        <th>Direkt-Link</th>
-                    </tr>
-                    <?php
-                    $activeCodes = $db->registration_codes->find(['is_used' => false]);
-                    foreach ($activeCodes as $c): 
-                        $link = "http://" . $_SERVER['HTTP_HOST'] . explode('?', $_SERVER['REQUEST_URI'])[0] . "?reg_token=" . $c['code'];
-                    ?>
+                <div style="overflow-x: auto;">
+                    <table>
                         <tr>
-                            <td><?php echo $c['role']; ?></td>
-                            <td><code><?php echo $c['code']; ?></code></td>
-                            <td><input type="text" value="<?php echo $link; ?>" readonly onclick="this.select();" style="font-size: 0.8em;"></td>
+                            <th>Rolle</th>
+                            <th>Code</th>
+                            <th>Direkt-Link</th>
                         </tr>
-                    <?php endforeach; ?>
-                </table>
+                        <?php
+                        $activeCodes = $db->registration_codes->find(['is_used' => false]);
+                        foreach ($activeCodes as $c): 
+                            $link = "http://" . $_SERVER['HTTP_HOST'] . explode('?', $_SERVER['REQUEST_URI'])[0] . "?reg_token=" . $c['code'];
+                        ?>
+                            <tr>
+                                <td><?php echo $c['role']; ?></td>
+                                <td><code><?php echo $c['code']; ?></code></td>
+                                <td><input type="text" value="<?php echo $link; ?>" readonly onclick="this.select();" style="font-size: 0.8rem;"></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </table>
+                </div>
             </section>
         <?php endif; ?>
 
         <?php if (can('create_project')): ?>
-            <section style="margin-top: 20px;">
+            <section style="margin-top: 1.25rem;">
                 <h3>Projekt-Management</h3>
                 <p>Du hast die Berechtigung, Projekte zu verwalten.</p>
                 <button onclick="alert('Hier käme das Formular für Projekte hin!')">Neues Projekt hinzufügen</button>
