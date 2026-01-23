@@ -1,0 +1,69 @@
+<?php
+// Nur Autoload laden, wenn Klassen nicht bereits durch Master geladen wurden
+if (!class_exists('MongoDB\Client')) {
+    require __DIR__ . '/../vendor/autoload.php';
+}
+
+use MongoDB\BSON\UTCDateTime;
+use MongoDB\Client;
+use MongoDB\BSON\ObjectId;
+
+try {
+    // HYBRIDE VERBINDUNG: Prüfen ob Master bereits $db bereitgestellt hat
+    if (!isset($db)) {
+        $client = new Client("mongodb://localhost:27017");
+        $db = $client->portfolio_db;
+        echo "<i>(Eigenständiger Modus: Neue Verbindung aufgebaut)</i><br>";
+    } else {
+        echo "<i>(Master-Modus: Bestehende Verbindung wird genutzt)</i><br>";
+    }
+
+    echo "<h1>Initialisierung: User Interactions</h1>";
+
+    // --- A. COMMENTS ---
+    $db->dropCollection("comments");
+    $db->createCollection("comments", [
+        'validator' => [
+            '$jsonSchema' => [
+                'bsonType' => 'object',
+                'required' => ['project_id', 'user_id', 'text', 'created_at', 'updated_at'],
+                'properties' => [
+                    'project_id' => ['bsonType' => 'objectId'],
+                    'user_id' => ['bsonType' => 'objectId'],
+                    'text' => ['bsonType' => 'string'],
+                    'created_at' => ['bsonType' => 'date'],
+                    'updated_at' => ['bsonType' => 'date']
+                ]
+            ]
+        ]
+    ]);
+    $db->comments->createIndex(['project_id' => 1]);
+    $db->comments->createIndex(['user_id' => 1]);
+    $db->comments->createIndex(['project_id' => 1, 'user_id' => 1], ['unique' => true]);
+    echo "✅ Comments-Collection erstellt.<br>";
+
+    // --- B. LIKES ---
+    $db->dropCollection("likes");
+    $db->createCollection("likes", [
+        'validator' => [
+            '$jsonSchema' => [
+                'bsonType' => 'object',
+                'required' => ['project_id', 'user_id', 'type', 'created_at'],
+                'properties' => [
+                    'project_id' => ['bsonType' => 'objectId'],
+                    'user_id' => ['bsonType' => 'objectId'],
+                    'type' => ['enum' => ['like', 'dislike']],
+                    'created_at' => ['bsonType' => 'date']
+                ]
+            ]
+        ]
+    ]);
+    $db->likes->createIndex(['project_id' => 1]);
+    $db->likes->createIndex(['user_id' => 1]);
+    $db->likes->createIndex(['project_id' => 1, 'user_id' => 1], ['unique' => true]);
+    echo "✅ Likes-Collection erstellt.<br>";
+
+} catch (Exception $e) {
+    echo "❌ Fehler in " . basename(__FILE__) . ": " . $e->getMessage() . "<br>";
+}
+?>

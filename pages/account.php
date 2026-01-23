@@ -1,27 +1,9 @@
 <?php
-// Session-Konfiguration für "Dauerhaft angemeldet bleiben" (30 Tage)
-ini_set('session.cookie_lifetime', 60 * 60 * 24 * 30);
-ini_set('session.gc_maxlifetime', 60 * 60 * 24 * 30);
-session_start();
-
-require_once 'vendor/autoload.php';
-
-use MongoDB\BSON\UTCDateTime;
-
-$client = new MongoDB\Client("mongodb://localhost:27017");
-$db = $client->portfolio_db;
-$message = "";
-
 // --- LOGOUT ---
 if (isset($_GET['logout'])) {
     session_destroy();
-    header("Location: account.php");
+    header("Location: index.php?page=account"); // Weiterleitung zur account Seite durch den Router
     exit();
-}
-
-// --- HILFSFUNKTION FÜR RECHTE ---
-function can($permission) {
-    return isset($_SESSION['permissions']) && in_array($permission, $_SESSION['permissions']);
 }
 
 // --- LOGIK: LOGIN ---
@@ -91,8 +73,6 @@ if (isset($_POST['generate_code']) && can('generate_codes')) {
 $prefilledCode = isset($_GET['reg_token']) ? htmlspecialchars($_GET['reg_token']) : '';
 ?>
 
-<!DOCTYPE html>
-<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -171,90 +151,77 @@ $prefilledCode = isset($_GET['reg_token']) ? htmlspecialchars($_GET['reg_token']
         }
     </style>
 </head>
-<body>
 
-<div class="container">
-    <h1>Account System</h1>
-    
-    <?php if ($message): ?>
-        <div class="alert"><?php echo $message; ?></div>
-    <?php endif; ?>
+    <div class="container">
+        <h1>Account System</h1>
+        
+        <?php if ($message): ?>
+            <div class="alert"><?php echo $message; ?></div>
+        <?php endif; ?>
 
-    <?php if (!isset($_SESSION['user_id'])): ?>
-        <div class="auth-grid">
-            <section>
-                <h2>Anmelden</h2>
-                <form method="POST">
-                    <input type="email" name="email" placeholder="E-Mail" required>
-                    <input type="password" name="password" placeholder="Passwort" required>
-                    <button type="submit" name="login">Login</button>
-                </form>
-            </section>
+        <?php if (!isset($_SESSION['user_id'])): ?>
+            <div class="auth-grid">
+                <section>
+                    <h2>Anmelden</h2>
+                    <form method="POST">
+                        <input type="email" name="email" placeholder="E-Mail" required>
+                        <input type="password" name="password" placeholder="Passwort" required>
+                        <button type="submit" name="login">Login</button>
+                    </form>
+                </section>
 
-            <section>
-                <h2>Registrieren</h2>
-                <form method="POST">
-                    <input type="text" name="reg_code" placeholder="Einmal-Code" value="<?php echo $prefilledCode; ?>" required>
-                    <input type="email" name="email" placeholder="E-Mail Adresse" required>
-                    <input type="password" name="password" placeholder="Passwort wählen" required>
-                    <button type="submit" name="register">Konto erstellen</button>
-                </form>
-            </section>
-        </div>
+                <section>
+                    <h2>Registrieren</h2>
+                    <form method="POST">
+                        <input type="text" name="reg_code" placeholder="Einmal-Code" value="<?php echo $prefilledCode; ?>" required>
+                        <input type="email" name="email" placeholder="E-Mail Adresse" required>
+                        <input type="password" name="password" placeholder="Passwort wählen" required>
+                        <button type="submit" name="register">Konto erstellen</button>
+                    </form>
+                </section>
+            </div>
 
-    <?php else: ?>
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
-            <p>Eingeloggt als: <strong><?php echo $_SESSION['email']; ?></strong> (Rolle: <?php echo $_SESSION['role']; ?>)</p>
-            <a href="?logout=1">Abmelden</a>
-        </div>
+        <?php else: ?>
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+                <p>Eingeloggt als: <strong><?php echo $_SESSION['email']; ?></strong> (Rolle: <?php echo $_SESSION['role']; ?>)</p>
+                <a href="?logout=1">Abmelden</a>
+            </div>
 
-        <hr style="border: 0; border-top: 0.0625rem solid #eee; margin: 1.25rem 0;">
+            <hr style="border: 0; border-top: 0.0625rem solid #eee; margin: 1.25rem 0;">
 
-        <?php if (can('generate_codes')): ?>
-            <section class="admin-panel">
-                <h3>Einladungscodes & Links</h3>
-                <form method="POST" style="display: flex; gap: 0.625rem; flex-wrap: wrap;">
-                    <select name="target_role" style="flex: 2; min-width: 12.5rem;">
-                        <option value="content_manager">Content Manager</option>
-                        <option value="community_member">Community Member</option>
-                        <option value="admin">Admin</option>
-                    </select>
-                    <button type="submit" name="generate_code" style="flex: 1; min-width: 9.375rem;">Code generieren</button>
-                </form>
+            <?php if (can('generate_codes')): ?>
+                <section class="admin-panel">
+                    <h3>Einladungscodes & Links</h3>
+                    <form method="POST" style="display: flex; gap: 0.625rem; flex-wrap: wrap;">
+                        <select name="target_role" style="flex: 2; min-width: 12.5rem;">
+                            <option value="content_manager">Content Manager</option>
+                            <option value="community_member">Community Member</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                        <button type="submit" name="generate_code" style="flex: 1; min-width: 9.375rem;">Code generieren</button>
+                    </form>
 
-                <div style="overflow-x: auto;">
-                    <table>
-                        <tr>
-                            <th>Rolle</th>
-                            <th>Code</th>
-                            <th>Direkt-Link</th>
-                        </tr>
-                        <?php
-                        $activeCodes = $db->registration_codes->find(['is_used' => false]);
-                        foreach ($activeCodes as $c): 
-                            $link = "http://" . $_SERVER['HTTP_HOST'] . explode('?', $_SERVER['REQUEST_URI'])[0] . "?reg_token=" . $c['code'];
-                        ?>
+                    <div style="overflow-x: auto;">
+                        <table>
                             <tr>
-                                <td><?php echo $c['role']; ?></td>
-                                <td><code><?php echo $c['code']; ?></code></td>
-                                <td><input type="text" value="<?php echo $link; ?>" readonly onclick="this.select();" style="font-size: 0.8rem;"></td>
+                                <th>Rolle</th>
+                                <th>Code</th>
+                                <th>Direkt-Link</th>
                             </tr>
-                        <?php endforeach; ?>
-                    </table>
-                </div>
-            </section>
+                            <?php
+                            $activeCodes = $db->registration_codes->find(['is_used' => false]);
+                            foreach ($activeCodes as $c): 
+                                $link = "http://" . $_SERVER['HTTP_HOST'] . explode('?', $_SERVER['REQUEST_URI'])[0] . "?reg_token=" . $c['code'];
+                            ?>
+                                <tr>
+                                    <td><?php echo $c['role']; ?></td>
+                                    <td><code><?php echo $c['code']; ?></code></td>
+                                    <td><input type="text" value="<?php echo $link; ?>" readonly onclick="this.select();" style="font-size: 0.8rem;"></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </table>
+                    </div>
+                </section>
+            <?php endif; ?>
         <?php endif; ?>
-
-        <?php if (can('create_project')): ?>
-            <section style="margin-top: 1.25rem;">
-                <h3>Projekt-Management</h3>
-                <p>Du hast die Berechtigung, Projekte zu verwalten.</p>
-                <button onclick="alert('Hier käme das Formular für Projekte hin!')">Neues Projekt hinzufügen</button>
-            </section>
-        <?php endif; ?>
-
-    <?php endif; ?>
-</div>
-
-</body>
-</html>
+    </div>

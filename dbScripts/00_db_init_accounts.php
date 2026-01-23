@@ -25,15 +25,15 @@ try {
     $db->roles_config->insertMany([
         [
             'role' => 'admin', 
-            'permissions' => ['create_project', 'edit_all', 'delete_all', 'manage_users', 'generate_codes']
+            'permissions' => ['create_project', 'edit_all', 'delete_all', 'manage_users', 'generate_codes', 'comment', 'like_dislike']
         ],
         [
             'role' => 'content_manager', 
-            'permissions' => ['create_project', 'edit_own']
+            'permissions' => ['create_project', 'edit_own', 'comment', 'like_dislike']
         ],
         [
             'role' => 'community_member', 
-            'permissions' => []
+            'permissions' => ['comment', 'like_dislike']
         ]
     ]);
     echo "✅ Rollen & Rechte definiert.<br>";
