@@ -216,7 +216,7 @@ $prefilledCode = isset($_GET['reg_token']) ? htmlspecialchars($_GET['reg_token']
                 <form method="POST" style="display: flex; gap: 0.625rem; flex-wrap: wrap;">
                     <select name="target_role" style="flex: 2; min-width: 12.5rem;">
                         <option value="content_manager">Content Manager</option>
-                        <option value="viewer">Viewer</option>
+                        <option value="community_member">Community Member</option>
                         <option value="admin">Admin</option>
                     </select>
                     <button type="submit" name="generate_code" style="flex: 1; min-width: 9.375rem;">Code generieren</button>

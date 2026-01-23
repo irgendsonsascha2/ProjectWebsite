@@ -32,7 +32,7 @@ try {
             'permissions' => ['create_project', 'edit_own']
         ],
         [
-            'role' => 'viewer', 
+            'role' => 'community_member', 
             'permissions' => []
         ]
     ]);
@@ -47,7 +47,7 @@ try {
                 'required' => ['code', 'role', 'is_used', 'created_at'],
                 'properties' => [
                     'code' => ['bsonType' => 'string'],
-                    'role' => ['enum' => ['admin', 'content_manager', 'viewer']],
+                    'role' => ['enum' => ['admin', 'content_manager', 'community_member']],
                     'is_used' => ['bsonType' => 'bool'],
                     'created_at' => ['bsonType' => 'date']
                 ]
@@ -67,7 +67,7 @@ try {
                 'properties' => [
                     'email' => ['bsonType' => 'string', 'pattern' => '^.+@.+$'],
                     'password' => ['bsonType' => 'string'],
-                    'role' => ['enum' => ['admin', 'content_manager', 'viewer']],
+                    'role' => ['enum' => ['admin', 'content_manager', 'community_member']],
                     'created_at' => ['bsonType' => 'date']
                 ]
             ]
