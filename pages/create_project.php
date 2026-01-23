@@ -41,20 +41,28 @@ if (isset($_POST['create_project'])) {
         }
     }
 
+    // --- LOGIK: PROJEKT ERSTELLEN ---
     if (empty($message) && !empty($title)) {
-        // Die $db Variable wird von der index.php bereitgestellt
-        $db->projects->insertOne([
-            'title' => $title,
-            'description' => $description,
-            'tags' => $tags,
-            'image' => $imagePath,
-            'author_id' => new \MongoDB\BSON\ObjectId($_SESSION['user_id']),
-            'created_at' => new UTCDateTime()
-        ]);
+        $now = new \MongoDB\BSON\UTCDateTime();
 
-        $message = "✅ Projekt erfolgreich erstellt!";
-    } elseif (empty($message)) {
-        $message = "❌ Bitte geben Sie mindestens einen Titel an.";
+        // Wir bauen das Dokument exakt nach Schema-Vorgabe
+        $document = [
+            'title'       => $title,
+            'description' => $description,
+            'thumbnail'   => $imagePath ?? 'img/default-thumb.jpg', // Muss vorhanden sein laut Schema
+            'gallery'     => [], // Muss vorhanden sein (Array) laut Schema
+            'author_id'   => $_SESSION['user_id'], // Als STRING senden, wie im Schema definiert
+            'created_at'  => $now,
+            'updated_at'  => $now  // Muss vorhanden sein laut Schema
+        ];
+
+        try {
+            $db->projects->insertOne($document);
+            $message = "✅ Projekt erfolgreich erstellt!";
+        } catch (Exception $e) {
+            // Dies zeigt dir den genauen Validierungsfehler an
+            $message = "❌ Datenbankfehler: " . $e->getMessage();
+        }
     }
 }
 ?>

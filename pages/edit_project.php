@@ -1,7 +1,8 @@
 <?php
 // --- HILFSFUNKTIONEN ---
 if (!function_exists('can')) {
-    function can($permission) {
+    function can($permission)
+    {
         return isset($_SESSION['permissions']) && in_array($permission, $_SESSION['permissions']);
     }
 }
@@ -47,7 +48,10 @@ if (isset($_POST['update_project'])) {
     $updateData = [
         'title' => trim($_POST['title']),
         'description' => trim($_POST['description']),
+        // Tags sind im Schema nicht explizit als Pflichtfeld im Validator, 
+        // aber wir behalten sie bei.
         'tags' => array_map('trim', explode(',', $_POST['tags'])),
+        'updated_at' => new \MongoDB\BSON\UTCDateTime() // PFLICHT laut Schema
     ];
 
     // --- BILD-UPLOAD ---
@@ -55,15 +59,15 @@ if (isset($_POST['update_project'])) {
         $uploadDir = __DIR__ . '/../img/thumbnails/';
         $filename = uniqid() . '-' . basename($_FILES['project_image']['name']);
         $targetFile = $uploadDir . $filename;
-        
+
         $check = getimagesize($_FILES['project_image']['tmp_name']);
         if ($check !== false) {
             if (move_uploaded_file($_FILES['project_image']['tmp_name'], $targetFile)) {
-                // Altes Bild löschen, falls vorhanden
-                if (!empty($project['image']) && file_exists(__DIR__ . '/../' . $project['image'])) {
-                    unlink(__DIR__ . '/../' . $project['image']);
+                // WICHTIG: Im Schema heißt das Feld 'thumbnail', nicht 'image'!
+                if (!empty($project['thumbnail']) && file_exists(__DIR__ . '/../' . $project['thumbnail'])) {
+                    unlink(__DIR__ . '/../' . $project['thumbnail']);
                 }
-                $updateData['image'] = 'img/thumbnails/' . $filename;
+                $updateData['thumbnail'] = 'img/thumbnails/' . $filename;
             } else {
                 $message = "Fehler beim Verschieben des Bildes.";
             }
@@ -73,14 +77,17 @@ if (isset($_POST['update_project'])) {
     }
 
     if (empty($message) && !empty($updateData['title'])) {
-        $db->projects->updateOne(
-            ['_id' => $projectObjectId],
-            ['$set' => $updateData]
-        );
-        
-        // Projekt-Daten neu laden, um die Änderungen im Formular anzuzeigen
-        $project = $db->projects->findOne(['_id' => $projectObjectId]);
-        $message = "✅ Projekt erfolgreich aktualisiert!";
+        try {
+            $db->projects->updateOne(
+                ['_id' => $projectObjectId],
+                ['$set' => $updateData]
+            );
+
+            $project = $db->projects->findOne(['_id' => $projectObjectId]);
+            $message = "✅ Projekt erfolgreich aktualisiert!";
+        } catch (Exception $e) {
+            $message = "❌ Datenbankfehler: " . $e->getMessage();
+        }
     } elseif (empty($message)) {
         $message = "❌ Bitte geben Sie mindestens einen Titel an.";
     }
@@ -96,7 +103,7 @@ if (isset($_POST['update_project'])) {
         <h1>Projekt bearbeiten</h1>
         <a href="index.php?page=project_detail&id=<?php echo (string)$projectObjectId; ?>">Zurück zum Projekt</a>
     </div>
-    
+
     <?php if ($message): ?>
         <div class="alert"><?php echo $message; ?></div>
     <?php endif; ?>
@@ -110,7 +117,7 @@ if (isset($_POST['update_project'])) {
 
         <label for="tags">Tags (kommagetrennt)</label>
         <input type="text" id="tags" name="tags" value="<?php echo htmlspecialchars(implode(', ', iterator_to_array($project['tags']))); ?>" placeholder="z.B. Coding, Musik, Gym">
-        
+
         <label for="project_image">Vorschaubild</label>
         <?php if (!empty($project['image'])): ?>
             <p>Aktuelles Bild:</p>
