@@ -31,8 +31,8 @@ $page = $_GET['page'] ?? 'project_grid';
 
     <nav>
         <a href="index.php?page=project_grid">Home</a>
-        <a href="index.php?page=about">About</a>
         <a href="index.php?page=account">Account</a>
+        <a href="index.php?page=acc">Error</a>
         <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
             <a href="pages/admin/index.php" style="color: red;">Admin</a>
         <?php endif; ?>
@@ -48,18 +48,11 @@ $page = $_GET['page'] ?? 'project_grid';
         $file_path = "pages/" . $safe_page . ".php";
 
         // 3. Prüfen, ob die Datei existiert und den Inhalt laden
-        switch ($safe_page) {
-            case 'create_project':
-            case 'edit_project':
-            case 'project_grid':
-            case 'project_detail':
-            case 'about':
-            case 'account':
-                include $file_path;
-                break;
-            default:
-                include 'pages/404.php';
-                break;
+       if (file_exists($file_path)) {
+            include $file_path;
+        } else {
+            // 4. Fallback zur 404 Seite
+            include 'pages/404.php';
         }
         ?>
     </main>

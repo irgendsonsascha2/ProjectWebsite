@@ -21,7 +21,7 @@ $projectsCursor = $db->projects->find([], ['sort' => ['created_at' => -1]]);
 ?>
 
 <head>
-    <link rel="stylesheet" href="/./style/project_grid_style.css">
+    <link rel="stylesheet" href="style/project_grid.css">
 </head>
 
 <div class="project-grid">

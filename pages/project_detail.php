@@ -123,82 +123,7 @@ if ($isLoggedIn) {
 }
 ?>
 
-<style>
-    .interaction-section {
-        margin-top: 30px;
-        background: #f9f9f9;
-        padding: 20px;
-        border-radius: 8px;
-    }
-
-    .interaction-buttons {
-        display: flex;
-        gap: 15px;
-        align-items: center;
-        margin-bottom: 20px;
-    }
-
-    .interaction-buttons button {
-        font-size: 1.2rem;
-        padding: 10px 20px;
-        cursor: pointer;
-        border: 1px solid #ccc;
-        background: white;
-        border-radius: 5px;
-    }
-
-    .interaction-buttons button.liked {
-        background-color: #d4edda;
-        border-color: #c3e6cb;
-    }
-
-    .interaction-buttons button.disliked {
-        background-color: #f8d7da;
-        border-color: #f5c6cb;
-    }
-
-    .comment-form textarea {
-        width: 100%;
-        min-height: 80px;
-        padding: 10px;
-        border-radius: 5px;
-        border: 1px solid #ccc;
-        margin-bottom: 10px;
-    }
-
-    .comment-form button {
-        background: #333;
-        color: white;
-        padding: 10px 15px;
-        border-radius: 4px;
-    }
-
-    .comment-list {
-        margin-top: 20px;
-    }
-
-    .comment {
-        background: #fff;
-        padding: 15px;
-        border: 1px solid #eee;
-        border-radius: 5px;
-        margin-bottom: 10px;
-    }
-
-    .comment p {
-        margin: 0;
-    }
-
-    .comment .author {
-        font-weight: bold;
-        color: #333;
-    }
-
-    .comment .date {
-        font-size: 0.8em;
-        color: #888;
-    }
-</style>
+<link rel="stylesheet" href="style/project_detail.css">
 
 <article class="project-detail">
     <a href="index.php?page=project_grid" class="back-link">← Zurück zur Übersicht</a>
@@ -207,7 +132,7 @@ if ($isLoggedIn) {
 
     <div class="gallery-grid" style="text-align: center;">
         <?php if (!empty($project['image'])): ?>
-            <img src="<?php echo htmlspecialchars($project['image']); ?>" alt="Vorschaubild" style="max-width: 100%; border-radius: 8px;">
+            <img src="<?php echo htmlspecialchars($project['image']); ?>" alt="Vorschaubild" style="max-width: 100%; border-radius: 0.5rem;">
         <?php endif; ?>
     </div>
 

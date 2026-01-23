@@ -1,4 +1,7 @@
 <?php
+
+use MongoDB\BSON\UTCDateTime;
+
 // --- LOGOUT ---
 if (isset($_GET['logout'])) {
     session_destroy();
@@ -18,7 +21,7 @@ if (isset($_POST['login'])) {
 
         $roleData = $db->roles_config->findOne(['role' => $user['role']]);
         $_SESSION['permissions'] = iterator_to_array($roleData['permissions']);
-        
+
         $message = "✅ Erfolgreich angemeldet!";
     } else {
         $message = "❌ Fehler: E-Mail oder Passwort falsch.";
@@ -58,7 +61,7 @@ if (isset($_POST['register'])) {
 
 // --- LOGIK: CODE GENERIEREN (Nur Admin) ---
 if (isset($_POST['generate_code']) && can('generate_codes')) {
-    $newCode = strtoupper(bin2hex(random_bytes(4))); 
+    $newCode = strtoupper(bin2hex(random_bytes(4)));
     $targetRole = $_POST['target_role'];
 
     $db->registration_codes->insertOne([
@@ -77,151 +80,79 @@ $prefilledCode = isset($_GET['reg_token']) ? htmlspecialchars($_GET['reg_token']
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Account Management</title>
-    <style>
-        /* Basis: 1rem entspricht i.d.R. 16px */
-        body { 
-            font-family: sans-serif; 
-            line-height: 1.6; 
-            padding: 1.25rem; 
-            background: #f9f9f9; 
-            font-size: 1rem;
-        }
-        .container { 
-            max-width: 50rem; 
-            margin: 2rem auto; 
-            background: white; 
-            padding: 1.25rem; 
-            border-radius: 0.625rem; 
-            box-shadow: 0 0.125rem 0.625rem rgba(0,0,0,0.1); 
-        }
-        .alert { 
-            padding: 0.625rem; 
-            background: #e3f2fd; 
-            border-left: 0.3125rem solid #2196f3; 
-            margin-bottom: 1.25rem; 
-        }
-        .auth-grid { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 2.5rem; 
-        }
-        input, select, button { 
-            width: 100%; 
-            padding: 0.625rem; 
-            margin: 0.3125rem 0; 
-            box-sizing: border-box; 
-            font-size: 1rem;
-        }
-        button { 
-            background: #333; 
-            color: white; 
-            border: none; 
-            cursor: pointer; 
-            transition: background 0.2s;
-        }
-        button:hover { 
-            background: #555; 
-        }
-        .admin-panel { 
-            background: #fff3e0; 
-            padding: 0.9375rem; 
-            border-radius: 0.3125rem; 
-            margin-top: 1.25rem; 
-        }
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 0.625rem; 
-        }
-        th, td { 
-            text-align: left; 
-            padding: 0.5rem; 
-            border-bottom: 0.0625rem solid #ddd; 
-            font-size: 0.875rem; 
-        }
-        code { 
-            background: #eee; 
-            padding: 0.125rem 0.25rem; 
-            border-radius: 0.1875rem;
-        }
-        
-        /* Responsive Anpassung für schmale Bildschirme */
-        @media (max-width: 40rem) {
-            .auth-grid { grid-template-columns: 1fr; gap: 1.25rem; }
-        }
-    </style>
+    <link rel="stylesheet" href="style/account.css">
 </head>
 
-    <div class="container">
-        <h1>Account System</h1>
-        
-        <?php if ($message): ?>
-            <div class="alert"><?php echo $message; ?></div>
-        <?php endif; ?>
+<div class="container">
+    <h1>Account System</h1>
 
-        <?php if (!isset($_SESSION['user_id'])): ?>
-            <div class="auth-grid">
-                <section>
-                    <h2>Anmelden</h2>
-                    <form method="POST">
-                        <input type="email" name="email" placeholder="E-Mail" required>
-                        <input type="password" name="password" placeholder="Passwort" required>
-                        <button type="submit" name="login">Login</button>
-                    </form>
-                </section>
+    <?php if ($message): ?>
+        <div class="alert"><?php echo $message; ?></div>
+    <?php endif; ?>
 
-                <section>
-                    <h2>Registrieren</h2>
-                    <form method="POST">
-                        <input type="text" name="reg_code" placeholder="Einmal-Code" value="<?php echo $prefilledCode; ?>" required>
-                        <input type="email" name="email" placeholder="E-Mail Adresse" required>
-                        <input type="password" name="password" placeholder="Passwort wählen" required>
-                        <button type="submit" name="register">Konto erstellen</button>
-                    </form>
-                </section>
-            </div>
+    <?php if (!isset($_SESSION['user_id'])): ?>
+        <div class="auth-grid">
+            <section>
+                <h2>Anmelden</h2>
+                <form method="POST">
+                    <input type="email" name="email" placeholder="E-Mail" required>
+                    <input type="password" name="password" placeholder="Passwort" required>
+                    <button type="submit" name="login">Login</button>
+                </form>
+            </section>
 
-        <?php else: ?>
-            <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
-                <p>Eingeloggt als: <strong><?php echo $_SESSION['email']; ?></strong> (Rolle: <?php echo $_SESSION['role']; ?>)</p>
-                <a href="?logout=1">Abmelden</a>
-            </div>
+            <section>
+                <h2>Registrieren</h2>
+                <form method="POST">
+                    <input type="text" name="reg_code" placeholder="Einmal-Code" value="<?php echo $prefilledCode; ?>" required>
+                    <input type="email" name="email" placeholder="E-Mail Adresse" required>
+                    <input type="password" name="password" placeholder="Passwort wählen" required>
+                    <button type="submit" name="register">Konto erstellen</button>
+                </form>
+            </section>
+        </div>
 
-            <hr style="border: 0; border-top: 0.0625rem solid #eee; margin: 1.25rem 0;">
+    <?php else: ?>
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+            <p>Eingeloggt als: <strong><?php echo $_SESSION['email']; ?></strong> (Rolle: <?php echo $_SESSION['role']; ?>)</p>
+            <a href="?logout=1">Abmelden</a>
+        </div>
 
-            <?php if (can('generate_codes')): ?>
-                <section class="admin-panel">
-                    <h3>Einladungscodes & Links</h3>
-                    <form method="POST" style="display: flex; gap: 0.625rem; flex-wrap: wrap;">
-                        <select name="target_role" style="flex: 2; min-width: 12.5rem;">
-                            <option value="content_manager">Content Manager</option>
-                            <option value="community_member">Community Member</option>
-                            <option value="admin">Admin</option>
-                        </select>
-                        <button type="submit" name="generate_code" style="flex: 1; min-width: 9.375rem;">Code generieren</button>
-                    </form>
+        <hr style="border: 0; border-top: 0.0625rem solid #eee; margin: 1.25rem 0;">
 
-                    <div style="overflow-x: auto;">
-                        <table>
+        <?php if (can('generate_codes')): ?>
+            <section class="admin-panel">
+                <h3>Einladungscodes & Links</h3>
+                <form method="POST" style="display: flex; gap: 0.625rem; flex-wrap: wrap;">
+                    <select name="target_role" style="flex: 2; min-width: 12.5rem;">
+                        <option value="content_manager">Content Manager</option>
+                        <option value="community_member">Community Member</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                    <button type="submit" name="generate_code" style="flex: 1; min-width: 9.375rem;">Code generieren</button>
+                </form>
+
+                <div style="overflow-x: auto;">
+                    <table>
+                        <tr>
+                            <th>Rolle</th>
+                            <th>Code</th>
+                            <th>Direkt-Link</th>
+                        </tr>
+                        <?php
+                        $activeCodes = $db->registration_codes->find(['is_used' => false]);
+                        foreach ($activeCodes as $c):
+                            $link = "http://" . $_SERVER['HTTP_HOST'] . explode('?', $_SERVER['REQUEST_URI'])[0] . "?reg_token=" . $c['code'];
+                        ?>
                             <tr>
-                                <th>Rolle</th>
-                                <th>Code</th>
-                                <th>Direkt-Link</th>
+                                <td><?php echo $c['role']; ?></td>
+                                <td><code><?php echo $c['code']; ?></code></td>
+                                <td><input type="text" value="<?php echo $link; ?>" readonly onclick="this.select();" style="font-size: 0.8rem;"></td>
                             </tr>
-                            <?php
-                            $activeCodes = $db->registration_codes->find(['is_used' => false]);
-                            foreach ($activeCodes as $c): 
-                                $link = "http://" . $_SERVER['HTTP_HOST'] . explode('?', $_SERVER['REQUEST_URI'])[0] . "?reg_token=" . $c['code'];
-                            ?>
-                                <tr>
-                                    <td><?php echo $c['role']; ?></td>
-                                    <td><code><?php echo $c['code']; ?></code></td>
-                                    <td><input type="text" value="<?php echo $link; ?>" readonly onclick="this.select();" style="font-size: 0.8rem;"></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </table>
-                    </div>
-                </section>
-            <?php endif; ?>
+                        <?php endforeach; ?>
+                    </table>
+                </div>
+            </section>
         <?php endif; ?>
-    </div>
+    <?php endif; ?>
+</div>

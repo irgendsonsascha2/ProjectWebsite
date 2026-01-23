@@ -4,9 +4,7 @@ if (!class_exists('MongoDB\Client')) {
     require __DIR__ . '/../vendor/autoload.php';
 }
 
-use MongoDB\BSON\UTCDateTime;
 use MongoDB\Client;
-use MongoDB\BSON\ObjectId;
 
 try {
     // HYBRIDE VERBINDUNG: Prüfen ob Master bereits $db bereitgestellt hat

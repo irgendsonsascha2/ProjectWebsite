@@ -9,7 +9,6 @@ $isLoggedIn = isset($_SESSION['user_id']);
 
 // --- DATENBANK & PROJEKT LADEN ---
 use MongoDB\BSON\ObjectId;
-use MongoDB\BSON\UTCDateTime;
 
 $projectId = $_GET['id'] ?? null;
 if (!$projectId) {
@@ -89,16 +88,7 @@ if (isset($_POST['update_project'])) {
 ?>
 
 <head>
-    <style>
-        .container { max-width: 700px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        input, textarea, button { width: 100%; padding: 12px; margin: 8px 0; box-sizing: border-box; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
-        textarea { min-height: 150px; resize: vertical; }
-        button { background: #333; color: white; border: none; cursor: pointer; transition: background 0.2s; }
-        button:hover { background: #555; }
-        .alert { padding: 15px; background: #e3f2fd; border-left: 5px solid #2196f3; margin-bottom: 20px; }
-        label { font-weight: bold; margin-top: 10px; display: block; }
-        .current-image { max-width: 200px; margin-top: 10px; border-radius: 5px; }
-    </style>
+    <link rel="stylesheet" href="style/edit_project.css">
 </head>
 
 <div class="container">

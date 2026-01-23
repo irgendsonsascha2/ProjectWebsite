@@ -1,0 +1,126 @@
+:root {
+    /* Farb-Variablen */
+    --error-primary: #3b82f6;        /* Hauptfarbe (z.B. Button) */
+    --error-primary-hover: #2563eb;
+    --error-accent: #ef4444;         /* Akzentfarbe (404 Zahl) */
+    --error-bg-light: #f8fafc;       /* Hintergrund der Systembox */
+    --error-text-main: #1e293b;      /* Haupttext */
+    --error-text-muted: #64748b;     /* Nebentext */
+    --error-success: #10b981;        /* System-Status Punkt */
+    --error-border: #e2e8f0;         /* Rahmen */
+
+    /* Skalierungsvariablen */
+    --error-radius: 0.75rem;
+}
+
+.error-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 65vh; /* Passt sich der Größe deines <main> an */
+    padding: 2rem;
+    font-family: inherit; /* Nutzt die Schriftart deiner index.php */
+}
+
+.error-content {
+    max-width: 35rem;
+    width: 100%;
+    text-align: center;
+    animation: slideUp 0.6s ease-out;
+}
+
+/* Die 404-Zahl */
+.error-number {
+    font-size: 8rem;
+    font-weight: 800;
+    color: var(--error-accent);
+    line-height: 1;
+    margin-bottom: 1rem;
+    letter-spacing: -0.3rem;
+}
+
+.error-headline {
+    font-size: 2.25rem;
+    color: var(--error-text-main);
+    margin-bottom: 1rem;
+}
+
+.error-text {
+    font-size: 1.125rem;
+    color: var(--error-text-muted);
+    margin-bottom: 2.5rem;
+}
+
+.requested-page {
+    font-family: monospace;
+    background: var(--error-bg-light);
+    color: var(--error-accent);
+    padding: 0.1rem 0.4rem;
+    border-radius: 0.25rem;
+}
+
+/* Button */
+.btn-back {
+    display: inline-block;
+    padding: 1rem 2.25rem;
+    background-color: var(--error-primary);
+    color: #ffffff;
+    text-decoration: none;
+    border-radius: var(--error-radius);
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-back:hover {
+    background-color: var(--error-primary-hover);
+    transform: translateY(-0.15rem);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+}
+
+/* System Info Box */
+.system-box {
+    margin-top: 4rem;
+    padding: 1.5rem;
+    background-color: var(--error-bg-light);
+    border: 1px solid var(--error-border);
+    border-radius: var(--error-radius);
+    text-align: left;
+    font-size: 0.9rem;
+    color: var(--error-text-muted);
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 700;
+    color: var(--error-text-main);
+    margin-bottom: 0.5rem;
+}
+
+.dot {
+    width: 0.6rem;
+    height: 0.6rem;
+    background-color: var(--error-success);
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.timestamp {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    opacity: 0.7;
+}
+
+/* Animation */
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(2rem); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Mobile Optimierung */
+@media (max-width: 40rem) {
+    .error-number { font-size: 5.5rem; }
+    .error-headline { font-size: 1.75rem; }
+    .error-wrapper { padding: 1.5rem; }
+}

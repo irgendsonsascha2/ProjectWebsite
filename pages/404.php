@@ -1,13 +1,29 @@
-<section class="about-me">
-    <h1>404</h1>
-    <p>404</p>
+<head>
+    <link rel="stylesheet" href="style/404.css">
+</head>
 
-    <div style="background: #f0f0f0; padding: 20px; border-radius: 8px; border: 2px dashed #ccc;">
-        <h3>✅ Erfolg!</h3>
-        <p>Wenn du diesen Text siehst, funktioniert dein <strong>dynamisches PHP-Navigationssystem</strong> einwandfrei.</p>
-        <p>Aktuelle Zeit auf dem Server: <?php echo date("H:i:s"); ?> Uhr</p>
+<div class="error-wrapper">
+    <div class="error-content">
+        <div class="error-number">404</div>
+        <h1 class="error-headline">Seite nicht gefunden</h1>
+        <p class="error-text">
+            Die von dir gesuchte Unterseite
+            <code class="requested-page">"<?php echo htmlspecialchars($page); ?>"</code>
+            konnte leider nicht gefunden werden.
+        </p>
+
+        <div class="action-area">
+            <a href="index.php?page=project_grid" class="btn-back">
+                Zurück zur Übersicht
+            </a>
+        </div>
+
+        <?php if (isset($safe_page)): ?>
+            <div class="debug-info">
+                <span class="status-badge">✅ System-Check aktiv</span>
+                <p>Die Navigation für <strong><?php echo $safe_page; ?></strong> wurde korrekt abgefangen.</p>
+                <p class="server-timestamp">Serverzeit: <?php echo date("H:i:s"); ?> Uhr</p>
+            </div>
+        <?php endif; ?>
     </div>
-
-    <br>
-    <a href="index.php?page=project_grid">← Zurück zu den Projekten</a>
-</section>
+</div>
