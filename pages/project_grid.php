@@ -9,6 +9,20 @@ if (!function_exists('can')) {
         return isset($_SESSION['permissions']) && in_array($permission, $_SESSION['permissions']);
     }
 }
+if (!function_exists('can_edit_project')) {
+    function can_edit_project($project) {
+        if (!isset($_SESSION['user_id'])) {
+            return false;
+        }
+        if (can('edit_all')) {
+            return true;
+        }
+        if (can('edit_own') && isset($project['author_id'])) {
+            return (string)$project['author_id'] === $_SESSION['user_id'];
+        }
+        return false;
+    }
+}
 
 // HYBRIDE VERBINDUNG: Prüfen ob Master bereits $db bereitgestellt hat
 if (!isset($db)) {
@@ -32,22 +46,50 @@ $projectsCursor = $db->projects->find([], ['sort' => ['created_at' => -1]]);
         <p>Keine Projekte gefunden.</p>
     <?php else: ?>
         <?php foreach ($projects as $project): ?>
-            <a href="index.php?page=project_detail&id=<?php echo (string)$project['_id']; ?>" class="project-card">
-                <img src="<?php echo htmlspecialchars($project['image'] ?? 'img/placeholder.jpg'); ?>" alt="Vorschau" class="thumbnail">
-                <div class="content">
-                    <h3><?php echo htmlspecialchars($project['title']); ?></h3>
-                    <p><?php echo htmlspecialchars(substr($project['description'], 0, 100)) . '...'; ?></p>
-                    <span class="date">
-                        <?php 
-                            if ($project['created_at'] instanceof \MongoDB\BSON\UTCDateTime) {
-                                echo $project['created_at']->toDateTime()->format('d.m.Y');
-                            } else {
-                                echo "Datum unbekannt";
-                            }
-                        ?>
-                    </span>
-                </div>
-            </a>
+            <?php
+                $detailUrl = "index.php?page=project_detail&id=" . (string)$project['_id'];
+                $thumb = null;
+                $thumbType = 'image';
+                if (!empty($project['gallery']) && is_array($project['gallery'])) {
+                    foreach ($project['gallery'] as $item) {
+                        if (!empty($item['url'])) {
+                            $thumb = $item['url'];
+                            $thumbType = $item['type'] ?? 'image';
+                            break;
+                        }
+                    }
+                }
+                if (!$thumb) {
+                    $thumb = 'img/placeholder.svg';
+                    $thumbType = 'image';
+                }
+                $canEditProject = can_edit_project($project);
+            ?>
+            <article class="project-card">
+                <a href="<?php echo htmlspecialchars($detailUrl); ?>" class="project-card-link">
+                    <?php if ($thumbType === 'video'): ?>
+                        <video class="thumbnail" src="<?php echo htmlspecialchars($thumb); ?>" muted playsinline preload="metadata"></video>
+                    <?php else: ?>
+                        <img src="<?php echo htmlspecialchars($thumb); ?>" alt="Vorschau" class="thumbnail">
+                    <?php endif; ?>
+                    <div class="content">
+                        <h3><?php echo htmlspecialchars($project['title']); ?></h3>
+                        <p><?php echo htmlspecialchars(substr($project['description'], 0, 100)) . '...'; ?></p>
+                        <span class="date">
+                            <?php 
+                                if ($project['created_at'] instanceof \MongoDB\BSON\UTCDateTime) {
+                                    echo $project['created_at']->toDateTime()->format('d.m.Y');
+                                } else {
+                                    echo "Datum unbekannt";
+                                }
+                            ?>
+                        </span>
+                    </div>
+                </a>
+                <?php if ($canEditProject): ?>
+                    <a href="index.php?page=edit_project&id=<?php echo (string)$project['_id']; ?>" class="project-edit" title="Projekt bearbeiten">✎</a>
+                <?php endif; ?>
+            </article>
         <?php endforeach; ?>
     <?php endif; ?>
 </div>

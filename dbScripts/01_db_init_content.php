@@ -18,11 +18,12 @@ try {
         'validator' => [
             '$jsonSchema' => [
                 'bsonType' => 'object',
-                'required' => ['title', 'description', 'thumbnail', 'gallery', 'created_at', 'updated_at'],
+                'required' => ['title', 'description', 'gallery', 'created_at', 'updated_at'],
                 'properties' => [
                     'title' => ['bsonType' => 'string'],
                     'description' => ['bsonType' => 'string'],
                     'thumbnail' => ['bsonType' => 'string'],
+                    'thumbnail_type' => ['enum' => ['image', 'video']],
                     'gallery' => [
                         'bsonType' => 'array',
                         'items' => [
@@ -49,10 +50,11 @@ try {
     $db->projects->insertOne([
         'title' => 'Erstes Portfolio Werk',
         'description' => 'Willkommen in meinem Grid.',
-        'thumbnail' => 'img/sample-thumb.jpg',
         'gallery' => [
             ['type' => 'image', 'url' => 'img/sample-1.jpg', 'caption' => 'Nahaufnahme']
         ],
+        'thumbnail' => 'img/sample-1.jpg',
+        'thumbnail_type' => 'image',
         'created_at' => $now,
         'updated_at' => $now
     ]);

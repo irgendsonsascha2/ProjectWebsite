@@ -94,7 +94,7 @@ $likeCount = $db->likes->countDocuments(['project_id' => $projectObjectId, 'type
 $dislikeCount = $db->likes->countDocuments(['project_id' => $projectObjectId, 'type' => 'dislike']);
 
 // Kommentare mit User-Infos laden
-$comments = $db->comments->aggregate([
+$commentsCursor = $db->comments->aggregate([
     ['$match' => ['project_id' => $projectObjectId]],
     ['$lookup' => [
         'from' => 'users',
@@ -105,6 +105,7 @@ $comments = $db->comments->aggregate([
     ['$unwind' => '$user_info'],
     ['$sort' => ['updated_at' => -1]]
 ]);
+$comments = iterator_to_array($commentsCursor);
 
 // User's eigenen Kommentar finden
 $userComment = null;
@@ -130,11 +131,34 @@ if ($isLoggedIn) {
 
     <h1><?php echo htmlspecialchars($project['title']); ?></h1>
 
-    <div class="gallery-grid" style="text-align: center;">
-        <?php if (!empty($project['image'])): ?>
-            <img src="<?php echo htmlspecialchars($project['image']); ?>" alt="Vorschaubild" style="max-width: 100%; border-radius: 0.5rem;">
-        <?php endif; ?>
-    </div>
+    <section class="gallery-section">
+        <div class="gallery-grid">
+            <?php if (!empty($project['gallery']) && is_array($project['gallery'])): ?>
+                <?php foreach ($project['gallery'] as $index => $item): ?>
+                    <?php
+                        $type = $item['type'] ?? 'image';
+                        $url = $item['url'] ?? '';
+                        $caption = $item['caption'] ?? '';
+                    ?>
+                    <?php if ($url): ?>
+                        <button class="media-item" data-type="<?php echo htmlspecialchars($type); ?>" data-src="<?php echo htmlspecialchars($url); ?>" data-caption="<?php echo htmlspecialchars($caption); ?>">
+                            <?php if ($type === 'video'): ?>
+                                <video src="<?php echo htmlspecialchars($url); ?>" preload="metadata" muted playsinline></video>
+                                <span class="media-badge">Video</span>
+                            <?php else: ?>
+                                <img src="<?php echo htmlspecialchars($url); ?>" alt="<?php echo htmlspecialchars($caption ?: 'Bild'); ?>">
+                            <?php endif; ?>
+                        </button>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="media-item placeholder-tile" aria-hidden="true">
+                    <img src="img/placeholder.svg" alt="Platzhalter">
+                    <span class="placeholder-text">Noch keine Medien</span>
+                </div>
+            <?php endif; ?>
+        </div>
+    </section>
 
     <p class="description"><?php echo nl2br(htmlspecialchars($project['description'])); ?></p>
     <p>Gepostet am: <?php echo $project['created_at']->toDateTime()->format('d.m.Y'); ?></p>
@@ -176,12 +200,84 @@ if ($isLoggedIn) {
                 <p><?php echo nl2br(htmlspecialchars($comment['text'])); ?></p>
             </div>
         <?php endforeach; ?>
-        <?php if (iterator_count($comments) === 0): ?>
+        <?php if (count($comments) === 0): ?>
             <p>Noch keine Kommentare vorhanden.</p>
         <?php endif; ?>
     </section>
 </article>
 
 <?php if ($canEdit): ?>
-<a href="index.php?page=edit_project&id=<?php echo (string)$projectObjectId; ?>" class="fab" title="Projekt bearbeiten">+</a>
+<a href="index.php?page=edit_project&id=<?php echo (string)$projectObjectId; ?>" class="fab fab-edit" title="Projekt bearbeiten">✎</a>
 <?php endif; ?>
+
+<div class="lightbox" id="lightbox" aria-hidden="true">
+    <div class="lightbox-content" role="dialog" aria-modal="true">
+        <button class="lightbox-close" type="button" aria-label="Schließen">×</button>
+        <div class="lightbox-media"></div>
+        <div class="lightbox-caption"></div>
+    </div>
+</div>
+
+<script>
+(() => {
+    const lightbox = document.getElementById('lightbox');
+    const lightboxMedia = lightbox.querySelector('.lightbox-media');
+    const lightboxCaption = lightbox.querySelector('.lightbox-caption');
+    const closeBtn = lightbox.querySelector('.lightbox-close');
+
+    function openLightbox(type, src, caption) {
+        lightboxMedia.innerHTML = '';
+        if (type === 'video') {
+            const video = document.createElement('video');
+            video.src = src;
+            video.controls = true;
+            video.autoplay = true;
+            video.playsInline = true;
+            lightboxMedia.appendChild(video);
+        } else {
+            const img = document.createElement('img');
+            img.src = src;
+            img.alt = caption || 'Bild';
+            lightboxMedia.appendChild(img);
+        }
+        lightboxCaption.textContent = caption || '';
+        lightbox.classList.add('is-open');
+        lightbox.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeLightbox() {
+        lightbox.classList.remove('is-open');
+        lightbox.setAttribute('aria-hidden', 'true');
+        lightboxMedia.innerHTML = '';
+        lightboxCaption.textContent = '';
+    }
+
+    document.querySelectorAll('.media-item').forEach((item) => {
+        item.addEventListener('click', () => {
+            openLightbox(item.dataset.type, item.dataset.src, item.dataset.caption);
+        });
+    });
+
+    closeBtn.addEventListener('click', closeLightbox);
+    lightboxMedia.addEventListener('click', (e) => {
+        if (e.target && (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO')) {
+            closeLightbox();
+        }
+    });
+    lightbox.addEventListener('click', (e) => {
+        if (e.target === lightbox) {
+            closeLightbox();
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            if (lightbox.classList.contains('is-open')) {
+                closeLightbox();
+            } else {
+                window.location.href = 'index.php?page=project_grid';
+            }
+        }
+    });
+})();
+</script>
