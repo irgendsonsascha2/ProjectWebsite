@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/bootstrap.php';
 // --- HILFSFUNKTIONEN ---
 if (!function_exists('can')) {
     function can($permission)
@@ -53,25 +54,67 @@ if (!is_dir($contentVideoDir)) {
     mkdir($contentVideoDir, 0755, true);
 }
 
-function detect_media_type($tmpPath) {
-    $mime = mime_content_type($tmpPath);
-    if (strpos($mime, 'image/') === 0) {
-        return 'image';
-    }
-    if (strpos($mime, 'video/') === 0) {
-        return 'video';
-    }
-    return null;
-}
-
 function media_target_dir($type, $imageDir, $videoDir) {
     return $type === 'video' ? $videoDir : $imageDir;
+}
+
+// --- LOGIK: MEDIA REIHENFOLGE ---
+if (isset($_POST['move_media']) && isset($_POST['media_index']) && isset($_POST['direction'])) {
+    $index = (int)$_POST['media_index'];
+    $direction = $_POST['direction'];
+    $gallery = normalize_gallery($project['gallery'] ?? []);
+    $swapIndex = $direction === 'up' ? $index - 1 : $index + 1;
+
+    if (isset($gallery[$index]) && isset($gallery[$swapIndex])) {
+        $tmp = $gallery[$index];
+        $gallery[$index] = $gallery[$swapIndex];
+        $gallery[$swapIndex] = $tmp;
+
+        $update = [
+            '$set' => [
+                'gallery' => $gallery,
+                'updated_at' => new \MongoDB\BSON\UTCDateTime()
+            ]
+        ];
+        if (!empty($gallery[0]['url'])) {
+            $update['$set']['thumbnail'] = $gallery[0]['url'];
+            $update['$set']['thumbnail_type'] = $gallery[0]['type'] ?? 'image';
+        } else {
+            $update['$unset'] = [
+                'thumbnail' => '',
+                'thumbnail_type' => ''
+            ];
+        }
+
+        $db->projects->updateOne(['_id' => $projectObjectId], $update);
+        $project = $db->projects->findOne(['_id' => $projectObjectId]);
+        $message = "✅ Reihenfolge aktualisiert.";
+    }
+}
+
+// --- LOGIK: CAPTIONS SPEICHERN ---
+if (isset($_POST['save_captions']) && isset($_POST['caption']) && is_array($_POST['caption'])) {
+    $gallery = normalize_gallery($project['gallery'] ?? []);
+    foreach ($gallery as $i => $item) {
+        if (isset($_POST['caption'][$i])) {
+            $gallery[$i]['caption'] = trim($_POST['caption'][$i]);
+        }
+    }
+    $db->projects->updateOne(
+        ['_id' => $projectObjectId],
+        ['$set' => [
+            'gallery' => $gallery,
+            'updated_at' => new \MongoDB\BSON\UTCDateTime()
+        ]]
+    );
+    $project = $db->projects->findOne(['_id' => $projectObjectId]);
+    $message = "✅ Captions gespeichert.";
 }
 
 // --- LOGIK: MEDIA LÖSCHEN ---
 if (isset($_POST['delete_media']) && isset($_POST['media_index'])) {
     $index = (int)$_POST['media_index'];
-    $gallery = isset($project['gallery']) && is_array($project['gallery']) ? $project['gallery'] : [];
+    $gallery = normalize_gallery($project['gallery'] ?? []);
 
     if (isset($gallery[$index])) {
         $item = $gallery[$index];
@@ -113,18 +156,30 @@ if (isset($_POST['delete_media']) && isset($_POST['media_index'])) {
 if (isset($_POST['upload_media']) && isset($_FILES['gallery_files'])) {
     $files = $_FILES['gallery_files'];
     $newItems = [];
+    $uploadErrors = [];
+    $uploadedFiles = [];
+    if (count($files['name']) > MEDIA_UPLOAD_MAX_FILES) {
+        $uploadErrors[] = "Maximal " . MEDIA_UPLOAD_MAX_FILES . " Dateien pro Upload.";
+    }
 
-    for ($i = 0; $i < count($files['name']); $i++) {
+    $limit = min(count($files['name']), MEDIA_UPLOAD_MAX_FILES);
+    for ($i = 0; $i < $limit; $i++) {
         if ($files['error'][$i] !== UPLOAD_ERR_OK) {
             continue;
         }
         $tmpPath = $files['tmp_name'][$i];
         $type = detect_media_type($tmpPath);
         if (!$type) {
+            $uploadErrors[] = "Ungültiger Dateityp: " . htmlspecialchars($files['name'][$i]);
+            continue;
+        }
+        $validationError = validate_media_upload($tmpPath, $files['size'][$i], $type);
+        if ($validationError) {
+            $uploadErrors[] = htmlspecialchars($files['name'][$i]) . ": " . $validationError;
             continue;
         }
         $ext = pathinfo($files['name'][$i], PATHINFO_EXTENSION);
-        $safeExt = $ext ? '.' . preg_replace('/[^a-zA-Z0-9]/', '', $ext) : '';
+        $safeExt = sanitize_extension($ext);
         $filename = uniqid('media_', true) . $safeExt;
         $targetDir = media_target_dir($type, $contentImageDir, $contentVideoDir);
         $targetFile = $targetDir . '/' . $filename;
@@ -136,12 +191,14 @@ if (isset($_POST['upload_media']) && isset($_FILES['gallery_files'])) {
                 'url' => $publicPath,
                 'caption' => ''
             ];
+            $uploadedFiles[] = $targetFile;
+        } else {
+            $uploadErrors[] = "Fehler beim Speichern: " . htmlspecialchars($files['name'][$i]);
         }
     }
 
     if (!empty($newItems)) {
-        $gallery = isset($project['gallery']) && is_array($project['gallery']) ? $project['gallery'] : [];
-        $isEmptyBefore = empty($gallery);
+        $gallery = normalize_gallery($project['gallery'] ?? []);
         $gallery = array_merge($gallery, $newItems);
         $update = [
             '$set' => [
@@ -158,14 +215,23 @@ if (isset($_POST['upload_media']) && isset($_FILES['gallery_files'])) {
                 'thumbnail_type' => ''
             ];
         }
-        $db->projects->updateOne(
-            ['_id' => $projectObjectId],
-            $update
-        );
-        $project = $db->projects->findOne(['_id' => $projectObjectId]);
-        $message = "✅ Medien hochgeladen.";
+        try {
+            $db->projects->updateOne(['_id' => $projectObjectId], $update);
+            $project = $db->projects->findOne(['_id' => $projectObjectId]);
+            $message = "✅ Medien hochgeladen.";
+        } catch (Exception $e) {
+            foreach ($uploadedFiles as $file) {
+                if (is_file($file)) {
+                    unlink($file);
+                }
+            }
+            $message = "❌ Datenbankfehler: " . $e->getMessage();
+        }
     } elseif (!$message) {
         $message = "❌ Keine gültigen Medien zum Upload gefunden.";
+    }
+    if (!empty($uploadErrors)) {
+        $message .= "<br>" . implode("<br>", $uploadErrors);
     }
 }
 
@@ -234,12 +300,13 @@ if (isset($_POST['update_project'])) {
     <section id="media-upload" class="media-manager">
         <h2>Projekt‑Medien</h2>
 
-        <?php if (!empty($project['gallery']) && is_array($project['gallery'])): ?>
+        <?php if (!empty(normalize_gallery($project['gallery'] ?? []))): ?>
             <div class="media-grid">
-                <?php foreach ($project['gallery'] as $index => $item): ?>
+                <?php foreach (normalize_gallery($project['gallery'] ?? []) as $index => $item): ?>
                     <?php
                         $type = $item['type'] ?? 'image';
                         $url = $item['url'] ?? '';
+                        $caption = $item['caption'] ?? '';
                     ?>
                     <?php if ($url): ?>
                         <div class="media-tile">
@@ -247,8 +314,21 @@ if (isset($_POST['update_project'])) {
                                 <video src="<?php echo htmlspecialchars($url); ?>" preload="metadata" muted playsinline></video>
                                 <span class="media-badge">Video</span>
                             <?php else: ?>
-                                <img src="<?php echo htmlspecialchars($url); ?>" alt="Bild">
+                                <img src="<?php echo htmlspecialchars($url); ?>" alt="Bild" loading="lazy">
                             <?php endif; ?>
+                            <div class="media-actions">
+                                <form method="POST">
+                                    <input type="hidden" name="media_index" value="<?php echo (int)$index; ?>">
+                                    <input type="hidden" name="direction" value="up">
+                                    <button type="submit" name="move_media" value="1">↑</button>
+                                </form>
+                                <form method="POST">
+                                    <input type="hidden" name="media_index" value="<?php echo (int)$index; ?>">
+                                    <input type="hidden" name="direction" value="down">
+                                    <button type="submit" name="move_media" value="1">↓</button>
+                                </form>
+                            </div>
+                            <input class="media-caption" type="text" name="caption[<?php echo (int)$index; ?>]" form="caption-form" value="<?php echo htmlspecialchars($caption); ?>" placeholder="Caption...">
                             <form method="POST" class="media-delete">
                                 <input type="hidden" name="media_index" value="<?php echo (int)$index; ?>">
                                 <button type="submit" name="delete_media">Löschen</button>
@@ -257,6 +337,9 @@ if (isset($_POST['update_project'])) {
                     <?php endif; ?>
                 <?php endforeach; ?>
             </div>
+            <form id="caption-form" method="POST" class="caption-form">
+                <button type="submit" name="save_captions">Captions speichern</button>
+            </form>
         <?php else: ?>
             <p>Noch keine Medien vorhanden.</p>
         <?php endif; ?>

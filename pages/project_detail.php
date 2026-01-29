@@ -1,26 +1,11 @@
 <?php
-// Session starten und Hilfsfunktionen laden
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../includes/bootstrap.php';
 
-// --- HILFSFUNKTIONEN ---
-if (!function_exists('can')) {
-    function can($permission)
-    {
-        return isset($_SESSION['permissions']) && in_array($permission, $_SESSION['permissions']);
-    }
-}
 $isLoggedIn = isset($_SESSION['user_id']);
 
 // --- DATENBANK & PROJEKT LADEN ---
-use MongoDB\Client;
 use MongoDB\BSON\ObjectId;
 use MongoDB\BSON\UTCDateTime;
-
-$client = new Client("mongodb://localhost:27017");
-$db = $client->portfolio_db;
 
 $projectId = $_GET['id'] ?? null;
 if (!$projectId) {
@@ -122,6 +107,15 @@ if ($isLoggedIn) {
         $canEdit = true;
     }
 }
+
+$gallery = normalize_gallery($project['gallery'] ?? []);
+$mediaLimit = isset($_GET['media_limit']) ? (int)$_GET['media_limit'] : 30;
+$mediaLimit = max(0, min($mediaLimit, 120));
+if ($mediaLimit === 0) {
+    $mediaLimit = 30;
+}
+$gallerySlice = array_slice($gallery, 0, $mediaLimit);
+$hasMore = count($gallery) > $mediaLimit;
 ?>
 
 <link rel="stylesheet" href="style/project_detail.css">
@@ -133,31 +127,48 @@ if ($isLoggedIn) {
 
     <section class="gallery-section">
         <div class="gallery-grid">
-            <?php if (!empty($project['gallery']) && is_array($project['gallery'])): ?>
-                <?php foreach ($project['gallery'] as $index => $item): ?>
+            <?php if (!empty($gallerySlice)): ?>
+                <?php foreach ($gallerySlice as $index => $item): ?>
                     <?php
                         $type = $item['type'] ?? 'image';
                         $url = $item['url'] ?? '';
                         $caption = $item['caption'] ?? '';
                     ?>
                     <?php if ($url): ?>
-                        <button class="media-item" data-type="<?php echo htmlspecialchars($type); ?>" data-src="<?php echo htmlspecialchars($url); ?>" data-caption="<?php echo htmlspecialchars($caption); ?>">
-                            <?php if ($type === 'video'): ?>
-                                <video src="<?php echo htmlspecialchars($url); ?>" preload="metadata" muted playsinline></video>
-                                <span class="media-badge">Video</span>
-                            <?php else: ?>
-                                <img src="<?php echo htmlspecialchars($url); ?>" alt="<?php echo htmlspecialchars($caption ?: 'Bild'); ?>">
+                        <div class="media-card">
+                            <button class="media-item" data-type="<?php echo htmlspecialchars($type); ?>" data-src="<?php echo htmlspecialchars($url); ?>" data-caption="<?php echo htmlspecialchars($caption); ?>">
+                                <?php if ($type === 'video'): ?>
+                                    <video src="<?php echo htmlspecialchars($url); ?>" preload="metadata" muted playsinline></video>
+                                    <span class="media-badge">Video</span>
+                                    <span class="media-play">▶</span>
+                                <?php else: ?>
+                                    <img src="<?php echo htmlspecialchars($url); ?>" alt="<?php echo htmlspecialchars($caption ?: 'Bild'); ?>" loading="lazy">
+                                <?php endif; ?>
+                            </button>
+                            <?php if (!empty($caption)): ?>
+                                <div class="media-caption"><?php echo htmlspecialchars($caption); ?></div>
                             <?php endif; ?>
-                        </button>
+                        </div>
                     <?php endif; ?>
                 <?php endforeach; ?>
             <?php else: ?>
-                <div class="media-item placeholder-tile" aria-hidden="true">
-                    <img src="img/placeholder.svg" alt="Platzhalter">
-                    <span class="placeholder-text">Noch keine Medien</span>
+                <div class="media-card" aria-hidden="true">
+                    <div class="media-item placeholder-tile">
+                        <img src="img/placeholder.svg" alt="Platzhalter">
+                        <span class="placeholder-text">Noch keine Medien</span>
+                    </div>
                 </div>
             <?php endif; ?>
         </div>
+        <?php if ($hasMore): ?>
+            <?php
+                $nextLimit = min(count($gallery), $mediaLimit + 30);
+                $query = $_GET;
+                $query['media_limit'] = $nextLimit;
+                $loadMoreUrl = 'index.php?' . http_build_query($query);
+            ?>
+            <a class="load-more" href="<?php echo htmlspecialchars($loadMoreUrl); ?>">Mehr laden</a>
+        <?php endif; ?>
     </section>
 
     <p class="description"><?php echo nl2br(htmlspecialchars($project['description'])); ?></p>
@@ -252,7 +263,7 @@ if ($isLoggedIn) {
         lightboxCaption.textContent = '';
     }
 
-    document.querySelectorAll('.media-item').forEach((item) => {
+    document.querySelectorAll('.media-item[data-src]').forEach((item) => {
         item.addEventListener('click', () => {
             openLightbox(item.dataset.type, item.dataset.src, item.dataset.caption);
         });

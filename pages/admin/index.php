@@ -1,6 +1,5 @@
 <?php
-session_start();
-require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../../includes/bootstrap.php';
 
 // --- BERECHTIGUNGS-CHECK ---
 // 1. Ist der User überhaupt eingeloggt?
@@ -14,8 +13,6 @@ if ($_SESSION['role'] !== 'admin') {
     die("<h1>Zugriff verweigert</h1><p>Diese Seite ist nur für Administratoren.</p>");
 }
 
-use MongoDB\Client;
-
 $message = "";
 
 // --- LOGIK: SCRIPT AUSFÜHREN ---
@@ -28,9 +25,6 @@ if (isset($_POST['run_script'])) {
 
         try {
             // Die DB-Verbindung für das inkludierte Script bereitstellen
-            $client = new Client("mongodb://localhost:27017");
-            $db = $client->portfolio_db;
-
             include $scriptPath;
 
             $message = "<h3>Ergebnis für: " . htmlspecialchars($_POST['script_name']) . "</h3><pre>" . ob_get_clean() . "</pre>";

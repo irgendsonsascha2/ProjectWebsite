@@ -95,6 +95,30 @@
         border-radius: 999rem;
     }
 
+    .media-actions {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        display: flex;
+        gap: 0.375rem;
+    }
+
+    .media-actions button {
+        width: auto;
+        padding: 0.25rem 0.45rem;
+        font-size: 0.75rem;
+        background: rgba(15, 23, 42, 0.85);
+    }
+
+    .media-caption {
+        width: 100%;
+        border: none;
+        border-top: 0.0625rem solid #e5e7eb;
+        padding: 0.5rem;
+        font-size: 0.85rem;
+        background: #fff;
+    }
+
     .media-delete {
         position: absolute;
         bottom: 0.5rem;
@@ -110,4 +134,8 @@
 
     .media-upload-form {
         margin-top: 1rem;
+    }
+
+    .caption-form {
+        margin-top: 0.5rem;
     }

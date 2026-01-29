@@ -1,18 +1,5 @@
 <?php
-session_start();
-require 'vendor/autoload.php';
-
-// --- GLOBALE DATENBANKVERBINDUNG ---
-use MongoDB\Client;
-$client = new Client("mongodb://localhost:27017");
-$db = $client->portfolio_db;
-
-// --- GLOBALE HILFSFUNKTION FÜR RECHTE (falls nicht schon geladen) ---
-if (!function_exists('can')) {
-    function can($permission) {
-        return isset($_SESSION['permissions']) && in_array($permission, $_SESSION['permissions']);
-    }
-}
+require __DIR__ . '/includes/bootstrap.php';
 
 // Welchen Inhalt sollen wir zeigen? Standard ist 'grid'
 $page = $_GET['page'] ?? 'project_grid';
