@@ -63,9 +63,10 @@ try {
         'validator' => [
             '$jsonSchema' => [
                 'bsonType' => 'object',
-                'required' => ['email', 'password', 'role', 'created_at'],
+                'required' => ['email', 'username', 'password', 'role', 'created_at'],
                 'properties' => [
                     'email' => ['bsonType' => 'string', 'pattern' => '^.+@.+$'],
+                    'username' => ['bsonType' => 'string'],
                     'password' => ['bsonType' => 'string'],
                     'role' => ['enum' => ['admin', 'content_manager', 'community_member']],
                     'created_at' => ['bsonType' => 'date']
@@ -74,10 +75,12 @@ try {
         ]
     ]);
     $db->users->createIndex(['email' => 1], ['unique' => true]);
+    $db->users->createIndex(['username' => 1], ['unique' => true]);
 
     // Initialen Admin anlegen
     $db->users->insertOne([
         'email' => 'admin@test.de',
+        'username' => 'admin',
         'password' => password_hash('admin123', PASSWORD_DEFAULT),
         'role' => 'admin',
         'created_at' => new UTCDateTime()

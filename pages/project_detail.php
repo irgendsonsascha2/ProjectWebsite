@@ -206,7 +206,7 @@ $hasMore = count($gallery) > $mediaLimit;
         <h3>Kommentare</h3>
         <?php foreach ($comments as $comment): ?>
             <div class="comment">
-                <p class="author"><?php echo htmlspecialchars($comment['user_info']['email']); ?></p>
+                <p class="author"><?php echo htmlspecialchars($comment['user_info']['username'] ?? $comment['user_info']['email']); ?></p>
                 <p class="date"><?php echo $comment['updated_at']->toDateTime()->format('d.m.Y H:i'); ?></p>
                 <p><?php echo nl2br(htmlspecialchars($comment['text'])); ?></p>
             </div>
