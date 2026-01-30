@@ -33,17 +33,22 @@ if ($isLoggedIn && can('like_dislike') && isset($_POST['interaction'])) {
     $userId = new ObjectId($_SESSION['user_id']);
     $type = $_POST['interaction']; // 'like' or 'dislike'
 
-    // Bestehenden Vote entfernen, um Duplikate zu vermeiden
-    $db->likes->deleteOne(['project_id' => $projectObjectId, 'user_id' => $userId]);
+    $existing = $db->likes->findOne(['project_id' => $projectObjectId, 'user_id' => $userId]);
 
-    // Neuen Vote einfügen
     if ($type === 'like' || $type === 'dislike') {
-        $db->likes->insertOne([
-            'project_id' => $projectObjectId,
-            'user_id' => $userId,
-            'type' => $type,
-            'created_at' => new UTCDateTime()
-        ]);
+        if ($existing && ($existing['type'] ?? null) === $type) {
+            // Nochmal klicken => Vote entfernen
+            $db->likes->deleteOne(['project_id' => $projectObjectId, 'user_id' => $userId]);
+        } else {
+            // Wechsel oder erster Vote
+            $db->likes->deleteOne(['project_id' => $projectObjectId, 'user_id' => $userId]);
+            $db->likes->insertOne([
+                'project_id' => $projectObjectId,
+                'user_id' => $userId,
+                'type' => $type,
+                'created_at' => new UTCDateTime()
+            ]);
+        }
     }
     header("Location: " . $_SERVER['REQUEST_URI']);
     exit();
@@ -185,7 +190,6 @@ $hasMore = count($gallery) > $mediaLimit;
                 <form method="POST" class="interaction-buttons">
                     <button type="submit" name="interaction" value="like">👍 <?php echo $likeCount; ?></button>
                     <button type="submit" name="interaction" value="dislike">👎 <?php echo $dislikeCount; ?></button>
-                    <button type="submit" name="interaction" value="clear">Vote zurücksetzen</button>
                 </form>
             <?php endif; ?>
 
