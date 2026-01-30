@@ -198,7 +198,12 @@ $hasMore = count($gallery) > $mediaLimit;
                 <h4>Dein Kommentar</h4>
                 <form method="POST" class="comment-form">
                     <textarea name="comment_text" placeholder="Schreibe einen Kommentar..."><?php echo htmlspecialchars($userComment['text'] ?? ''); ?></textarea>
-                    <button type="submit" name="submit_comment">Kommentar speichern</button>
+                    <input type="hidden" name="submit_comment" value="1">
+                    <button type="submit" name="submit_comment" aria-label="Kommentieren">
+                        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                            <path d="M2 21l21-9L2 3v7l15 2-15 2z" fill="currentColor"/>
+                        </svg>
+                    </button>
                 </form>
             <?php endif; ?>
         </section>
@@ -235,6 +240,22 @@ $hasMore = count($gallery) > $mediaLimit;
 
 <script>
 (() => {
+    document.addEventListener('keydown', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLTextAreaElement)) return;
+        if (!target.closest('.comment-form')) return;
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            const form = target.closest('form');
+            if (!form) return;
+            if (typeof form.requestSubmit === 'function') {
+                form.requestSubmit();
+            } else {
+                form.submit();
+            }
+        }
+    });
+
     const lightbox = document.getElementById('lightbox');
     const lightboxMedia = lightbox.querySelector('.lightbox-media');
     const lightboxCaption = lightbox.querySelector('.lightbox-caption');
