@@ -53,6 +53,8 @@
     border-radius: 0.3125rem;
     border: 0.0625rem solid #ccc;
     margin-bottom: 0.625rem;
+    resize: none;
+    overflow: hidden;
 }
 
 .comment-form button {

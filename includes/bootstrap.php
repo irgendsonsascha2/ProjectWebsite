@@ -12,6 +12,33 @@ if (!isset($db)) {
     $db = $client->portfolio_db;
 }
 
+if (isset($_SESSION['user_id']) && (
+    !isset($_SESSION['permissions']) ||
+    !is_array($_SESSION['permissions']) ||
+    !isset($_SESSION['role']) ||
+    !isset($_SESSION['email'])
+)) {
+    try {
+        $userId = new \MongoDB\BSON\ObjectId($_SESSION['user_id']);
+        $user = $db->users->findOne(['_id' => $userId]);
+        if ($user) {
+            $_SESSION['email'] = $user['email'] ?? '';
+            $_SESSION['username'] = $user['username'] ?? '';
+            $_SESSION['role'] = $user['role'] ?? '';
+            if ($_SESSION['role']) {
+                $roleData = $db->roles_config->findOne(['role' => $_SESSION['role']]);
+                if ($roleData && isset($roleData['permissions'])) {
+                    $_SESSION['permissions'] = iterator_to_array($roleData['permissions']);
+                }
+            }
+        } else {
+            $_SESSION = [];
+        }
+    } catch (Exception $e) {
+        $_SESSION = [];
+    }
+}
+
 if (!function_exists('can')) {
     function can($permission) {
         return isset($_SESSION['permissions']) && in_array($permission, $_SESSION['permissions']);

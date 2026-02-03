@@ -119,6 +119,7 @@ if ($isLoggedIn && can('like_dislike') && isset($_POST['interaction'])) {
 if ($isLoggedIn && can('comment') && isset($_POST['submit_comment'])) {
     $userId = new ObjectId($_SESSION['user_id']);
     $commentText = trim($_POST['comment_text']);
+    $commentLimit = 400;
 
     if (empty($commentText)) {
         if ($isAjax) {
@@ -131,6 +132,23 @@ if ($isLoggedIn && can('comment') && isset($_POST['submit_comment'])) {
             'action' => 'comment',
             'message' => 'Kommentar darf nicht leer sein.'
         ]);
+            exit();
+        }
+        header("Location: " . $_SERVER['REQUEST_URI']);
+        exit();
+    }
+
+    if (mb_strlen($commentText) > $commentLimit) {
+        if ($isAjax) {
+            if (ob_get_length()) {
+                ob_clean();
+            }
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'ok' => false,
+                'action' => 'comment',
+                'message' => 'Keine Romane Schreiben bitte'
+            ]);
             exit();
         }
         header("Location: " . $_SERVER['REQUEST_URI']);
@@ -294,7 +312,7 @@ $ajaxActionUrl = 'pages/project_detail.php?id=' . urlencode($projectId);
                 <h4>Dein Kommentar</h4>
                 <form method="POST" class="comment-form" data-ajax="true" data-ajax-action="<?php echo htmlspecialchars($ajaxActionUrl); ?>">
                     <input type="hidden" name="ajax" value="1">
-                    <textarea name="comment_text" placeholder="Schreibe einen Kommentar..."><?php echo htmlspecialchars($userComment['text'] ?? ''); ?></textarea>
+                    <textarea name="comment_text" placeholder="Schreibe einen Kommentar..." maxlength="400" data-maxlength="400"><?php echo htmlspecialchars($userComment['text'] ?? ''); ?></textarea>
                     <input type="hidden" name="submit_comment" value="1">
                     <button type="submit" name="submit_comment" aria-label="Kommentieren">
                         <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
@@ -350,6 +368,7 @@ $ajaxActionUrl = 'pages/project_detail.php?id=' . urlencode($projectId);
     const commentItems = document.getElementById('comment-items');
     const likeCountEl = document.querySelector('.like-count');
     const dislikeCountEl = document.querySelector('.dislike-count');
+    const commentTextarea = document.querySelector('.comment-form textarea');
 
     async function submitAjaxForm(form, submitter) {
         const formData = new FormData(form);
@@ -394,7 +413,7 @@ $ajaxActionUrl = 'pages/project_detail.php?id=' . urlencode($projectId);
         if (!(form instanceof HTMLFormElement)) return;
         if (!form.dataset.ajax) return;
         event.preventDefault();
-        if (statusEl) statusEl.textContent = 'Speichern...';
+            if (statusEl) statusEl.textContent = 'Speichern...';
         try {
             const submitter = event.submitter || (lastSubmitter && form.contains(lastSubmitter) ? lastSubmitter : null);
             const data = await submitAjaxForm(form, submitter);
@@ -430,6 +449,40 @@ $ajaxActionUrl = 'pages/project_detail.php?id=' . urlencode($projectId);
             if (statusEl) statusEl.textContent = 'Fehler beim Speichern.';
         }
     });
+
+    function autoGrowTextarea(textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+
+    if (commentTextarea) {
+        autoGrowTextarea(commentTextarea);
+        commentTextarea.addEventListener('input', (event) => {
+            const max = parseInt(commentTextarea.dataset.maxlength || '400', 10);
+            if (commentTextarea.value.length >= max && event.inputType && event.inputType.startsWith('insert')) {
+                if (statusEl) statusEl.textContent = 'Keine Romane Schreiben bitte';
+            } else if (statusEl && statusEl.textContent === 'Keine Romane Schreiben bitte') {
+                statusEl.textContent = '';
+            }
+            autoGrowTextarea(commentTextarea);
+        });
+
+        commentTextarea.addEventListener('paste', (event) => {
+            const max = parseInt(commentTextarea.dataset.maxlength || '400', 10);
+            const text = (event.clipboardData || window.clipboardData).getData('text');
+            const selection = commentTextarea.selectionEnd - commentTextarea.selectionStart;
+            const available = max - (commentTextarea.value.length - selection);
+            if (text.length > available) {
+                event.preventDefault();
+                const insert = text.slice(0, Math.max(0, available));
+                const start = commentTextarea.selectionStart;
+                const end = commentTextarea.selectionEnd;
+                commentTextarea.setRangeText(insert, start, end, 'end');
+                if (statusEl) statusEl.textContent = 'Keine Romane Schreiben bitte';
+                autoGrowTextarea(commentTextarea);
+            }
+        });
+    }
 
     const lightbox = document.getElementById('lightbox');
     const lightboxMedia = lightbox.querySelector('.lightbox-media');
