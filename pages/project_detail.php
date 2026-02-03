@@ -1,4 +1,7 @@
 <?php
+if (!headers_sent()) {
+    ob_start();
+}
 require_once __DIR__ . '/../includes/bootstrap.php';
 
 $isLoggedIn = isset($_SESSION['user_id']);
@@ -27,6 +30,46 @@ try {
 }
 
 $message = '';
+$isAjax = false;
+if (isset($_POST['ajax']) && $_POST['ajax'] === '1') {
+    $isAjax = true;
+} elseif (isset($_SERVER['HTTP_X_REQUESTED_WITH'])) {
+    $isAjax = in_array(strtolower($_SERVER['HTTP_X_REQUESTED_WITH']), ['xmlhttprequest', 'fetch'], true);
+} elseif (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) {
+    $isAjax = true;
+}
+
+function fetch_comments_with_users($db, $projectObjectId) {
+    $commentsCursor = $db->comments->aggregate([
+        ['$match' => ['project_id' => $projectObjectId]],
+        ['$lookup' => [
+            'from' => 'users',
+            'localField' => 'user_id',
+            'foreignField' => '_id',
+            'as' => 'user_info'
+        ]],
+        ['$unwind' => '$user_info'],
+        ['$sort' => ['updated_at' => -1]]
+    ]);
+    return iterator_to_array($commentsCursor);
+}
+
+function render_comment_items($comments) {
+    ob_start();
+    foreach ($comments as $comment) {
+        ?>
+        <div class="comment">
+            <p class="author"><?php echo htmlspecialchars($comment['user_info']['username'] ?? $comment['user_info']['email']); ?></p>
+            <p class="date"><?php echo $comment['updated_at']->toDateTime()->format('d.m.Y H:i'); ?></p>
+            <p><?php echo nl2br(htmlspecialchars($comment['text'])); ?></p>
+        </div>
+        <?php
+    }
+    if (count($comments) === 0) {
+        echo '<p>Noch keine Kommentare vorhanden.</p>';
+    }
+    return ob_get_clean();
+}
 
 // --- LOGIK: LIKE / DISLIKE ---
 if ($isLoggedIn && can('like_dislike') && isset($_POST['interaction'])) {
@@ -50,6 +93,21 @@ if ($isLoggedIn && can('like_dislike') && isset($_POST['interaction'])) {
             ]);
         }
     }
+    if ($isAjax) {
+        $likeCount = $db->likes->countDocuments(['project_id' => $projectObjectId, 'type' => 'like']);
+        $dislikeCount = $db->likes->countDocuments(['project_id' => $projectObjectId, 'type' => 'dislike']);
+        if (ob_get_length()) {
+            ob_clean();
+        }
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'ok' => true,
+            'action' => 'interaction',
+            'likeCount' => $likeCount,
+            'dislikeCount' => $dislikeCount
+        ]);
+        exit();
+    }
     header("Location: " . $_SERVER['REQUEST_URI']);
     exit();
 }
@@ -59,21 +117,50 @@ if ($isLoggedIn && can('comment') && isset($_POST['submit_comment'])) {
     $userId = new ObjectId($_SESSION['user_id']);
     $commentText = trim($_POST['comment_text']);
 
-    if (!empty($commentText)) {
-        $db->comments->updateOne(
-            ['project_id' => $projectObjectId, 'user_id' => $userId],
-            [
-                '$set' => [
-                    'text' => $commentText,
-                    'updated_at' => new UTCDateTime()
-                ],
-                '$setOnInsert' => [
-                    'created_at' => new UTCDateTime()
-                ]
+    if (empty($commentText)) {
+        if ($isAjax) {
+        if (ob_get_length()) {
+            ob_clean();
+        }
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'ok' => false,
+            'action' => 'comment',
+            'message' => 'Kommentar darf nicht leer sein.'
+        ]);
+            exit();
+        }
+        header("Location: " . $_SERVER['REQUEST_URI']);
+        exit();
+    }
+
+    $db->comments->updateOne(
+        ['project_id' => $projectObjectId, 'user_id' => $userId],
+        [
+            '$set' => [
+                'text' => $commentText,
+                'updated_at' => new UTCDateTime()
             ],
-            ['upsert' => true]
-        );
-        $message = "Kommentar gespeichert!";
+            '$setOnInsert' => [
+                'created_at' => new UTCDateTime()
+            ]
+        ],
+        ['upsert' => true]
+    );
+    $message = "Kommentar gespeichert!";
+    if ($isAjax) {
+        $comments = fetch_comments_with_users($db, $projectObjectId);
+        if (ob_get_length()) {
+            ob_clean();
+        }
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'ok' => true,
+            'action' => 'comment',
+            'message' => $message,
+            'commentsHtml' => render_comment_items($comments)
+        ]);
+        exit();
     }
     header("Location: " . $_SERVER['REQUEST_URI']);
     exit();
@@ -84,18 +171,7 @@ $likeCount = $db->likes->countDocuments(['project_id' => $projectObjectId, 'type
 $dislikeCount = $db->likes->countDocuments(['project_id' => $projectObjectId, 'type' => 'dislike']);
 
 // Kommentare mit User-Infos laden
-$commentsCursor = $db->comments->aggregate([
-    ['$match' => ['project_id' => $projectObjectId]],
-    ['$lookup' => [
-        'from' => 'users',
-        'localField' => 'user_id',
-        'foreignField' => '_id',
-        'as' => 'user_info'
-    ]],
-    ['$unwind' => '$user_info'],
-    ['$sort' => ['updated_at' => -1]]
-]);
-$comments = iterator_to_array($commentsCursor);
+$comments = fetch_comments_with_users($db, $projectObjectId);
 
 // User's eigenen Kommentar finden
 $userComment = null;
@@ -121,6 +197,7 @@ if ($mediaLimit === 0) {
 }
 $gallerySlice = array_slice($gallery, 0, $mediaLimit);
 $hasMore = count($gallery) > $mediaLimit;
+$ajaxActionUrl = 'pages/project_detail.php?id=' . urlencode($projectId);
 ?>
 
 <link rel="stylesheet" href="style/project_detail.css">
@@ -184,19 +261,22 @@ $hasMore = count($gallery) > $mediaLimit;
     <?php if ($isLoggedIn && (can('like_dislike') || can('comment'))): ?>
         <section class="interaction-section">
             <h2>Interaktionen</h2>
+            <p class="interaction-status" id="interaction-status" role="status" aria-live="polite"></p>
 
             <!-- LIKES / DISLIKES -->
             <?php if (can('like_dislike')): ?>
-                <form method="POST" class="interaction-buttons">
-                    <button type="submit" name="interaction" value="like">👍 <?php echo $likeCount; ?></button>
-                    <button type="submit" name="interaction" value="dislike">👎 <?php echo $dislikeCount; ?></button>
+                <form method="POST" class="interaction-buttons" data-ajax="true" data-ajax-action="<?php echo htmlspecialchars($ajaxActionUrl); ?>">
+                    <input type="hidden" name="ajax" value="1">
+                    <button type="submit" name="interaction" value="like">👍 <span class="like-count"><?php echo $likeCount; ?></span></button>
+                    <button type="submit" name="interaction" value="dislike">👎 <span class="dislike-count"><?php echo $dislikeCount; ?></span></button>
                 </form>
             <?php endif; ?>
 
             <!-- KOMMENTAR-FORMULAR -->
             <?php if (can('comment')): ?>
                 <h4>Dein Kommentar</h4>
-                <form method="POST" class="comment-form">
+                <form method="POST" class="comment-form" data-ajax="true" data-ajax-action="<?php echo htmlspecialchars($ajaxActionUrl); ?>">
+                    <input type="hidden" name="ajax" value="1">
                     <textarea name="comment_text" placeholder="Schreibe einen Kommentar..."><?php echo htmlspecialchars($userComment['text'] ?? ''); ?></textarea>
                     <input type="hidden" name="submit_comment" value="1">
                     <button type="submit" name="submit_comment" aria-label="Kommentieren">
@@ -211,18 +291,11 @@ $hasMore = count($gallery) > $mediaLimit;
 
 
     <!-- KOMMENTAR-LISTE -->
-    <section class="comment-list">
+    <section class="comment-list" id="comment-list">
         <h3>Kommentare</h3>
-        <?php foreach ($comments as $comment): ?>
-            <div class="comment">
-                <p class="author"><?php echo htmlspecialchars($comment['user_info']['username'] ?? $comment['user_info']['email']); ?></p>
-                <p class="date"><?php echo $comment['updated_at']->toDateTime()->format('d.m.Y H:i'); ?></p>
-                <p><?php echo nl2br(htmlspecialchars($comment['text'])); ?></p>
-            </div>
-        <?php endforeach; ?>
-        <?php if (count($comments) === 0): ?>
-            <p>Noch keine Kommentare vorhanden.</p>
-        <?php endif; ?>
+        <div class="comment-items" id="comment-items">
+            <?php echo render_comment_items($comments); ?>
+        </div>
     </section>
 </article>
 
@@ -253,6 +326,77 @@ $hasMore = count($gallery) > $mediaLimit;
             } else {
                 form.submit();
             }
+        }
+    });
+
+    const statusEl = document.getElementById('interaction-status');
+    const commentItems = document.getElementById('comment-items');
+    const likeCountEl = document.querySelector('.like-count');
+    const dislikeCountEl = document.querySelector('.dislike-count');
+
+    async function submitAjaxForm(form, submitter) {
+        const formData = new FormData(form);
+        if (submitter && submitter.name) {
+            formData.append(submitter.name, submitter.value);
+        }
+        const actionUrl = form.dataset.ajaxAction || form.action || window.location.href;
+        const response = await fetch(actionUrl, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: formData
+        });
+        if (!response.ok) {
+            throw new Error('Serverfehler');
+        }
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+            return response.json();
+        }
+        const text = await response.text();
+        try {
+            return JSON.parse(text);
+        } catch (error) {
+            throw new Error('Ungültige Antwort vom Server');
+        }
+    }
+
+    let lastSubmitter = null;
+    document.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        const button = target.closest('button[type="submit"], input[type="submit"]');
+        if (!button) return;
+        lastSubmitter = button;
+    });
+
+    document.addEventListener('submit', async (event) => {
+        const form = event.target;
+        if (!(form instanceof HTMLFormElement)) return;
+        if (!form.dataset.ajax) return;
+        event.preventDefault();
+        if (statusEl) statusEl.textContent = 'Speichern...';
+        try {
+            const submitter = event.submitter || (lastSubmitter && form.contains(lastSubmitter) ? lastSubmitter : null);
+            const data = await submitAjaxForm(form, submitter);
+            if (data.ok === false) {
+                if (statusEl) statusEl.textContent = data.message || 'Fehler beim Speichern.';
+                return;
+            }
+            if (data.action === 'interaction') {
+                if (likeCountEl) likeCountEl.textContent = data.likeCount ?? likeCountEl.textContent;
+                if (dislikeCountEl) dislikeCountEl.textContent = data.dislikeCount ?? dislikeCountEl.textContent;
+                if (statusEl) statusEl.textContent = '';
+            } else if (data.action === 'comment') {
+                if (commentItems && typeof data.commentsHtml === 'string') {
+                    commentItems.innerHTML = data.commentsHtml;
+                }
+                if (statusEl) statusEl.textContent = data.message || 'Kommentar gespeichert.';
+            }
+        } catch (error) {
+            if (statusEl) statusEl.textContent = 'Fehler beim Speichern.';
         }
     });
 
