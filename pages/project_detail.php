@@ -96,6 +96,8 @@ if ($isLoggedIn && can('like_dislike') && isset($_POST['interaction'])) {
     if ($isAjax) {
         $likeCount = $db->likes->countDocuments(['project_id' => $projectObjectId, 'type' => 'like']);
         $dislikeCount = $db->likes->countDocuments(['project_id' => $projectObjectId, 'type' => 'dislike']);
+        $currentUserLike = $db->likes->findOne(['project_id' => $projectObjectId, 'user_id' => $userId]);
+        $currentUserInteraction = $currentUserLike['type'] ?? null;
         if (ob_get_length()) {
             ob_clean();
         }
@@ -104,7 +106,8 @@ if ($isLoggedIn && can('like_dislike') && isset($_POST['interaction'])) {
             'ok' => true,
             'action' => 'interaction',
             'likeCount' => $likeCount,
-            'dislikeCount' => $dislikeCount
+            'dislikeCount' => $dislikeCount,
+            'currentUserInteraction' => $currentUserInteraction
         ]);
         exit();
     }
@@ -169,6 +172,14 @@ if ($isLoggedIn && can('comment') && isset($_POST['submit_comment'])) {
 // --- DATEN FÜR DIE ANZEIGE LADEN ---
 $likeCount = $db->likes->countDocuments(['project_id' => $projectObjectId, 'type' => 'like']);
 $dislikeCount = $db->likes->countDocuments(['project_id' => $projectObjectId, 'type' => 'dislike']);
+$userLikeType = null;
+if ($isLoggedIn && can('like_dislike')) {
+    $userLike = $db->likes->findOne([
+        'project_id' => $projectObjectId,
+        'user_id' => new ObjectId($_SESSION['user_id'])
+    ]);
+    $userLikeType = $userLike['type'] ?? null;
+}
 
 // Kommentare mit User-Infos laden
 $comments = fetch_comments_with_users($db, $projectObjectId);
@@ -267,8 +278,14 @@ $ajaxActionUrl = 'pages/project_detail.php?id=' . urlencode($projectId);
             <?php if (can('like_dislike')): ?>
                 <form method="POST" class="interaction-buttons" data-ajax="true" data-ajax-action="<?php echo htmlspecialchars($ajaxActionUrl); ?>">
                     <input type="hidden" name="ajax" value="1">
-                    <button type="submit" name="interaction" value="like">👍 <span class="like-count"><?php echo $likeCount; ?></span></button>
-                    <button type="submit" name="interaction" value="dislike">👎 <span class="dislike-count"><?php echo $dislikeCount; ?></span></button>
+                    <button type="submit" name="interaction" value="like" class="<?php echo $userLikeType === 'like' ? 'is-active' : ''; ?>" aria-pressed="<?php echo $userLikeType === 'like' ? 'true' : 'false'; ?>">
+                        <span class="interaction-emoji" aria-hidden="true">🔥</span>
+                        <span class="like-count"><?php echo $likeCount; ?></span>
+                    </button>
+                    <button type="submit" name="interaction" value="dislike" class="<?php echo $userLikeType === 'dislike' ? 'is-active' : ''; ?>" aria-pressed="<?php echo $userLikeType === 'dislike' ? 'true' : 'false'; ?>">
+                        <span class="interaction-emoji" aria-hidden="true">💩</span>
+                        <span class="dislike-count"><?php echo $dislikeCount; ?></span>
+                    </button>
                 </form>
             <?php endif; ?>
 
@@ -388,6 +405,20 @@ $ajaxActionUrl = 'pages/project_detail.php?id=' . urlencode($projectId);
             if (data.action === 'interaction') {
                 if (likeCountEl) likeCountEl.textContent = data.likeCount ?? likeCountEl.textContent;
                 if (dislikeCountEl) dislikeCountEl.textContent = data.dislikeCount ?? dislikeCountEl.textContent;
+                if (data.currentUserInteraction !== undefined) {
+                    const likeBtn = document.querySelector('button[name="interaction"][value="like"]');
+                    const dislikeBtn = document.querySelector('button[name="interaction"][value="dislike"]');
+                    if (likeBtn) {
+                        const isActive = data.currentUserInteraction === 'like';
+                        likeBtn.classList.toggle('is-active', isActive);
+                        likeBtn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+                    }
+                    if (dislikeBtn) {
+                        const isActive = data.currentUserInteraction === 'dislike';
+                        dislikeBtn.classList.toggle('is-active', isActive);
+                        dislikeBtn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+                    }
+                }
                 if (statusEl) statusEl.textContent = '';
             } else if (data.action === 'comment') {
                 if (commentItems && typeof data.commentsHtml === 'string') {

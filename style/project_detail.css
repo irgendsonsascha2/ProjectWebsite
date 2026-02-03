@@ -5,6 +5,16 @@
     border-radius: 0.5rem;
 }
 
+.interaction-status {
+    min-height: 1.2rem;
+    margin: 0 0 0.75rem 0;
+    line-height: 1.2rem;
+}
+
+.interaction-status:empty {
+    visibility: hidden;
+}
+
 .interaction-buttons {
     display: flex;
     gap: 0.9375rem;
@@ -13,22 +23,27 @@
 }
 
 .interaction-buttons button {
-    font-size: 1.2rem;
-    padding: 0.625rem 1.25rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.95rem;
+    padding: 0.35rem 0.7rem;
     cursor: pointer;
-    border: 0.0625rem solid #ccc;
-    background: white;
-    border-radius: 0.3125rem;
+    border: none;
+    background: transparent;
+    border-radius: 0;
+    color: #111;
 }
 
-.interaction-buttons button.liked {
-    background-color: #d4edda;
-    border-color: #c3e6cb;
+.interaction-buttons button.is-active {
+    color: #111;
+    background: #dbeafe;
+    border-radius: 999rem;
 }
 
-.interaction-buttons button.disliked {
-    background-color: #f8d7da;
-    border-color: #f5c6cb;
+.interaction-buttons .interaction-emoji {
+    font-size: 1.5rem;
+    line-height: 1;
 }
 
 .comment-form textarea {
