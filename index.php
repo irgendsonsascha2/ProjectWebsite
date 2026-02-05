@@ -9,6 +9,19 @@ require __DIR__ . '/includes/bootstrap.php';
 
 // Welchen Inhalt sollen wir zeigen? Standard ist 'grid'
 $page = $_GET['page'] ?? 'project_grid';
+$isAjax = (isset($_POST['ajax']) && $_POST['ajax'] === '1')
+    || (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && in_array(strtolower($_SERVER['HTTP_X_REQUESTED_WITH']), ['xmlhttprequest', 'fetch'], true));
+
+if ($isAjax) {
+    $safe_page = preg_replace('/[^a-zA-Z0-9_-]/', '', $page);
+    $file_path = "pages/" . $safe_page . ".php";
+    if (file_exists($file_path)) {
+        include $file_path;
+    } else {
+        include 'pages/404.php';
+    }
+    exit;
+}
 ?>
 
 <!DOCTYPE html>

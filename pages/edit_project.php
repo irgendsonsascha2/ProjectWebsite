@@ -84,6 +84,63 @@ function normalize_gallery_items($gallery) {
     return $normalized;
 }
 
+function render_media_manager($workingGallery, $editActionUrl, $message, $showMessage = false) {
+    ob_start();
+    ?>
+        <h2>Projekt‑Medien</h2>
+
+        <?php if ($showMessage && $message): ?>
+            <div class="alert media-alert"><?php echo $message; ?></div>
+        <?php endif; ?>
+
+        <?php if (!empty($workingGallery)): ?>
+            <div class="media-grid">
+                <?php foreach ($workingGallery as $index => $item): ?>
+                    <?php
+                        $type = $item['type'] ?? 'image';
+                        $url = $item['url'] ?? '';
+                    ?>
+                    <?php if ($url): ?>
+                        <div class="media-tile">
+                            <?php if ($type === 'video'): ?>
+                                <video src="<?php echo htmlspecialchars($url); ?>" preload="metadata" muted playsinline></video>
+                                <span class="media-badge">Video</span>
+                            <?php else: ?>
+                                <img src="<?php echo htmlspecialchars($url); ?>" alt="Bild" loading="lazy">
+                            <?php endif; ?>
+                            <div class="media-actions">
+                                <form method="POST" action="<?php echo htmlspecialchars($editActionUrl); ?>" data-ajax="true">
+                                    <input type="hidden" name="media_index" value="<?php echo (int)$index; ?>">
+                                    <input type="hidden" name="direction" value="up">
+                                    <button type="submit" name="move_media" value="1">↑</button>
+                                </form>
+                                <form method="POST" action="<?php echo htmlspecialchars($editActionUrl); ?>" data-ajax="true">
+                                    <input type="hidden" name="media_index" value="<?php echo (int)$index; ?>">
+                                    <input type="hidden" name="direction" value="down">
+                                    <button type="submit" name="move_media" value="1">↓</button>
+                                </form>
+                            </div>
+                            <form method="POST" action="<?php echo htmlspecialchars($editActionUrl); ?>" class="media-delete" data-ajax="true">
+                                <input type="hidden" name="media_index" value="<?php echo (int)$index; ?>">
+                                <button type="submit" name="delete_media">Löschen</button>
+                            </form>
+                        </div>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            </div>
+        <?php else: ?>
+            <p>Noch keine Medien vorhanden.</p>
+        <?php endif; ?>
+
+        <form method="POST" action="<?php echo htmlspecialchars($editActionUrl); ?>" enctype="multipart/form-data" class="media-upload-form" id="media-upload-form" data-ajax="true">
+            <label for="gallery_files">Bilder/Videos hinzufügen</label>
+            <input type="file" id="gallery_files" name="gallery_files[]" multiple accept="image/*,video/*">
+            <input type="hidden" name="upload_media" value="1">
+        </form>
+    <?php
+    return ob_get_clean();
+}
+
 $sessionGalleryKey = 'edit_gallery_' . (string)$projectObjectId;
 $sessionOriginalKey = 'edit_gallery_original_' . (string)$projectObjectId;
 if (!isset($_SESSION[$sessionGalleryKey])) {
@@ -200,6 +257,8 @@ if (isset($_POST['upload_media']) && isset($_FILES['gallery_files'])) {
     }
 }
 
+$isAjax = isset($_POST['ajax']) && $_POST['ajax'] === '1';
+
 // --- LOGIK: PROJEKT AKTUALISIEREN ---
 if (isset($_POST['update_project'])) {
     $rawTags = [];
@@ -313,6 +372,11 @@ $editActionUrl = 'index.php?page=edit_project&id=' . urlencode((string)$projectO
 if ($debugFlag) {
     $editActionUrl .= '&debug=1';
 }
+
+if ($isAjax) {
+    echo render_media_manager($workingGallery, $editActionUrl, $message, true);
+    exit;
+}
 ?>
 
 <head>
@@ -349,65 +413,54 @@ if ($debugFlag) {
     </form>
 
     <section id="media-upload" class="media-manager">
-        <h2>Projekt‑Medien</h2>
-
-        <?php if (!empty($workingGallery)): ?>
-            <div class="media-grid">
-                <?php foreach ($workingGallery as $index => $item): ?>
-                    <?php
-                        $type = $item['type'] ?? 'image';
-                        $url = $item['url'] ?? '';
-                    ?>
-                    <?php if ($url): ?>
-                        <div class="media-tile">
-                            <?php if ($type === 'video'): ?>
-                                <video src="<?php echo htmlspecialchars($url); ?>" preload="metadata" muted playsinline></video>
-                                <span class="media-badge">Video</span>
-                            <?php else: ?>
-                                <img src="<?php echo htmlspecialchars($url); ?>" alt="Bild" loading="lazy">
-                            <?php endif; ?>
-                            <div class="media-actions">
-                                <form method="POST" action="<?php echo htmlspecialchars($editActionUrl); ?>">
-                                    <input type="hidden" name="media_index" value="<?php echo (int)$index; ?>">
-                                    <input type="hidden" name="direction" value="up">
-                                    <button type="submit" name="move_media" value="1">↑</button>
-                                </form>
-                                <form method="POST" action="<?php echo htmlspecialchars($editActionUrl); ?>">
-                                    <input type="hidden" name="media_index" value="<?php echo (int)$index; ?>">
-                                    <input type="hidden" name="direction" value="down">
-                                    <button type="submit" name="move_media" value="1">↓</button>
-                                </form>
-                            </div>
-                            <form method="POST" action="<?php echo htmlspecialchars($editActionUrl); ?>" class="media-delete">
-                                <input type="hidden" name="media_index" value="<?php echo (int)$index; ?>">
-                                <button type="submit" name="delete_media">Löschen</button>
-                            </form>
-                        </div>
-                    <?php endif; ?>
-                <?php endforeach; ?>
-            </div>
-        <?php else: ?>
-            <p>Noch keine Medien vorhanden.</p>
-        <?php endif; ?>
-
-        <form method="POST" action="<?php echo htmlspecialchars($editActionUrl); ?>" enctype="multipart/form-data" class="media-upload-form" id="media-upload-form">
-            <label for="gallery_files">Bilder/Videos hinzufügen</label>
-            <input type="file" id="gallery_files" name="gallery_files[]" multiple accept="image/*,video/*">
-            <input type="hidden" name="upload_media" value="1">
-        </form>
+        <?php echo render_media_manager($workingGallery, $editActionUrl, $message); ?>
     </section>
 </div>
 
 <script>
     (function () {
-        const fileInput = document.getElementById('gallery_files');
-        const form = document.getElementById('media-upload-form');
-        if (!fileInput || !form) return;
-        fileInput.addEventListener('change', function () {
-            if (!fileInput.files || fileInput.files.length === 0) {
+        const mediaSection = document.getElementById('media-upload');
+        if (!mediaSection) return;
+
+        async function submitMediaForm(form, submitter) {
+            const formData = new FormData(form);
+            formData.set('ajax', '1');
+            if (submitter && submitter.name) {
+                formData.set(submitter.name, submitter.value || '1');
+            }
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'fetch'
+                }
+            });
+            const html = await response.text();
+            mediaSection.innerHTML = html;
+        }
+
+        mediaSection.addEventListener('submit', function (event) {
+            const form = event.target;
+            if (!(form instanceof HTMLFormElement) || form.dataset.ajax !== 'true') {
                 return;
             }
-            form.submit();
+            event.preventDefault();
+            submitMediaForm(form, event.submitter).catch(() => {});
+        });
+
+        mediaSection.addEventListener('change', function (event) {
+            const target = event.target;
+            if (!target || target.id !== 'gallery_files') {
+                return;
+            }
+            const form = target.closest('form');
+            if (!form || form.dataset.ajax !== 'true') {
+                return;
+            }
+            if (!target.files || target.files.length === 0) {
+                return;
+            }
+            submitMediaForm(form).catch(() => {});
         });
     })();
 </script>

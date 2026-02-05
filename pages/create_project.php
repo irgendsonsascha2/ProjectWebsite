@@ -93,6 +93,67 @@ function handle_media_uploads($files, $contentImageDir, $contentVideoDir) {
     return [$newItems, $uploadedFiles, $uploadErrors];
 }
 
+function render_media_manager($draftProject, $createActionUrl, $message, $showMessage = false) {
+    $gallery = $draftProject ? normalize_gallery($draftProject['gallery'] ?? []) : [];
+    $draftId = ($draftProject && isset($draftProject['_id'])) ? (string)$draftProject['_id'] : '';
+    ob_start();
+    ?>
+        <h2>Projekt‑Medien (Entwurf)</h2>
+
+        <?php if ($showMessage && $message): ?>
+            <div class="alert media-alert"><?php echo $message; ?></div>
+        <?php endif; ?>
+
+        <input type="hidden" id="draft-id" value="<?php echo htmlspecialchars($draftId); ?>">
+
+        <?php if (!empty($gallery)): ?>
+            <div class="media-grid">
+                <?php foreach ($gallery as $index => $item): ?>
+                    <?php
+                        $type = $item['type'] ?? 'image';
+                        $url = $item['url'] ?? '';
+                    ?>
+                    <?php if ($url): ?>
+                        <div class="media-tile">
+                            <?php if ($type === 'video'): ?>
+                                <video src="<?php echo htmlspecialchars($url); ?>" preload="metadata" muted playsinline></video>
+                                <span class="media-badge">Video</span>
+                            <?php else: ?>
+                                <img src="<?php echo htmlspecialchars($url); ?>" alt="Bild" loading="lazy">
+                            <?php endif; ?>
+                            <div class="media-actions">
+                                <form method="POST" action="<?php echo htmlspecialchars($createActionUrl); ?>" data-ajax="true">
+                                    <input type="hidden" name="media_index" value="<?php echo (int)$index; ?>">
+                                    <input type="hidden" name="direction" value="up">
+                                    <button type="submit" name="move_media" value="1">↑</button>
+                                </form>
+                                <form method="POST" action="<?php echo htmlspecialchars($createActionUrl); ?>" data-ajax="true">
+                                    <input type="hidden" name="media_index" value="<?php echo (int)$index; ?>">
+                                    <input type="hidden" name="direction" value="down">
+                                    <button type="submit" name="move_media" value="1">↓</button>
+                                </form>
+                            </div>
+                            <form method="POST" action="<?php echo htmlspecialchars($createActionUrl); ?>" class="media-delete" data-ajax="true">
+                                <input type="hidden" name="media_index" value="<?php echo (int)$index; ?>">
+                                <button type="submit" name="delete_media">Löschen</button>
+                            </form>
+                        </div>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            </div>
+        <?php else: ?>
+            <p>Noch keine Medien vorhanden.</p>
+        <?php endif; ?>
+
+        <form method="POST" action="<?php echo htmlspecialchars($createActionUrl); ?>" enctype="multipart/form-data" class="media-upload-form" id="draft-media-upload-form" data-ajax="true">
+            <label for="draft_gallery_files">Bilder/Videos hinzufügen</label>
+            <input type="file" id="draft_gallery_files" name="draft_gallery_files[]" multiple accept="image/*,video/*">
+            <input type="hidden" name="upload_media_draft" value="1">
+        </form>
+    <?php
+    return ob_get_clean();
+}
+
 $draftProject = null;
 $draftObjectId = null;
 if (isset($_SESSION['draft_project_id'])) {
@@ -269,6 +330,8 @@ if (isset($_POST['upload_media_draft']) && isset($_FILES['draft_gallery_files'])
     }
 }
 
+$isAjax = isset($_POST['ajax']) && $_POST['ajax'] === '1';
+
 // --- LOGIK: PROJEKT ERSTELLEN ---
     if (isset($_POST['create_project'])) {
         $title = trim($_POST['title']);
@@ -365,6 +428,11 @@ if (isset($_POST['upload_media_draft']) && isset($_FILES['draft_gallery_files'])
         $message .= "<br>" . implode("<br>", $uploadErrors);
     }
 }
+
+if ($isAjax) {
+    echo render_media_manager($draftProject, $createActionUrl, $message, true);
+    exit();
+}
 ?>
 
 <head>
@@ -398,76 +466,70 @@ if (isset($_POST['upload_media_draft']) && isset($_FILES['draft_gallery_files'])
     </form>
 
     <section id="media-upload" class="media-manager">
-        <h2>Projekt‑Medien (Entwurf)</h2>
-
-        <?php if ($draftProject && !empty(normalize_gallery($draftProject['gallery'] ?? []))): ?>
-            <div class="media-grid">
-                <?php foreach (normalize_gallery($draftProject['gallery'] ?? []) as $index => $item): ?>
-                    <?php
-                        $type = $item['type'] ?? 'image';
-                        $url = $item['url'] ?? '';
-                    ?>
-                    <?php if ($url): ?>
-                        <div class="media-tile">
-                            <?php if ($type === 'video'): ?>
-                                <video src="<?php echo htmlspecialchars($url); ?>" preload="metadata" muted playsinline></video>
-                                <span class="media-badge">Video</span>
-                            <?php else: ?>
-                                <img src="<?php echo htmlspecialchars($url); ?>" alt="Bild" loading="lazy">
-                            <?php endif; ?>
-                            <div class="media-actions">
-                                <form method="POST" action="<?php echo htmlspecialchars($createActionUrl); ?>">
-                                    <input type="hidden" name="media_index" value="<?php echo (int)$index; ?>">
-                                    <input type="hidden" name="direction" value="up">
-                                    <button type="submit" name="move_media" value="1">↑</button>
-                                </form>
-                                <form method="POST" action="<?php echo htmlspecialchars($createActionUrl); ?>">
-                                    <input type="hidden" name="media_index" value="<?php echo (int)$index; ?>">
-                                    <input type="hidden" name="direction" value="down">
-                                    <button type="submit" name="move_media" value="1">↓</button>
-                                </form>
-                            </div>
-                            <form method="POST" action="<?php echo htmlspecialchars($createActionUrl); ?>" class="media-delete">
-                                <input type="hidden" name="media_index" value="<?php echo (int)$index; ?>">
-                                <button type="submit" name="delete_media">Löschen</button>
-                            </form>
-                        </div>
-                    <?php endif; ?>
-                <?php endforeach; ?>
-            </div>
-        <?php else: ?>
-            <p>Noch keine Medien vorhanden.</p>
-        <?php endif; ?>
-
-        <form method="POST" action="<?php echo htmlspecialchars($createActionUrl); ?>" enctype="multipart/form-data" class="media-upload-form" id="draft-media-upload-form">
-            <label for="draft_gallery_files">Bilder/Videos hinzufügen</label>
-            <input type="file" id="draft_gallery_files" name="draft_gallery_files[]" multiple accept="image/*,video/*">
-            <input type="hidden" name="upload_media_draft" value="1">
-        </form>
+        <?php echo render_media_manager($draftProject, $createActionUrl, $message); ?>
     </section>
 </div>
 
 <script>
     (function () {
-        const fileInput = document.getElementById('draft_gallery_files');
-        const form = document.getElementById('draft-media-upload-form');
-        if (!fileInput || !form) return;
+        const mediaSection = document.getElementById('media-upload');
+        if (!mediaSection) return;
         let isSubmitting = false;
 
         document.addEventListener('submit', function () {
             isSubmitting = true;
         }, true);
 
-        fileInput.addEventListener('change', function () {
-            if (!fileInput.files || fileInput.files.length === 0) {
+        async function submitMediaForm(form, submitter) {
+            const formData = new FormData(form);
+            formData.set('ajax', '1');
+            if (submitter && submitter.name) {
+                formData.set(submitter.name, submitter.value || '1');
+            }
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'fetch'
+                }
+            });
+            const html = await response.text();
+            mediaSection.innerHTML = html;
+        }
+
+        mediaSection.addEventListener('submit', function (event) {
+            const form = event.target;
+            if (!(form instanceof HTMLFormElement) || form.dataset.ajax !== 'true') {
                 return;
             }
-            form.submit();
+            event.preventDefault();
+            submitMediaForm(form, event.submitter).catch(() => {});
         });
 
-        const draftId = <?php echo $draftObjectId ? json_encode((string)$draftObjectId) : 'null'; ?>;
+        mediaSection.addEventListener('change', function (event) {
+            const target = event.target;
+            if (!target || target.id !== 'draft_gallery_files') {
+                return;
+            }
+            const form = target.closest('form');
+            if (!form || form.dataset.ajax !== 'true') {
+                return;
+            }
+            if (!target.files || target.files.length === 0) {
+                return;
+            }
+            submitMediaForm(form).catch(() => {});
+        });
+
+        function getDraftId() {
+            const node = document.getElementById('draft-id');
+            if (!node) return null;
+            const value = node.value ? node.value.trim() : '';
+            return value.length > 0 ? value : null;
+        }
         const cleanupUrl = <?php echo json_encode($createActionUrl); ?>;
         window.addEventListener('beforeunload', function () {
+            const draftId = getDraftId();
             if (isSubmitting || !draftId) {
                 return;
             }
