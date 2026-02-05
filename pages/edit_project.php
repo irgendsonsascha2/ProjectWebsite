@@ -17,6 +17,24 @@ if (!$projectId) {
     die("Projekt nicht gefunden.");
 }
 
+$returnTo = 'index.php';
+if (!empty($_POST['return_to'])) {
+    $candidate = $_POST['return_to'];
+    $candidatePath = parse_url($candidate, PHP_URL_PATH);
+    $candidateQuery = parse_url($candidate, PHP_URL_QUERY);
+    $candidateFile = $candidatePath ? basename($candidatePath) : '';
+    if (in_array($candidateFile, ['index.php', ''], true)) {
+        $returnTo = 'index.php' . ($candidateQuery ? ('?' . $candidateQuery) : '');
+    }
+} elseif (!empty($_SERVER['HTTP_REFERER'])) {
+    $refererPath = parse_url($_SERVER['HTTP_REFERER'], PHP_URL_PATH);
+    $refererQuery = parse_url($_SERVER['HTTP_REFERER'], PHP_URL_QUERY);
+    $refererFile = $refererPath ? basename($refererPath) : '';
+    if (in_array($refererFile, ['index.php', ''], true)) {
+        $returnTo = 'index.php' . ($refererQuery ? ('?' . $refererQuery) : '');
+    }
+}
+
 try {
     $projectObjectId = new ObjectId($projectId);
     // Die $db Variable wird von der index.php bereitgestellt
@@ -357,7 +375,8 @@ if (isset($_POST['update_project'])) {
                 $_SESSION[$sessionGalleryKey] = normalize_gallery_items($project['gallery'] ?? []);
                 $_SESSION[$sessionOriginalKey] = normalize_gallery_items($project['gallery'] ?? []);
                 $workingGallery = $_SESSION[$sessionGalleryKey];
-                $message = "✅ Projekt erfolgreich aktualisiert!";
+                header('Location: ' . $returnTo);
+                exit;
             } catch (Exception $e) {
                 $message = "❌ Datenbankfehler: " . $e->getMessage();
             }
@@ -393,7 +412,8 @@ if ($isAjax) {
         <div class="alert"><?php echo $message; ?></div>
     <?php endif; ?>
 
-    <form method="POST" action="<?php echo htmlspecialchars($editActionUrl); ?>" enctype="multipart/form-data">
+    <form method="POST" action="<?php echo htmlspecialchars($editActionUrl); ?>" enctype="multipart/form-data" id="edit-project-form">
+        <input type="hidden" name="return_to" id="return_to" value="">
         <label for="title">Projekttitel</label>
         <input type="text" id="title" name="title" value="<?php echo htmlspecialchars($project['title']); ?>" required>
 
@@ -419,6 +439,19 @@ if ($isAjax) {
 
 <script>
     (function () {
+        const backTarget = 'index.php';
+        const navEntries = performance.getEntriesByType('navigation');
+        const navType = navEntries && navEntries.length ? navEntries[0].type : '';
+        if (navType === 'back_forward') {
+            window.location.replace(backTarget);
+            return;
+        }
+
+        const returnToInput = document.getElementById('return_to');
+        if (returnToInput && document.referrer) {
+            returnToInput.value = document.referrer;
+        }
+
         const mediaSection = document.getElementById('media-upload');
         if (!mediaSection) return;
 

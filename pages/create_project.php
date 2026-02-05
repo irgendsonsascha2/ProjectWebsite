@@ -472,6 +472,14 @@ if ($isAjax) {
 
 <script>
     (function () {
+        const backTarget = 'index.php';
+        const navEntries = performance.getEntriesByType('navigation');
+        const navType = navEntries && navEntries.length ? navEntries[0].type : '';
+        if (navType === 'back_forward') {
+            window.location.replace(backTarget);
+            return;
+        }
+
         const mediaSection = document.getElementById('media-upload');
         if (!mediaSection) return;
         let isSubmitting = false;
