@@ -23,6 +23,56 @@
     position: relative;
 }
 
+.page-project_grid .project-select {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.page-project_grid .project-select input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.page-project_grid .project-check {
+    width: 1.7rem;
+    height: 1.7rem;
+    border-radius: 999rem;
+    border: 2px solid rgba(15, 23, 42, 0.35);
+    background: rgba(255, 255, 255, 0.92);
+    color: transparent;
+    font-size: 1rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0.2rem 0.6rem rgba(15, 23, 42, 0.18);
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.page-project_grid .project-select input:checked + .project-check {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    border-color: #16a34a;
+    color: #fff;
+    transform: scale(1.06);
+    box-shadow: 0 0.35rem 0.9rem rgba(22, 163, 74, 0.35);
+}
+
+.page-project_grid .project-card:hover .project-select,
+.page-project_grid .project-select.is-checked,
+.page-project_grid .project-grid.has-selection .project-select {
+    opacity: 1;
+    pointer-events: auto;
+}
+
 .page-project_grid .project-card:hover {
     transform: translateY(-0.3125rem);
     box-shadow: 0 0.5rem 1.5625rem rgba(0,0,0,0.15);
@@ -140,4 +190,16 @@
 .fab:hover {
     background-color: #1d4ed8;
     transform: scale(1.05);
+}
+
+.fab.fab-delete {
+    right: 6.5rem;
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+    display: none;
+    box-shadow: 0 0.35rem 1rem rgba(185, 28, 28, 0.35);
+}
+
+.fab.fab-delete.is-active {
+    background: linear-gradient(135deg, #f97316, #dc2626);
+    display: flex;
 }

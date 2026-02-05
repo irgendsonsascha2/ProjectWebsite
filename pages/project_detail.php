@@ -37,6 +37,7 @@ try {
 }
 
 $message = '';
+$canDeleteProjects = $isLoggedIn && isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'content_manager'], true);
 $isAjax = false;
 if (isset($_POST['ajax']) && $_POST['ajax'] === '1') {
     $isAjax = true;
@@ -76,6 +77,28 @@ function render_comment_items($comments) {
         echo '<p>Noch keine Kommentare vorhanden.</p>';
     }
     return ob_get_clean();
+}
+
+function delete_project_files($project) {
+    $gallery = normalize_gallery($project['gallery'] ?? []);
+    foreach ($gallery as $item) {
+        $url = $item['url'] ?? '';
+        if (strpos($url, 'content/images/') === 0 || strpos($url, 'content/videos/') === 0) {
+            $path = __DIR__ . '/../' . $url;
+            if (is_file($path)) {
+                unlink($path);
+            }
+        }
+    }
+}
+
+if ($canDeleteProjects && isset($_POST['delete_project'])) {
+    delete_project_files($project);
+    $db->projects->deleteOne(['_id' => $projectObjectId]);
+    $db->likes->deleteMany(['project_id' => $projectObjectId]);
+    $db->comments->deleteMany(['project_id' => $projectObjectId]);
+    header('Location: index.php?page=project_grid');
+    exit();
 }
 
 // --- LOGIK: LIKE / DISLIKE ---
@@ -341,6 +364,17 @@ $ajaxActionUrl = 'pages/project_detail.php?id=' . urlencode($projectId);
 <a href="index.php?page=edit_project&id=<?php echo (string)$projectObjectId; ?>" class="fab fab-edit" title="Projekt bearbeiten">✎</a>
 <?php endif; ?>
 
+<?php if ($canDeleteProjects): ?>
+<form method="POST" action="index.php?page=project_detail&id=<?php echo (string)$projectObjectId; ?>" class="fab fab-delete" id="delete-project-form">
+    <button type="submit" name="delete_project" value="1" title="Projekt löschen" aria-label="Projekt löschen">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+            <path d="M9 4h6l1 2h4v2H4V6h4l1-2zm1 6h2v9h-2V10zm4 0h2v9h-2V10zM7 10h2v9H7V10z" fill="currentColor"/>
+            <path d="M6 8h12l-1 12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 8z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+    </button>
+</form>
+<?php endif; ?>
+
 <div class="lightbox" id="lightbox" aria-hidden="true">
     <div class="lightbox-content" role="dialog" aria-modal="true">
         <button class="lightbox-close" type="button" aria-label="Schließen">×</button>
@@ -350,6 +384,15 @@ $ajaxActionUrl = 'pages/project_detail.php?id=' . urlencode($projectId);
 
 <script>
 (() => {
+    const deleteForm = document.getElementById('delete-project-form');
+    if (deleteForm) {
+        deleteForm.addEventListener('submit', function (event) {
+            const ok = window.confirm('Dieses Projekt wirklich löschen?');
+            if (!ok) {
+                event.preventDefault();
+            }
+        });
+    }
     document.addEventListener('keydown', (event) => {
         const target = event.target;
         if (!(target instanceof HTMLTextAreaElement)) return;

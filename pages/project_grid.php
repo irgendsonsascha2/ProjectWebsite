@@ -1,6 +1,46 @@
 <?php
 require_once __DIR__ . '/../includes/bootstrap.php';
 
+$canDeleteProjects = isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'content_manager'], true);
+
+function delete_project_files($project) {
+    $gallery = normalize_gallery($project['gallery'] ?? []);
+    foreach ($gallery as $item) {
+        $url = $item['url'] ?? '';
+        if (strpos($url, 'content/images/') === 0 || strpos($url, 'content/videos/') === 0) {
+            $path = __DIR__ . '/../' . $url;
+            if (is_file($path)) {
+                unlink($path);
+            }
+        }
+    }
+}
+
+if ($canDeleteProjects && isset($_POST['delete_projects']) && isset($_POST['project_ids']) && is_array($_POST['project_ids'])) {
+    $ids = array_values(array_filter($_POST['project_ids'], function ($id) {
+        return is_string($id) && $id !== '';
+    }));
+    if (!empty($ids)) {
+        $objectIds = [];
+        foreach ($ids as $id) {
+            try {
+                $objectIds[] = new \MongoDB\BSON\ObjectId($id);
+            } catch (Exception $e) {
+                continue;
+            }
+        }
+        if (!empty($objectIds)) {
+            $projectsToDelete = iterator_to_array($db->projects->find(['_id' => ['$in' => $objectIds]]));
+            foreach ($projectsToDelete as $project) {
+                delete_project_files($project);
+            }
+            $db->projects->deleteMany(['_id' => ['$in' => $objectIds]]);
+            $db->likes->deleteMany(['project_id' => ['$in' => $objectIds]]);
+            $db->comments->deleteMany(['project_id' => ['$in' => $objectIds]]);
+        }
+    }
+}
+
 $projectsCursor = $db->projects->find(
     ['is_draft' => ['$ne' => true]],
     ['sort' => ['created_at' => -1]]
@@ -11,6 +51,7 @@ $projectsCursor = $db->projects->find(
     <link rel="stylesheet" href="style/project_grid.css">
 </head>
 
+<form method="POST" action="index.php?page=project_grid" id="grid-delete-form">
 <div class="project-grid">
     <?php 
     $projects = iterator_to_array($projectsCursor);
@@ -40,6 +81,12 @@ $projectsCursor = $db->projects->find(
                 $canEditProject = can_edit_project($project);
             ?>
             <article class="project-card">
+                <?php if ($canDeleteProjects): ?>
+                    <label class="project-select">
+                        <input type="checkbox" name="project_ids[]" value="<?php echo (string)$project['_id']; ?>">
+                        <span class="project-check" aria-hidden="true">✓</span>
+                    </label>
+                <?php endif; ?>
                 <a href="<?php echo htmlspecialchars($detailUrl); ?>" class="project-card-link">
                     <div class="thumb-wrap">
                         <?php if ($thumbType === 'video'): ?>
@@ -70,7 +117,68 @@ $projectsCursor = $db->projects->find(
         <?php endforeach; ?>
     <?php endif; ?>
 </div>
+</form>
 
 <?php if (can('create_project')): ?>
 <a href="index.php?page=create_project" class="fab" title="Neues Projekt erstellen">+</a>
+<?php endif; ?>
+
+<?php if ($canDeleteProjects): ?>
+<button type="submit" form="grid-delete-form" name="delete_projects" value="1" class="fab fab-delete" title="Markierte Projekte löschen" aria-label="Markierte Projekte löschen">
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+        <path d="M9 4h6l1 2h4v2H4V6h4l1-2zm1 6h2v9h-2V10zm4 0h2v9h-2V10zM7 10h2v9H7V10z" fill="currentColor"/>
+        <path d="M6 8h12l-1 12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 8z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+    </svg>
+</button>
+<?php endif; ?>
+
+<?php if ($canDeleteProjects): ?>
+<script>
+    (function () {
+        const form = document.getElementById('grid-delete-form');
+        if (!form) return;
+        const deleteButton = document.querySelector('.fab-delete');
+        const checkboxes = Array.from(form.querySelectorAll('input[type="checkbox"][name="project_ids[]"]'));
+        if (!deleteButton || checkboxes.length === 0) return;
+
+        const grid = document.querySelector('.project-grid');
+
+        function updateDeleteButton() {
+            const anyChecked = checkboxes.some((cb) => cb.checked);
+            deleteButton.classList.toggle('is-active', anyChecked);
+            if (grid) {
+                grid.classList.toggle('has-selection', anyChecked);
+            }
+            checkboxes.forEach((cb) => {
+                const label = cb.closest('.project-select');
+                if (label) {
+                    label.classList.toggle('is-checked', cb.checked);
+                }
+            });
+        }
+
+        form.addEventListener('change', function (event) {
+            if (event.target && event.target.matches('input[type="checkbox"][name="project_ids[]"]')) {
+                updateDeleteButton();
+            }
+        });
+
+        form.addEventListener('submit', function (event) {
+            if (event.submitter !== deleteButton) {
+                return;
+            }
+            const anyChecked = checkboxes.some((cb) => cb.checked);
+            if (!anyChecked) {
+                event.preventDefault();
+                return;
+            }
+            const ok = window.confirm('Ausgewählte Projekte wirklich löschen?');
+            if (!ok) {
+                event.preventDefault();
+            }
+        });
+
+        updateDeleteButton();
+    })();
+</script>
 <?php endif; ?>
