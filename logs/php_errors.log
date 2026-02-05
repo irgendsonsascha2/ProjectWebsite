@@ -1,0 +1,36 @@
+[05-Feb-2026 16:29:34 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function mime_content_type() in C:\Users\Sascha\Sascha Projekte\ProjectWebsite\includes\bootstrap.php:90
+Stack trace:
+#0 C:\Users\Sascha\Sascha Projekte\ProjectWebsite\pages\edit_project.php(155): detect_media_type()
+#1 C:\Users\Sascha\Sascha Projekte\ProjectWebsite\index.php(45): include('...')
+#2 {main}
+  thrown in C:\Users\Sascha\Sascha Projekte\ProjectWebsite\includes\bootstrap.php on line 90
+[05-Feb-2026 16:29:34 UTC] FATAL: Uncaught Error: Call to undefined function mime_content_type() in C:\Users\Sascha\Sascha Projekte\ProjectWebsite\includes\bootstrap.php:90
+Stack trace:
+#0 C:\Users\Sascha\Sascha Projekte\ProjectWebsite\pages\edit_project.php(155): detect_media_type()
+#1 C:\Users\Sascha\Sascha Projekte\ProjectWebsite\index.php(45): include('...')
+#2 {main}
+  thrown in C:\Users\Sascha\Sascha Projekte\ProjectWebsite\includes\bootstrap.php:90
+[05-Feb-2026 16:30:55 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function finfo_open() in C:\Users\Sascha\Sascha Projekte\ProjectWebsite\includes\bootstrap.php:93
+Stack trace:
+#0 C:\Users\Sascha\Sascha Projekte\ProjectWebsite\pages\edit_project.php(155): detect_media_type()
+#1 C:\Users\Sascha\Sascha Projekte\ProjectWebsite\index.php(45): include('...')
+#2 {main}
+  thrown in C:\Users\Sascha\Sascha Projekte\ProjectWebsite\includes\bootstrap.php on line 93
+[05-Feb-2026 16:30:55 UTC] FATAL: Uncaught Error: Call to undefined function finfo_open() in C:\Users\Sascha\Sascha Projekte\ProjectWebsite\includes\bootstrap.php:93
+Stack trace:
+#0 C:\Users\Sascha\Sascha Projekte\ProjectWebsite\pages\edit_project.php(155): detect_media_type()
+#1 C:\Users\Sascha\Sascha Projekte\ProjectWebsite\index.php(45): include('...')
+#2 {main}
+  thrown in C:\Users\Sascha\Sascha Projekte\ProjectWebsite\includes\bootstrap.php:93
+[05-Feb-2026 16:31:38 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function finfo_open() in C:\Users\Sascha\Sascha Projekte\ProjectWebsite\includes\bootstrap.php:93
+Stack trace:
+#0 C:\Users\Sascha\Sascha Projekte\ProjectWebsite\pages\edit_project.php(155): detect_media_type()
+#1 C:\Users\Sascha\Sascha Projekte\ProjectWebsite\index.php(45): include('...')
+#2 {main}
+  thrown in C:\Users\Sascha\Sascha Projekte\ProjectWebsite\includes\bootstrap.php on line 93
+[05-Feb-2026 16:31:38 UTC] FATAL: Uncaught Error: Call to undefined function finfo_open() in C:\Users\Sascha\Sascha Projekte\ProjectWebsite\includes\bootstrap.php:93
+Stack trace:
+#0 C:\Users\Sascha\Sascha Projekte\ProjectWebsite\pages\edit_project.php(155): detect_media_type()
+#1 C:\Users\Sascha\Sascha Projekte\ProjectWebsite\index.php(45): include('...')
+#2 {main}
+  thrown in C:\Users\Sascha\Sascha Projekte\ProjectWebsite\includes\bootstrap.php:93

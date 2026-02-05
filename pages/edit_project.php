@@ -92,25 +92,6 @@ if (isset($_POST['move_media']) && isset($_POST['media_index']) && isset($_POST[
     }
 }
 
-// --- LOGIK: CAPTIONS SPEICHERN ---
-if (isset($_POST['save_captions']) && isset($_POST['caption']) && is_array($_POST['caption'])) {
-    $gallery = normalize_gallery($project['gallery'] ?? []);
-    foreach ($gallery as $i => $item) {
-        if (isset($_POST['caption'][$i])) {
-            $gallery[$i]['caption'] = trim($_POST['caption'][$i]);
-        }
-    }
-    $db->projects->updateOne(
-        ['_id' => $projectObjectId],
-        ['$set' => [
-            'gallery' => $gallery,
-            'updated_at' => new \MongoDB\BSON\UTCDateTime()
-        ]]
-    );
-    $project = $db->projects->findOne(['_id' => $projectObjectId]);
-    $message = "✅ Captions gespeichert.";
-}
-
 // --- LOGIK: MEDIA LÖSCHEN ---
 if (isset($_POST['delete_media']) && isset($_POST['media_index'])) {
     $index = (int)$_POST['media_index'];
@@ -165,10 +146,13 @@ if (isset($_POST['upload_media']) && isset($_FILES['gallery_files'])) {
     $limit = min(count($files['name']), MEDIA_UPLOAD_MAX_FILES);
     for ($i = 0; $i < $limit; $i++) {
         if ($files['error'][$i] !== UPLOAD_ERR_OK) {
+            if ($files['error'][$i] !== UPLOAD_ERR_NO_FILE) {
+                $uploadErrors[] = htmlspecialchars($files['name'][$i]) . ": " . upload_error_message($files['error'][$i]);
+            }
             continue;
         }
         $tmpPath = $files['tmp_name'][$i];
-        $type = detect_media_type($tmpPath);
+        $type = detect_media_type($tmpPath, $files['name'][$i]);
         if (!$type) {
             $uploadErrors[] = "Ungültiger Dateityp: " . htmlspecialchars($files['name'][$i]);
             continue;
@@ -188,8 +172,7 @@ if (isset($_POST['upload_media']) && isset($_FILES['gallery_files'])) {
             $publicPath = 'content/' . ($type === 'video' ? 'videos' : 'images') . '/' . $filename;
             $newItems[] = [
                 'type' => $type,
-                'url' => $publicPath,
-                'caption' => ''
+                'url' => $publicPath
             ];
             $uploadedFiles[] = $targetFile;
         } else {
@@ -237,12 +220,19 @@ if (isset($_POST['upload_media']) && isset($_FILES['gallery_files'])) {
 
 // --- LOGIK: PROJEKT AKTUALISIEREN ---
 if (isset($_POST['update_project'])) {
+    $rawTags = [];
+    if (isset($_POST['tags'])) {
+        $rawTags = array_map('trim', explode(',', $_POST['tags']));
+    }
+    $tags = array_values(array_filter($rawTags, function ($tag) {
+        return $tag !== '';
+    }));
     $updateData = [
         'title' => trim($_POST['title']),
         'description' => trim($_POST['description']),
         // Tags sind im Schema nicht explizit als Pflichtfeld im Validator, 
         // aber wir behalten sie bei.
-        'tags' => array_map('trim', explode(',', $_POST['tags'])),
+        'tags' => $tags,
         'updated_at' => new \MongoDB\BSON\UTCDateTime() // PFLICHT laut Schema
     ];
 
@@ -262,6 +252,12 @@ if (isset($_POST['update_project'])) {
         $message = "❌ Bitte geben Sie mindestens einen Titel an.";
     }
 }
+
+$debugFlag = isset($_GET['debug']) && $_GET['debug'] === '1';
+$editActionUrl = 'index.php?page=edit_project&id=' . urlencode((string)$projectObjectId);
+if ($debugFlag) {
+    $editActionUrl .= '&debug=1';
+}
 ?>
 
 <head>
@@ -278,7 +274,7 @@ if (isset($_POST['update_project'])) {
         <div class="alert"><?php echo $message; ?></div>
     <?php endif; ?>
 
-    <form method="POST" enctype="multipart/form-data">
+    <form method="POST" action="<?php echo htmlspecialchars($editActionUrl); ?>" enctype="multipart/form-data">
         <label for="title">Projekttitel</label>
         <input type="text" id="title" name="title" value="<?php echo htmlspecialchars($project['title']); ?>" required>
 
@@ -306,7 +302,6 @@ if (isset($_POST['update_project'])) {
                     <?php
                         $type = $item['type'] ?? 'image';
                         $url = $item['url'] ?? '';
-                        $caption = $item['caption'] ?? '';
                     ?>
                     <?php if ($url): ?>
                         <div class="media-tile">
@@ -317,19 +312,18 @@ if (isset($_POST['update_project'])) {
                                 <img src="<?php echo htmlspecialchars($url); ?>" alt="Bild" loading="lazy">
                             <?php endif; ?>
                             <div class="media-actions">
-                                <form method="POST">
+                                <form method="POST" action="<?php echo htmlspecialchars($editActionUrl); ?>">
                                     <input type="hidden" name="media_index" value="<?php echo (int)$index; ?>">
                                     <input type="hidden" name="direction" value="up">
                                     <button type="submit" name="move_media" value="1">↑</button>
                                 </form>
-                                <form method="POST">
+                                <form method="POST" action="<?php echo htmlspecialchars($editActionUrl); ?>">
                                     <input type="hidden" name="media_index" value="<?php echo (int)$index; ?>">
                                     <input type="hidden" name="direction" value="down">
                                     <button type="submit" name="move_media" value="1">↓</button>
                                 </form>
                             </div>
-                            <input class="media-caption" type="text" name="caption[<?php echo (int)$index; ?>]" form="caption-form" value="<?php echo htmlspecialchars($caption); ?>" placeholder="Caption...">
-                            <form method="POST" class="media-delete">
+                            <form method="POST" action="<?php echo htmlspecialchars($editActionUrl); ?>" class="media-delete">
                                 <input type="hidden" name="media_index" value="<?php echo (int)$index; ?>">
                                 <button type="submit" name="delete_media">Löschen</button>
                             </form>
@@ -337,17 +331,28 @@ if (isset($_POST['update_project'])) {
                     <?php endif; ?>
                 <?php endforeach; ?>
             </div>
-            <form id="caption-form" method="POST" class="caption-form">
-                <button type="submit" name="save_captions">Captions speichern</button>
-            </form>
         <?php else: ?>
             <p>Noch keine Medien vorhanden.</p>
         <?php endif; ?>
 
-        <form method="POST" enctype="multipart/form-data" class="media-upload-form">
+        <form method="POST" action="<?php echo htmlspecialchars($editActionUrl); ?>" enctype="multipart/form-data" class="media-upload-form" id="media-upload-form">
             <label for="gallery_files">Bilder/Videos hinzufügen</label>
             <input type="file" id="gallery_files" name="gallery_files[]" multiple accept="image/*,video/*">
-            <button type="submit" name="upload_media">Medien hochladen</button>
+            <input type="hidden" name="upload_media" value="1">
         </form>
     </section>
 </div>
+
+<script>
+    (function () {
+        const fileInput = document.getElementById('gallery_files');
+        const form = document.getElementById('media-upload-form');
+        if (!fileInput || !form) return;
+        fileInput.addEventListener('change', function () {
+            if (!fileInput.files || fileInput.files.length === 0) {
+                return;
+            }
+            form.submit();
+        });
+    })();
+</script>

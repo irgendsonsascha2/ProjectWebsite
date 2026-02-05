@@ -24,6 +24,13 @@ try {
         echo "Projekt existiert nicht.";
         return;
     }
+    if (($project['is_draft'] ?? false) === true) {
+        $isOwner = $isLoggedIn && isset($project['author_id']) && (string)$project['author_id'] === $_SESSION['user_id'];
+        if (!$isOwner) {
+            echo "Projekt existiert nicht.";
+            return;
+        }
+    }
 } catch (Exception $e) {
     echo "Ungültige Projekt-ID.";
     return;
@@ -243,22 +250,18 @@ $ajaxActionUrl = 'pages/project_detail.php?id=' . urlencode($projectId);
                     <?php
                         $type = $item['type'] ?? 'image';
                         $url = $item['url'] ?? '';
-                        $caption = $item['caption'] ?? '';
                     ?>
                     <?php if ($url): ?>
                         <div class="media-card">
-                            <button class="media-item" data-type="<?php echo htmlspecialchars($type); ?>" data-src="<?php echo htmlspecialchars($url); ?>" data-caption="<?php echo htmlspecialchars($caption); ?>">
+                            <button class="media-item" data-type="<?php echo htmlspecialchars($type); ?>" data-src="<?php echo htmlspecialchars($url); ?>">
                                 <?php if ($type === 'video'): ?>
                                     <video src="<?php echo htmlspecialchars($url); ?>" preload="metadata" muted playsinline></video>
                                     <span class="media-badge">Video</span>
                                     <span class="media-play">▶</span>
                                 <?php else: ?>
-                                    <img src="<?php echo htmlspecialchars($url); ?>" alt="<?php echo htmlspecialchars($caption ?: 'Bild'); ?>" loading="lazy">
+                                    <img src="<?php echo htmlspecialchars($url); ?>" alt="Bild" loading="lazy">
                                 <?php endif; ?>
                             </button>
-                            <?php if (!empty($caption)): ?>
-                                <div class="media-caption"><?php echo htmlspecialchars($caption); ?></div>
-                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
                 <?php endforeach; ?>
@@ -342,7 +345,6 @@ $ajaxActionUrl = 'pages/project_detail.php?id=' . urlencode($projectId);
     <div class="lightbox-content" role="dialog" aria-modal="true">
         <button class="lightbox-close" type="button" aria-label="Schließen">×</button>
         <div class="lightbox-media"></div>
-        <div class="lightbox-caption"></div>
     </div>
 </div>
 
@@ -486,10 +488,9 @@ $ajaxActionUrl = 'pages/project_detail.php?id=' . urlencode($projectId);
 
     const lightbox = document.getElementById('lightbox');
     const lightboxMedia = lightbox.querySelector('.lightbox-media');
-    const lightboxCaption = lightbox.querySelector('.lightbox-caption');
     const closeBtn = lightbox.querySelector('.lightbox-close');
 
-    function openLightbox(type, src, caption) {
+    function openLightbox(type, src) {
         lightboxMedia.innerHTML = '';
         if (type === 'video') {
             const video = document.createElement('video');
@@ -501,10 +502,9 @@ $ajaxActionUrl = 'pages/project_detail.php?id=' . urlencode($projectId);
         } else {
             const img = document.createElement('img');
             img.src = src;
-            img.alt = caption || 'Bild';
+            img.alt = 'Bild';
             lightboxMedia.appendChild(img);
         }
-        lightboxCaption.textContent = caption || '';
         lightbox.classList.add('is-open');
         lightbox.setAttribute('aria-hidden', 'false');
     }
@@ -513,12 +513,11 @@ $ajaxActionUrl = 'pages/project_detail.php?id=' . urlencode($projectId);
         lightbox.classList.remove('is-open');
         lightbox.setAttribute('aria-hidden', 'true');
         lightboxMedia.innerHTML = '';
-        lightboxCaption.textContent = '';
     }
 
     document.querySelectorAll('.media-item[data-src]').forEach((item) => {
         item.addEventListener('click', () => {
-            openLightbox(item.dataset.type, item.dataset.src, item.dataset.caption);
+            openLightbox(item.dataset.type, item.dataset.src);
         });
     });
 

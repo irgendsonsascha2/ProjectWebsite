@@ -48,3 +48,14 @@
         margin-top: 0.625rem;
         display: block;
     }
+
+    .draft-badge {
+        display: inline-block;
+        padding: 0.25rem 0.6rem;
+        background: #fff3cd;
+        border: 0.0625rem solid #f1d28b;
+        color: #7a5b00;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        margin-left: 0.75rem;
+    }

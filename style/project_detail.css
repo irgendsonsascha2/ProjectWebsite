@@ -215,11 +215,6 @@
     font-size: 1rem;
 }
 
-.media-caption {
-    font-size: 0.85rem;
-    color: #475569;
-    line-height: 1.3;
-}
 
 .load-more {
     display: inline-block;
@@ -269,12 +264,6 @@
     margin: 0 auto;
 }
 
-.lightbox-caption {
-    margin-top: 0.5rem;
-    text-align: center;
-    color: #ddd;
-    font-size: 0.9rem;
-}
 
 .lightbox-close {
     position: absolute;

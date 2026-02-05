@@ -1,7 +1,10 @@
 <?php
 require_once __DIR__ . '/../includes/bootstrap.php';
 
-$projectsCursor = $db->projects->find([], ['sort' => ['created_at' => -1]]);
+$projectsCursor = $db->projects->find(
+    ['is_draft' => ['$ne' => true]],
+    ['sort' => ['created_at' => -1]]
+);
 ?>
 
 <head>

@@ -110,14 +110,6 @@
         background: rgba(15, 23, 42, 0.85);
     }
 
-    .media-caption {
-        width: 100%;
-        border: none;
-        border-top: 0.0625rem solid #e5e7eb;
-        padding: 0.5rem;
-        font-size: 0.85rem;
-        background: #fff;
-    }
 
     .media-delete {
         position: absolute;
@@ -134,8 +126,4 @@
 
     .media-upload-form {
         margin-top: 1rem;
-    }
-
-    .caption-form {
-        margin-top: 0.5rem;
     }

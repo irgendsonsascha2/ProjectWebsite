@@ -1,4 +1,10 @@
 <?php
+if (isset($_GET['debug']) && $_GET['debug'] === '1') {
+    ini_set('display_errors', '1');
+    ini_set('display_startup_errors', '1');
+    error_reporting(E_ALL);
+}
+
 require __DIR__ . '/includes/bootstrap.php';
 
 // Welchen Inhalt sollen wir zeigen? Standard ist 'grid'

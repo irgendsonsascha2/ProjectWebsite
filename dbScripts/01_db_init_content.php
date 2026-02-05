@@ -24,6 +24,10 @@ try {
                     'description' => ['bsonType' => 'string'],
                     'thumbnail' => ['bsonType' => 'string'],
                     'thumbnail_type' => ['enum' => ['image', 'video']],
+                    'tags' => [
+                        'bsonType' => 'array',
+                        'items' => ['bsonType' => 'string']
+                    ],
                     'gallery' => [
                         'bsonType' => 'array',
                         'items' => [
@@ -31,12 +35,12 @@ try {
                             'required' => ['type', 'url'],
                             'properties' => [
                                 'type' => ['enum' => ['image', 'video']],
-                                'url' => ['bsonType' => 'string'],
-                                'caption' => ['bsonType' => 'string']
+                                'url' => ['bsonType' => 'string']
                             ]
                         ]
                     ],
                     'author_id' => ['bsonType' => 'string'], // Referenz zum User
+                    'is_draft' => ['bsonType' => 'bool'],
                     'created_at' => ['bsonType' => 'date'],
                     'updated_at' => ['bsonType' => 'date']
                 ]
@@ -45,20 +49,18 @@ try {
     ]);
     echo "✅ Projects-Struktur erstellt.<br>";
 
-    // Beispiel-Projekt einfügen
+    // Beispiel-Projekt einfügen (ohne Medien)
     $now = new UTCDateTime();
     $db->projects->insertOne([
         'title' => 'Erstes Portfolio Werk',
         'description' => 'Willkommen in meinem Grid.',
-        'gallery' => [
-            ['type' => 'image', 'url' => 'img/sample-1.jpg', 'caption' => 'Nahaufnahme']
-        ],
-        'thumbnail' => 'img/sample-1.jpg',
+        'tags' => ['Coding', 'Portfolio'],
+        'gallery' => [],
         'thumbnail_type' => 'image',
         'created_at' => $now,
         'updated_at' => $now
     ]);
-    echo "✅ Beispiel-Projekt eingefügt.";
+    echo "✅ Beispiel-Projekt eingefügt (ohne Medien).";
 
 } catch (Exception $e) {
     echo "❌ Fehler: " . $e->getMessage();

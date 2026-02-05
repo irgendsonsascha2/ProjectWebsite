@@ -3,6 +3,24 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+if (isset($_GET['debug']) && $_GET['debug'] === '1') {
+    ini_set('display_errors', '1');
+    ini_set('display_startup_errors', '1');
+    ini_set('log_errors', '1');
+    $logDir = __DIR__ . '/../logs';
+    if (!is_dir($logDir)) {
+        mkdir($logDir, 0755, true);
+    }
+    ini_set('error_log', $logDir . '/php_errors.log');
+    error_reporting(E_ALL);
+    register_shutdown_function(function () {
+        $error = error_get_last();
+        if ($error !== null) {
+            error_log('FATAL: ' . $error['message'] . ' in ' . $error['file'] . ':' . $error['line']);
+        }
+    });
+}
+
 if (!class_exists('MongoDB\Client')) {
     require __DIR__ . '/../vendor/autoload.php';
 }
@@ -68,14 +86,38 @@ if (!function_exists('sanitize_extension')) {
 }
 
 if (!function_exists('detect_media_type')) {
-    function detect_media_type($tmpPath) {
-        $mime = mime_content_type($tmpPath);
-        if (strpos($mime, 'image/') === 0) {
-            return 'image';
+    function detect_media_type($tmpPath, $originalName = null) {
+        if (function_exists('mime_content_type')) {
+            $mime = mime_content_type($tmpPath);
+            if ($mime) {
+                if (strpos($mime, 'image/') === 0) {
+                    return 'image';
+                }
+                if (strpos($mime, 'video/') === 0) {
+                    return 'video';
+                }
+            }
         }
-        if (strpos($mime, 'video/') === 0) {
-            return 'video';
+
+        if (function_exists('getimagesize')) {
+            $imgInfo = @getimagesize($tmpPath);
+            if ($imgInfo !== false) {
+                return 'image';
+            }
         }
+
+        if ($originalName) {
+            $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+            $imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'bmp', 'svg'];
+            $videoExts = ['mp4', 'webm', 'ogg', 'ogv', 'mov', 'avi', 'mkv'];
+            if (in_array($ext, $imageExts, true)) {
+                return 'image';
+            }
+            if (in_array($ext, $videoExts, true)) {
+                return 'video';
+            }
+        }
+
         return null;
     }
 }
@@ -96,6 +138,27 @@ if (!function_exists('validate_media_upload')) {
             return "Ungültiger Upload.";
         }
         return null;
+    }
+}
+
+if (!function_exists('upload_error_message')) {
+    function upload_error_message($error) {
+        switch ($error) {
+            case UPLOAD_ERR_INI_SIZE:
+                return "Datei zu groß (Server-Limit).";
+            case UPLOAD_ERR_FORM_SIZE:
+                return "Datei zu groß (Form-Limit).";
+            case UPLOAD_ERR_PARTIAL:
+                return "Datei nur teilweise hochgeladen.";
+            case UPLOAD_ERR_NO_TMP_DIR:
+                return "Temporäres Verzeichnis fehlt.";
+            case UPLOAD_ERR_CANT_WRITE:
+                return "Datei konnte nicht geschrieben werden.";
+            case UPLOAD_ERR_EXTENSION:
+                return "Upload durch Server-Erweiterung gestoppt.";
+            default:
+                return "Unbekannter Upload-Fehler.";
+        }
     }
 }
 
