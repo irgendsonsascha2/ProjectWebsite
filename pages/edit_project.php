@@ -46,6 +46,7 @@ $message = "";
 $contentBaseDir = __DIR__ . '/../content';
 $contentImageDir = $contentBaseDir . '/images';
 $contentVideoDir = $contentBaseDir . '/videos';
+$contentTmpDir = $contentBaseDir . '/tmp';
 
 if (!is_dir($contentImageDir)) {
     mkdir($contentImageDir, 0755, true);
@@ -58,11 +59,46 @@ function media_target_dir($type, $imageDir, $videoDir) {
     return $type === 'video' ? $videoDir : $imageDir;
 }
 
+function media_temp_dir($type, $baseTmpDir, $userId, $projectId) {
+    $subdir = $type === 'video' ? 'videos' : 'images';
+    return $baseTmpDir . '/' . $userId . '/' . $projectId . '/' . $subdir;
+}
+
+function build_temp_url($type, $userId, $projectId, $filename) {
+    $subdir = $type === 'video' ? 'videos' : 'images';
+    return 'content/tmp/' . $userId . '/' . $projectId . '/' . $subdir . '/' . $filename;
+}
+
+function normalize_gallery_items($gallery) {
+    $gallery = normalize_gallery($gallery);
+    $normalized = [];
+    foreach ($gallery as $item) {
+        if (is_array($item)) {
+            $normalized[] = $item;
+        } elseif ($item instanceof Traversable) {
+            $normalized[] = iterator_to_array($item);
+        } else {
+            $normalized[] = (array)$item;
+        }
+    }
+    return $normalized;
+}
+
+$sessionGalleryKey = 'edit_gallery_' . (string)$projectObjectId;
+$sessionOriginalKey = 'edit_gallery_original_' . (string)$projectObjectId;
+if (!isset($_SESSION[$sessionGalleryKey])) {
+    $_SESSION[$sessionGalleryKey] = normalize_gallery_items($project['gallery'] ?? []);
+    $_SESSION[$sessionOriginalKey] = normalize_gallery_items($project['gallery'] ?? []);
+}
+
+$workingGallery = normalize_gallery_items($_SESSION[$sessionGalleryKey] ?? []);
+$_SESSION[$sessionGalleryKey] = $workingGallery;
+
 // --- LOGIK: MEDIA REIHENFOLGE ---
 if (isset($_POST['move_media']) && isset($_POST['media_index']) && isset($_POST['direction'])) {
     $index = (int)$_POST['media_index'];
     $direction = $_POST['direction'];
-    $gallery = normalize_gallery($project['gallery'] ?? []);
+    $gallery = $workingGallery;
     $swapIndex = $direction === 'up' ? $index - 1 : $index + 1;
 
     if (isset($gallery[$index]) && isset($gallery[$swapIndex])) {
@@ -70,24 +106,8 @@ if (isset($_POST['move_media']) && isset($_POST['media_index']) && isset($_POST[
         $gallery[$index] = $gallery[$swapIndex];
         $gallery[$swapIndex] = $tmp;
 
-        $update = [
-            '$set' => [
-                'gallery' => $gallery,
-                'updated_at' => new \MongoDB\BSON\UTCDateTime()
-            ]
-        ];
-        if (!empty($gallery[0]['url'])) {
-            $update['$set']['thumbnail'] = $gallery[0]['url'];
-            $update['$set']['thumbnail_type'] = $gallery[0]['type'] ?? 'image';
-        } else {
-            $update['$unset'] = [
-                'thumbnail' => '',
-                'thumbnail_type' => ''
-            ];
-        }
-
-        $db->projects->updateOne(['_id' => $projectObjectId], $update);
-        $project = $db->projects->findOne(['_id' => $projectObjectId]);
+        $_SESSION[$sessionGalleryKey] = $gallery;
+        $workingGallery = $gallery;
         $message = "✅ Reihenfolge aktualisiert.";
     }
 }
@@ -95,13 +115,12 @@ if (isset($_POST['move_media']) && isset($_POST['media_index']) && isset($_POST[
 // --- LOGIK: MEDIA LÖSCHEN ---
 if (isset($_POST['delete_media']) && isset($_POST['media_index'])) {
     $index = (int)$_POST['media_index'];
-    $gallery = normalize_gallery($project['gallery'] ?? []);
+    $gallery = $workingGallery;
 
     if (isset($gallery[$index])) {
         $item = $gallery[$index];
-        $url = $item['url'] ?? '';
-        if (strpos($url, 'content/images/') === 0 || strpos($url, 'content/videos/') === 0) {
-            $path = __DIR__ . '/../' . $url;
+        if (!empty($item['is_temp']) && !empty($item['tmp_path'])) {
+            $path = $item['tmp_path'];
             if (is_file($path)) {
                 unlink($path);
             }
@@ -109,26 +128,8 @@ if (isset($_POST['delete_media']) && isset($_POST['media_index'])) {
         unset($gallery[$index]);
         $gallery = array_values($gallery);
 
-        $update = [
-            '$set' => [
-                'gallery' => $gallery,
-                'updated_at' => new \MongoDB\BSON\UTCDateTime()
-            ]
-        ];
-        if (!empty($gallery) && !empty($gallery[0]['url'])) {
-            $update['$set']['thumbnail'] = $gallery[0]['url'];
-            $update['$set']['thumbnail_type'] = $gallery[0]['type'] ?? 'image';
-        } else {
-            $update['$unset'] = [
-                'thumbnail' => '',
-                'thumbnail_type' => ''
-            ];
-        }
-        $db->projects->updateOne(
-            ['_id' => $projectObjectId],
-            $update
-        );
-        $project = $db->projects->findOne(['_id' => $projectObjectId]);
+        $_SESSION[$sessionGalleryKey] = $gallery;
+        $workingGallery = $gallery;
         $message = "✅ Medium gelöscht.";
     }
 }
@@ -165,14 +166,19 @@ if (isset($_POST['upload_media']) && isset($_FILES['gallery_files'])) {
         $ext = pathinfo($files['name'][$i], PATHINFO_EXTENSION);
         $safeExt = sanitize_extension($ext);
         $filename = uniqid('media_', true) . $safeExt;
-        $targetDir = media_target_dir($type, $contentImageDir, $contentVideoDir);
+        $targetDir = media_temp_dir($type, $contentTmpDir, $_SESSION['user_id'], (string)$projectObjectId);
+        if (!is_dir($targetDir)) {
+            mkdir($targetDir, 0755, true);
+        }
         $targetFile = $targetDir . '/' . $filename;
 
         if (move_uploaded_file($tmpPath, $targetFile)) {
-            $publicPath = 'content/' . ($type === 'video' ? 'videos' : 'images') . '/' . $filename;
+            $publicPath = build_temp_url($type, $_SESSION['user_id'], (string)$projectObjectId, $filename);
             $newItems[] = [
                 'type' => $type,
-                'url' => $publicPath
+                'url' => $publicPath,
+                'is_temp' => true,
+                'tmp_path' => $targetFile
             ];
             $uploadedFiles[] = $targetFile;
         } else {
@@ -181,35 +187,11 @@ if (isset($_POST['upload_media']) && isset($_FILES['gallery_files'])) {
     }
 
     if (!empty($newItems)) {
-        $gallery = normalize_gallery($project['gallery'] ?? []);
+        $gallery = $workingGallery;
         $gallery = array_merge($gallery, $newItems);
-        $update = [
-            '$set' => [
-                'gallery' => $gallery,
-                'updated_at' => new \MongoDB\BSON\UTCDateTime()
-            ]
-        ];
-        if (!empty($gallery) && !empty($gallery[0]['url'])) {
-            $update['$set']['thumbnail'] = $gallery[0]['url'];
-            $update['$set']['thumbnail_type'] = $gallery[0]['type'] ?? 'image';
-        } else {
-            $update['$unset'] = [
-                'thumbnail' => '',
-                'thumbnail_type' => ''
-            ];
-        }
-        try {
-            $db->projects->updateOne(['_id' => $projectObjectId], $update);
-            $project = $db->projects->findOne(['_id' => $projectObjectId]);
-            $message = "✅ Medien hochgeladen.";
-        } catch (Exception $e) {
-            foreach ($uploadedFiles as $file) {
-                if (is_file($file)) {
-                    unlink($file);
-                }
-            }
-            $message = "❌ Datenbankfehler: " . $e->getMessage();
-        }
+        $_SESSION[$sessionGalleryKey] = $gallery;
+        $workingGallery = $gallery;
+        $message = "✅ Medien hochgeladen. Änderungen sind noch nicht gespeichert.";
     } elseif (!$message) {
         $message = "❌ Keine gültigen Medien zum Upload gefunden.";
     }
@@ -237,16 +219,89 @@ if (isset($_POST['update_project'])) {
     ];
 
     if (empty($message) && !empty($updateData['title'])) {
-        try {
-            $db->projects->updateOne(
-                ['_id' => $projectObjectId],
-                ['$set' => $updateData]
-            );
+        $finalGallery = [];
+        $workingGallery = normalize_gallery_items($_SESSION[$sessionGalleryKey] ?? ($project['gallery'] ?? []));
+        foreach ($workingGallery as $item) {
+            if (empty($item['type']) || empty($item['url'])) {
+                continue;
+            }
+            if (!empty($item['is_temp']) && !empty($item['tmp_path'])) {
+                $type = $item['type'];
+                $ext = pathinfo($item['tmp_path'], PATHINFO_EXTENSION);
+                $safeExt = sanitize_extension($ext);
+                $filename = uniqid('media_', true) . $safeExt;
+                $targetDir = media_target_dir($type, $contentImageDir, $contentVideoDir);
+                $targetFile = $targetDir . '/' . $filename;
+                if (!is_dir($targetDir)) {
+                    mkdir($targetDir, 0755, true);
+                }
+                if (rename($item['tmp_path'], $targetFile)) {
+                    $publicPath = 'content/' . ($type === 'video' ? 'videos' : 'images') . '/' . $filename;
+                    $finalGallery[] = [
+                        'type' => $type,
+                        'url' => $publicPath
+                    ];
+                } else {
+                    $message = "❌ Fehler beim Finalisieren der Medien.";
+                    break;
+                }
+            } else {
+                $finalGallery[] = [
+                    'type' => $item['type'],
+                    'url' => $item['url']
+                ];
+            }
+        }
 
-            $project = $db->projects->findOne(['_id' => $projectObjectId]);
-            $message = "✅ Projekt erfolgreich aktualisiert!";
-        } catch (Exception $e) {
-            $message = "❌ Datenbankfehler: " . $e->getMessage();
+        if (empty($message)) {
+            $updateData['gallery'] = $finalGallery;
+            if (!empty($finalGallery) && !empty($finalGallery[0]['url'])) {
+                $updateData['thumbnail'] = $finalGallery[0]['url'];
+                $updateData['thumbnail_type'] = $finalGallery[0]['type'] ?? 'image';
+            }
+            $originalGallery = normalize_gallery_items($_SESSION[$sessionOriginalKey] ?? ($project['gallery'] ?? []));
+            $originalUrls = [];
+            foreach ($originalGallery as $item) {
+                if (!empty($item['url'])) {
+                    $originalUrls[] = $item['url'];
+                }
+            }
+            $finalUrls = [];
+            foreach ($finalGallery as $item) {
+                if (!empty($item['url'])) {
+                    $finalUrls[] = $item['url'];
+                }
+            }
+            $removed = array_diff($originalUrls, $finalUrls);
+            foreach ($removed as $url) {
+                if (strpos($url, 'content/images/') === 0 || strpos($url, 'content/videos/') === 0) {
+                    $path = __DIR__ . '/../' . $url;
+                    if (is_file($path)) {
+                        unlink($path);
+                    }
+                }
+            }
+        }
+
+        if (empty($message)) {
+            try {
+                $update = ['$set' => $updateData];
+                if (empty($finalGallery)) {
+                    $update['$unset'] = [
+                        'thumbnail' => '',
+                        'thumbnail_type' => ''
+                    ];
+                }
+                $db->projects->updateOne(['_id' => $projectObjectId], $update);
+
+                $project = $db->projects->findOne(['_id' => $projectObjectId]);
+                $_SESSION[$sessionGalleryKey] = normalize_gallery_items($project['gallery'] ?? []);
+                $_SESSION[$sessionOriginalKey] = normalize_gallery_items($project['gallery'] ?? []);
+                $workingGallery = $_SESSION[$sessionGalleryKey];
+                $message = "✅ Projekt erfolgreich aktualisiert!";
+            } catch (Exception $e) {
+                $message = "❌ Datenbankfehler: " . $e->getMessage();
+            }
         }
     } elseif (empty($message)) {
         $message = "❌ Bitte geben Sie mindestens einen Titel an.";
@@ -296,9 +351,9 @@ if ($debugFlag) {
     <section id="media-upload" class="media-manager">
         <h2>Projekt‑Medien</h2>
 
-        <?php if (!empty(normalize_gallery($project['gallery'] ?? []))): ?>
+        <?php if (!empty($workingGallery)): ?>
             <div class="media-grid">
-                <?php foreach (normalize_gallery($project['gallery'] ?? []) as $index => $item): ?>
+                <?php foreach ($workingGallery as $index => $item): ?>
                     <?php
                         $type = $item['type'] ?? 'image';
                         $url = $item['url'] ?? '';
