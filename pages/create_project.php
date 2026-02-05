@@ -114,12 +114,12 @@ function render_media_manager($draftProject, $createActionUrl, $message, $showMe
                         $url = $item['url'] ?? '';
                     ?>
                     <?php if ($url): ?>
-                        <div class="media-tile">
+                        <div class="media-tile" data-index="<?php echo (int)$index; ?>">
                             <?php if ($type === 'video'): ?>
-                                <video src="<?php echo htmlspecialchars($url); ?>" preload="metadata" muted playsinline></video>
+                                <video src="<?php echo htmlspecialchars($url); ?>" preload="metadata" muted playsinline draggable="false"></video>
                                 <span class="media-badge">Video</span>
                             <?php else: ?>
-                                <img src="<?php echo htmlspecialchars($url); ?>" alt="Bild" loading="lazy">
+                                <img src="<?php echo htmlspecialchars($url); ?>" alt="Bild" loading="lazy" draggable="false">
                             <?php endif; ?>
                             <div class="media-actions">
                                 <form method="POST" action="<?php echo htmlspecialchars($createActionUrl); ?>" data-ajax="true">
@@ -266,6 +266,37 @@ if ($draftObjectId && isset($_POST['delete_media']) && isset($_POST['media_index
         );
         $draftProject = $db->projects->findOne(['_id' => $draftObjectId]);
         $message = "✅ Medium gelöscht.";
+    }
+}
+
+if ($draftObjectId && isset($_POST['reorder_media']) && isset($_POST['order']) && is_array($_POST['order'])) {
+    $order = array_map('intval', $_POST['order']);
+    $gallery = normalize_gallery($draftProject['gallery'] ?? []);
+    $reordered = [];
+    foreach ($order as $idx) {
+        if (isset($gallery[$idx])) {
+            $reordered[] = $gallery[$idx];
+        }
+    }
+    if (count($reordered) === count($gallery)) {
+        $update = [
+            '$set' => [
+                'gallery' => $reordered,
+                'updated_at' => new UTCDateTime()
+            ]
+        ];
+        if (!empty($reordered) && !empty($reordered[0]['url'])) {
+            $update['$set']['thumbnail'] = $reordered[0]['url'];
+            $update['$set']['thumbnail_type'] = $reordered[0]['type'] ?? 'image';
+        } else {
+            $update['$unset'] = [
+                'thumbnail' => '',
+                'thumbnail_type' => ''
+            ];
+        }
+        $db->projects->updateOne(['_id' => $draftObjectId], $update);
+        $draftProject = $db->projects->findOne(['_id' => $draftObjectId]);
+        $message = "✅ Reihenfolge aktualisiert.";
     }
 }
 
@@ -482,6 +513,7 @@ if ($isAjax) {
 
         const mediaSection = document.getElementById('media-upload');
         if (!mediaSection) return;
+        const mediaActionUrl = <?php echo json_encode($createActionUrl); ?>;
         let isSubmitting = false;
 
         document.addEventListener('submit', function () {
@@ -528,6 +560,70 @@ if ($isAjax) {
             }
             submitMediaForm(form).catch(() => {});
         });
+
+        function sendReorder(grid) {
+            const order = Array.from(grid.querySelectorAll('.media-tile')).map((tile) => tile.dataset.index);
+            const formData = new FormData();
+            order.forEach((idx) => formData.append('order[]', idx));
+            formData.set('reorder_media', '1');
+            formData.set('ajax', '1');
+            fetch(mediaActionUrl, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'fetch'
+                }
+            }).then((response) => response.text())
+              .then((html) => {
+                  mediaSection.innerHTML = html;
+              }).catch(() => {});
+        }
+
+        let pointerDrag = null;
+        mediaSection.addEventListener('pointerdown', function (event) {
+            const tile = event.target.closest('.media-tile');
+            if (!tile) return;
+            if (event.pointerType === 'mouse' && event.button !== 0) return;
+            if (event.target.closest('button, input, form')) return;
+            pointerDrag = tile;
+            tile.classList.add('is-dragging');
+            tile.setPointerCapture(event.pointerId);
+            event.preventDefault();
+        });
+
+        mediaSection.addEventListener('pointermove', function (event) {
+            if (!pointerDrag) return;
+            const el = document.elementFromPoint(event.clientX, event.clientY);
+            const tile = el ? el.closest('.media-tile') : null;
+            if (!tile || tile === pointerDrag) return;
+            const grid = tile.parentElement;
+            const tiles = Array.from(grid.querySelectorAll('.media-tile'));
+            const draggedIndex = tiles.indexOf(pointerDrag);
+            const targetIndex = tiles.indexOf(tile);
+            if (draggedIndex < targetIndex) {
+                grid.insertBefore(pointerDrag, tile.nextSibling);
+            } else {
+                grid.insertBefore(pointerDrag, tile);
+            }
+        });
+
+        function endPointerDrag(event) {
+            if (!pointerDrag) return;
+            const grid = pointerDrag.parentElement;
+            pointerDrag.classList.remove('is-dragging');
+            try {
+                pointerDrag.releasePointerCapture(event.pointerId);
+            } catch (e) {
+                // ignore
+            }
+            pointerDrag = null;
+            if (grid) {
+                sendReorder(grid);
+            }
+        }
+
+        mediaSection.addEventListener('pointerup', endPointerDrag);
+        mediaSection.addEventListener('pointercancel', endPointerDrag);
 
         function getDraftId() {
             const node = document.getElementById('draft-id');

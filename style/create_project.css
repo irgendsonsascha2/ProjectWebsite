@@ -79,6 +79,12 @@
         overflow: hidden;
         box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.12);
         background: #f7f7f7;
+        cursor: grab;
+    }
+
+    .media-tile.is-dragging {
+        opacity: 0.6;
+        cursor: grabbing;
     }
 
     .media-tile img,
