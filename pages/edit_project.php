@@ -102,6 +102,22 @@ function normalize_gallery_items($gallery) {
     return $normalized;
 }
 
+function normalize_tags($tags) {
+    if (is_array($tags)) {
+        return $tags;
+    }
+    if ($tags instanceof Traversable) {
+        return iterator_to_array($tags);
+    }
+    if (is_string($tags)) {
+        $rawTags = array_map('trim', explode(',', $tags));
+        return array_values(array_filter($rawTags, function ($tag) {
+            return $tag !== '';
+        }));
+    }
+    return [];
+}
+
 function render_media_manager($workingGallery, $editActionUrl, $message, $showMessage = false) {
     ob_start();
     ?>
@@ -264,6 +280,11 @@ $isAjax = isset($_POST['ajax']) && $_POST['ajax'] === '1';
 
 // --- LOGIK: PROJEKT AKTUALISIEREN ---
 if (isset($_POST['update_project'])) {
+    $hasError = false;
+    if (!empty($message)) {
+        $trimmedMessage = ltrim($message);
+        $hasError = strpos($trimmedMessage, '❌') === 0;
+    }
     $rawTags = [];
     if (isset($_POST['tags'])) {
         $rawTags = array_map('trim', explode(',', $_POST['tags']));
@@ -280,7 +301,7 @@ if (isset($_POST['update_project'])) {
         'updated_at' => new \MongoDB\BSON\UTCDateTime() // PFLICHT laut Schema
     ];
 
-    if (empty($message) && !empty($updateData['title'])) {
+    if (!$hasError && !empty($updateData['title'])) {
         $finalGallery = [];
         $workingGallery = normalize_gallery_items($_SESSION[$sessionGalleryKey] ?? ($project['gallery'] ?? []));
         foreach ($workingGallery as $item) {
@@ -305,6 +326,7 @@ if (isset($_POST['update_project'])) {
                     ];
                 } else {
                     $message = "❌ Fehler beim Finalisieren der Medien.";
+                    $hasError = true;
                     break;
                 }
             } else {
@@ -315,7 +337,7 @@ if (isset($_POST['update_project'])) {
             }
         }
 
-        if (empty($message)) {
+        if (!$hasError) {
             $updateData['gallery'] = $finalGallery;
             if (!empty($finalGallery) && !empty($finalGallery[0]['url'])) {
                 $updateData['thumbnail'] = $finalGallery[0]['url'];
@@ -345,7 +367,7 @@ if (isset($_POST['update_project'])) {
             }
         }
 
-        if (empty($message)) {
+        if (!$hasError) {
             try {
                 $update = ['$set' => $updateData];
                 if (empty($finalGallery)) {
@@ -366,7 +388,7 @@ if (isset($_POST['update_project'])) {
                 $message = "❌ Datenbankfehler: " . $e->getMessage();
             }
         }
-    } elseif (empty($message)) {
+    } elseif (!$hasError) {
         $message = "❌ Bitte geben Sie mindestens einen Titel an.";
     }
 }
@@ -407,10 +429,7 @@ if ($isAjax) {
 
         <label for="tags">Tags (kommagetrennt)</label>
         <?php
-            $tags = [];
-            if (isset($project['tags']) && is_array($project['tags'])) {
-                $tags = $project['tags'];
-            }
+            $tags = normalize_tags($project['tags'] ?? []);
         ?>
         <input type="text" id="tags" name="tags" value="<?php echo htmlspecialchars(implode(', ', $tags)); ?>" placeholder="z.B. Coding, Musik, Gym">
 

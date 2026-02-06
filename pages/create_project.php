@@ -141,6 +141,22 @@ function render_media_manager($draftProject, $createActionUrl, $message, $showMe
     return ob_get_clean();
 }
 
+function normalize_tags($tags) {
+    if (is_array($tags)) {
+        return $tags;
+    }
+    if ($tags instanceof Traversable) {
+        return iterator_to_array($tags);
+    }
+    if (is_string($tags)) {
+        $rawTags = array_map('trim', explode(',', $tags));
+        return array_values(array_filter($rawTags, function ($tag) {
+            return $tag !== '';
+        }));
+    }
+    return [];
+}
+
 $draftProject = null;
 $draftObjectId = null;
 if (isset($_SESSION['draft_project_id'])) {
@@ -315,11 +331,18 @@ if (isset($_POST['upload_media_draft']) && isset($_FILES['draft_gallery_files'])
 }
 
 $isAjax = isset($_POST['ajax']) && $_POST['ajax'] === '1';
+function has_error_message($message) {
+    if (!$message) {
+        return false;
+    }
+    $trimmed = ltrim($message);
+    return strpos($trimmed, '❌') === 0;
+}
 
 // --- LOGIK: PROJEKT ERSTELLEN ---
-    if (isset($_POST['create_project'])) {
-        $title = trim($_POST['title']);
-        $description = trim($_POST['description']);
+if (isset($_POST['create_project'])) {
+    $title = trim($_POST['title']);
+    $description = trim($_POST['description']);
     $rawTags = [];
     if (isset($_POST['tags'])) {
         $rawTags = array_map('trim', explode(',', $_POST['tags']));
@@ -337,7 +360,8 @@ $isAjax = isset($_POST['ajax']) && $_POST['ajax'] === '1';
     }
 
     // --- LOGIK: PROJEKT ERSTELLEN ---
-    if (empty($message) && !empty($title)) {
+    $hasError = has_error_message($message);
+    if (!$hasError && !empty($title)) {
         $now = new \MongoDB\BSON\UTCDateTime();
         $existingGallery = $draftProject ? normalize_gallery($draftProject['gallery'] ?? []) : [];
         if (!empty($gallery)) {
