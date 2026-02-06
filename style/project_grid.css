@@ -3,8 +3,7 @@
 /* Spezifisches Styling nur für die Grid-Seite */
 .page-project_grid .project-grid {
     display: grid;
-    /* Erstellt automatisch so viele Spalten wie Platz ist */
-    grid-template-columns: repeat(auto-fill, minmax(18.75rem, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 2rem;
     padding: 2rem 0;
 }
@@ -79,21 +78,22 @@
 }
 
 .page-project_grid .project-card-link {
-    display: flex;
-    flex-direction: column;
+    display: block;
     text-decoration: none;
     color: inherit;
     height: 100%;
+    position: relative;
 }
 
 /* Bild-Container Styling */
 .page-project_grid .thumb-wrap {
     position: relative;
+    aspect-ratio: 1 / 1;
 }
 
 .page-project_grid .thumbnail {
     width: 100%;
-    height: 12.5rem;
+    height: 100%;
     object-fit: cover; /* Verhindert Verzerrung des Bildes */
     display: block;
 }
@@ -116,31 +116,52 @@
 
 /* Textbereich innerhalb der Karte */
 .page-project_grid .content {
-    padding: 1.5rem;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 1rem 1.25rem 1.1rem;
     display: flex;
     flex-direction: column;
-    flex-grow: 1;
+    gap: 0.35rem;
+    color: #fff;
+    background: rgba(10, 12, 16, 0.5);
+    backdrop-filter: blur(10px) saturate(120%);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .page-project_grid .content h3 {
     margin: 0 0 0.5rem 0;
     font-size: 1.25rem;
+    color: #fff;
 }
 
 .page-project_grid .content p {
     font-size: 0.95rem;
     line-height: 1.5;
-    color: #555;
-    flex-grow: 1;
+    color: rgba(255, 255, 255, 0.85);
+    margin: 0;
 }
 
 .page-project_grid .date {
     display: block;
     margin-top: 1rem;
     font-size: 0.8rem;
-    color: #999;
+    color: rgba(255, 255, 255, 0.7);
     text-transform: uppercase;
     letter-spacing: 0.05rem;
+}
+
+@media (max-width: 70rem) {
+    .page-project_grid .project-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 44rem) {
+    .page-project_grid .project-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .page-project_grid .project-edit {
