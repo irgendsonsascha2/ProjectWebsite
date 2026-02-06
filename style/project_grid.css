@@ -6,6 +6,7 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 2rem;
     padding: 2rem 0;
+    perspective: 1200px;
 }
 
 /* Styling der einzelnen Projekt-Karten */
@@ -18,8 +19,10 @@
     border-radius: 0.75rem;
     overflow: hidden;
     box-shadow: 0 0.25rem 0.9375rem rgba(0,0,0,0.1);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.2s ease, box-shadow 0.3s ease;
     position: relative;
+    transform-style: preserve-3d;
+    transform: translateY(var(--lift, 0)) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
 }
 
 .page-project_grid .project-select {
@@ -73,8 +76,23 @@
 }
 
 .page-project_grid .project-card:hover {
-    transform: translateY(-0.3125rem);
+    --lift: -0.3125rem;
     box-shadow: 0 0.5rem 1.5625rem rgba(0,0,0,0.15);
+}
+
+.page-project_grid .project-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(0, 0, 0, 0.32), rgba(0, 0, 0, 0) 45%);
+    transform: translateZ(-12px);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+
+.page-project_grid .project-card.is-tilting::before {
+    opacity: 1;
 }
 
 .page-project_grid .project-card-link {
@@ -83,12 +101,14 @@
     color: inherit;
     height: 100%;
     position: relative;
+    transform: translateZ(16px);
 }
 
 /* Bild-Container Styling */
 .page-project_grid .thumb-wrap {
     position: relative;
     aspect-ratio: 1 / 1;
+    transform: translateZ(16px);
 }
 
 .page-project_grid .thumbnail {
@@ -128,6 +148,7 @@
     background: rgba(10, 12, 16, 0.5);
     backdrop-filter: blur(10px) saturate(120%);
     border-top: 1px solid rgba(255, 255, 255, 0.15);
+    transform: translateZ(20px);
 }
 
 .page-project_grid .content h3 {
@@ -183,6 +204,7 @@
     z-index: 2;
     opacity: 0;
     pointer-events: none;
+    transform: translateZ(24px);
 }
 
 .page-project_grid .project-card:hover .project-edit {
