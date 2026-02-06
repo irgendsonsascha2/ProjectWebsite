@@ -106,6 +106,11 @@ function render_media_manager($draftProject, $createActionUrl, $message, $showMe
 
         <input type="hidden" id="draft-id" value="<?php echo htmlspecialchars($draftId); ?>">
 
+        <form method="POST" action="<?php echo htmlspecialchars($createActionUrl); ?>" enctype="multipart/form-data" class="media-upload-form" id="draft-media-upload-form" data-ajax="true">
+            <label for="draft_gallery_files">Bilder/Videos hinzufügen</label>
+            <input type="file" id="draft_gallery_files" name="draft_gallery_files[]" multiple accept="image/*,video/*">
+            <input type="hidden" name="upload_media_draft" value="1">
+        </form>
         <?php if (!empty($gallery)): ?>
             <div class="media-grid">
                 <?php foreach ($gallery as $index => $item): ?>
@@ -121,18 +126,6 @@ function render_media_manager($draftProject, $createActionUrl, $message, $showMe
                             <?php else: ?>
                                 <img src="<?php echo htmlspecialchars($url); ?>" alt="Bild" loading="lazy" draggable="false">
                             <?php endif; ?>
-                            <div class="media-actions">
-                                <form method="POST" action="<?php echo htmlspecialchars($createActionUrl); ?>" data-ajax="true">
-                                    <input type="hidden" name="media_index" value="<?php echo (int)$index; ?>">
-                                    <input type="hidden" name="direction" value="up">
-                                    <button type="submit" name="move_media" value="1">↑</button>
-                                </form>
-                                <form method="POST" action="<?php echo htmlspecialchars($createActionUrl); ?>" data-ajax="true">
-                                    <input type="hidden" name="media_index" value="<?php echo (int)$index; ?>">
-                                    <input type="hidden" name="direction" value="down">
-                                    <button type="submit" name="move_media" value="1">↓</button>
-                                </form>
-                            </div>
                             <form method="POST" action="<?php echo htmlspecialchars($createActionUrl); ?>" class="media-delete" data-ajax="true">
                                 <input type="hidden" name="media_index" value="<?php echo (int)$index; ?>">
                                 <button type="submit" name="delete_media">Löschen</button>
@@ -144,12 +137,6 @@ function render_media_manager($draftProject, $createActionUrl, $message, $showMe
         <?php else: ?>
             <p>Noch keine Medien vorhanden.</p>
         <?php endif; ?>
-
-        <form method="POST" action="<?php echo htmlspecialchars($createActionUrl); ?>" enctype="multipart/form-data" class="media-upload-form" id="draft-media-upload-form" data-ajax="true">
-            <label for="draft_gallery_files">Bilder/Videos hinzufügen</label>
-            <input type="file" id="draft_gallery_files" name="draft_gallery_files[]" multiple accept="image/*,video/*">
-            <input type="hidden" name="upload_media_draft" value="1">
-        </form>
     <?php
     return ob_get_clean();
 }
@@ -192,40 +179,6 @@ if (isset($_POST['cleanup_draft']) && $_POST['cleanup_draft'] === '1') {
     }
     echo json_encode(['ok' => true]);
     exit();
-}
-
-// --- LOGIK: DRAFT MEDIA REIHENFOLGE ---
-if ($draftObjectId && isset($_POST['move_media']) && isset($_POST['media_index']) && isset($_POST['direction'])) {
-    $index = (int)$_POST['media_index'];
-    $direction = $_POST['direction'];
-    $gallery = normalize_gallery($draftProject['gallery'] ?? []);
-    $swapIndex = $direction === 'up' ? $index - 1 : $index + 1;
-
-    if (isset($gallery[$index]) && isset($gallery[$swapIndex])) {
-        $tmp = $gallery[$index];
-        $gallery[$index] = $gallery[$swapIndex];
-        $gallery[$swapIndex] = $tmp;
-
-        $update = [
-            '$set' => [
-                'gallery' => $gallery,
-                'updated_at' => new UTCDateTime()
-            ]
-        ];
-        if (!empty($gallery[0]['url'])) {
-            $update['$set']['thumbnail'] = $gallery[0]['url'];
-            $update['$set']['thumbnail_type'] = $gallery[0]['type'] ?? 'image';
-        } else {
-            $update['$unset'] = [
-                'thumbnail' => '',
-                'thumbnail_type' => ''
-            ];
-        }
-
-        $db->projects->updateOne(['_id' => $draftObjectId], $update);
-        $draftProject = $db->projects->findOne(['_id' => $draftObjectId]);
-        $message = "✅ Reihenfolge aktualisiert.";
-    }
 }
 
 // --- LOGIK: DRAFT MEDIA LÖSCHEN ---

@@ -111,6 +111,11 @@ function render_media_manager($workingGallery, $editActionUrl, $message, $showMe
             <div class="alert media-alert"><?php echo $message; ?></div>
         <?php endif; ?>
 
+        <form method="POST" action="<?php echo htmlspecialchars($editActionUrl); ?>" enctype="multipart/form-data" class="media-upload-form" id="media-upload-form" data-ajax="true">
+            <label for="gallery_files">Bilder/Videos hinzufügen</label>
+            <input type="file" id="gallery_files" name="gallery_files[]" multiple accept="image/*,video/*">
+            <input type="hidden" name="upload_media" value="1">
+        </form>
         <?php if (!empty($workingGallery)): ?>
             <div class="media-grid">
                 <?php foreach ($workingGallery as $index => $item): ?>
@@ -126,18 +131,6 @@ function render_media_manager($workingGallery, $editActionUrl, $message, $showMe
                             <?php else: ?>
                                 <img src="<?php echo htmlspecialchars($url); ?>" alt="Bild" loading="lazy" draggable="false">
                             <?php endif; ?>
-                            <div class="media-actions">
-                                <form method="POST" action="<?php echo htmlspecialchars($editActionUrl); ?>" data-ajax="true">
-                                    <input type="hidden" name="media_index" value="<?php echo (int)$index; ?>">
-                                    <input type="hidden" name="direction" value="up">
-                                    <button type="submit" name="move_media" value="1">↑</button>
-                                </form>
-                                <form method="POST" action="<?php echo htmlspecialchars($editActionUrl); ?>" data-ajax="true">
-                                    <input type="hidden" name="media_index" value="<?php echo (int)$index; ?>">
-                                    <input type="hidden" name="direction" value="down">
-                                    <button type="submit" name="move_media" value="1">↓</button>
-                                </form>
-                            </div>
                             <form method="POST" action="<?php echo htmlspecialchars($editActionUrl); ?>" class="media-delete" data-ajax="true">
                                 <input type="hidden" name="media_index" value="<?php echo (int)$index; ?>">
                                 <button type="submit" name="delete_media">Löschen</button>
@@ -149,12 +142,6 @@ function render_media_manager($workingGallery, $editActionUrl, $message, $showMe
         <?php else: ?>
             <p>Noch keine Medien vorhanden.</p>
         <?php endif; ?>
-
-        <form method="POST" action="<?php echo htmlspecialchars($editActionUrl); ?>" enctype="multipart/form-data" class="media-upload-form" id="media-upload-form" data-ajax="true">
-            <label for="gallery_files">Bilder/Videos hinzufügen</label>
-            <input type="file" id="gallery_files" name="gallery_files[]" multiple accept="image/*,video/*">
-            <input type="hidden" name="upload_media" value="1">
-        </form>
     <?php
     return ob_get_clean();
 }
@@ -168,24 +155,6 @@ if (!isset($_SESSION[$sessionGalleryKey])) {
 
 $workingGallery = normalize_gallery_items($_SESSION[$sessionGalleryKey] ?? []);
 $_SESSION[$sessionGalleryKey] = $workingGallery;
-
-// --- LOGIK: MEDIA REIHENFOLGE ---
-if (isset($_POST['move_media']) && isset($_POST['media_index']) && isset($_POST['direction'])) {
-    $index = (int)$_POST['media_index'];
-    $direction = $_POST['direction'];
-    $gallery = $workingGallery;
-    $swapIndex = $direction === 'up' ? $index - 1 : $index + 1;
-
-    if (isset($gallery[$index]) && isset($gallery[$swapIndex])) {
-        $tmp = $gallery[$index];
-        $gallery[$index] = $gallery[$swapIndex];
-        $gallery[$swapIndex] = $tmp;
-
-        $_SESSION[$sessionGalleryKey] = $gallery;
-        $workingGallery = $gallery;
-        $message = "✅ Reihenfolge aktualisiert.";
-    }
-}
 
 // --- LOGIK: MEDIA LÖSCHEN ---
 if (isset($_POST['delete_media']) && isset($_POST['media_index'])) {
