@@ -23,6 +23,9 @@ try {
     $db->dropCollection("permissions_config");
     $db->createCollection("permissions_config");
     $db->permissions_config->insertMany([
+        ['key' => 'view_projects', 'label' => 'Projekte ansehen', 'description' => 'Projekte im Frontend ansehen'],
+        ['key' => 'view_comments', 'label' => 'Kommentare ansehen', 'description' => 'Kommentare lesen'],
+        ['key' => 'view_likes', 'label' => 'Likes/Dislikes ansehen', 'description' => 'Like/Dislike-Zahlen anzeigen'],
         ['key' => 'create_project', 'label' => 'Projekt erstellen', 'description' => 'Neue Projekte anlegen'],
         ['key' => 'edit_all', 'label' => 'Alle Projekte bearbeiten', 'description' => 'Beliebige Projekte bearbeiten'],
         ['key' => 'edit_own', 'label' => 'Eigene Projekte bearbeiten', 'description' => 'Nur eigene Projekte bearbeiten'],
@@ -42,22 +45,22 @@ try {
         [
             'role' => 'viewer',
             'label' => 'Viewer',
-            'permissions' => []
+            'permissions' => ['view_projects', 'view_comments', 'view_likes']
         ],
         [
             'role' => 'admin',
             'label' => 'Administrator',
-            'permissions' => ['create_project', 'edit_all', 'delete_all', 'manage_users', 'generate_codes', 'comment', 'like_dislike']
+            'permissions' => ['view_projects', 'view_comments', 'view_likes', 'create_project', 'edit_all', 'delete_all', 'manage_users', 'generate_codes', 'comment', 'like_dislike']
         ],
         [
             'role' => 'content_manager',
             'label' => 'Content Manager',
-            'permissions' => ['create_project', 'edit_own', 'comment', 'like_dislike']
+            'permissions' => ['view_projects', 'view_comments', 'view_likes', 'create_project', 'edit_own', 'comment', 'like_dislike']
         ],
         [
             'role' => 'community_member',
             'label' => 'Community Member',
-            'permissions' => ['comment', 'like_dislike']
+            'permissions' => ['view_projects', 'view_comments', 'view_likes', 'comment', 'like_dislike']
         ]
     ]);
     echo "✅ Rollen & Rechte definiert.<br>";

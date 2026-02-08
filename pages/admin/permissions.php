@@ -14,6 +14,9 @@ $notice = '';
 $error = '';
 
 $defaultPermissions = [
+    ['key' => 'view_projects', 'label' => 'Projekte ansehen', 'description' => 'Projekte im Frontend ansehen'],
+    ['key' => 'view_comments', 'label' => 'Kommentare ansehen', 'description' => 'Kommentare lesen'],
+    ['key' => 'view_likes', 'label' => 'Likes/Dislikes ansehen', 'description' => 'Like/Dislike-Zahlen anzeigen'],
     ['key' => 'create_project', 'label' => 'Projekt erstellen', 'description' => 'Neue Projekte anlegen'],
     ['key' => 'edit_all', 'label' => 'Alle Projekte bearbeiten', 'description' => 'Beliebige Projekte bearbeiten'],
     ['key' => 'edit_own', 'label' => 'Eigene Projekte bearbeiten', 'description' => 'Nur eigene Projekte bearbeiten'],
@@ -172,6 +175,8 @@ try {
             border-radius: 8px;
             padding: 14px;
             background: #fafafa;
+            position: relative;
+            padding-bottom: 56px;
         }
 
         .card h3 {
@@ -236,6 +241,84 @@ try {
             color: #666;
             font-size: 12px;
         }
+
+        .toolbar {
+            display: flex;
+            justify-content: flex-end;
+            margin: 14px 0;
+        }
+
+        .dialog-button {
+            background: #111;
+        }
+
+        .icon-button {
+            background: #f2f2f2;
+            color: #111;
+            border: 1px solid #ccc;
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            font-size: 16px;
+        }
+
+        .icon-button:hover {
+            background: #e7e7e7;
+        }
+
+        .permission-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .card-actions {
+            position: absolute;
+            right: 12px;
+            bottom: 12px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .card-actions form {
+            margin: 0;
+        }
+
+        dialog {
+            border: none;
+            border-radius: 10px;
+            padding: 0;
+            width: min(720px, 92vw);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        dialog::backdrop {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .dialog-card {
+            padding: 18px;
+        }
+
+        .dialog-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .dialog-header h2 {
+            margin: 0;
+        }
+
+        .close-button {
+            background: #666;
+        }
     </style>
 </head>
 
@@ -260,28 +343,37 @@ try {
             <div class="alert success"><?php echo htmlspecialchars($notice); ?></div>
         <?php endif; ?>
 
-        <section class="card">
-            <h2>Neue Berechtigung erstellen</h2>
-            <form method="POST">
-                <input type="hidden" name="action" value="create_permission">
-                <div class="field">
-                    <label for="perm_key">Berechtigungs-Schlüssel</label>
-                    <input type="text" id="perm_key" name="perm_key" placeholder="z.B. publish_posts" required>
-                    <div class="hint">Nur Kleinbuchstaben, Zahlen, _ und -</div>
+        <div class="toolbar">
+            <button type="button" class="dialog-button" data-dialog-open="create-permission-dialog">Neue Berechtigung</button>
+        </div>
+
+        <dialog id="create-permission-dialog">
+            <div class="dialog-card">
+                <div class="dialog-header">
+                    <h2>Neue Berechtigung erstellen</h2>
+                    <button type="button" class="close-button" data-dialog-close>Schließen</button>
                 </div>
-                <div class="field">
-                    <label for="perm_label">Anzeigename</label>
-                    <input type="text" id="perm_label" name="perm_label" placeholder="z.B. Beiträge veröffentlichen">
-                </div>
-                <div class="field">
-                    <label for="perm_desc">Beschreibung</label>
-                    <textarea id="perm_desc" name="perm_desc" placeholder="Wofür ist diese Berechtigung?"></textarea>
-                </div>
-                <div class="actions">
-                    <button type="submit">Berechtigung anlegen</button>
-                </div>
-            </form>
-        </section>
+                <form method="POST" class="permission-form">
+                    <input type="hidden" name="action" value="create_permission">
+                    <div class="field">
+                        <label for="perm_key">Berechtigungs-Schlüssel</label>
+                        <input type="text" id="perm_key" name="perm_key" placeholder="z.B. publish_posts" required>
+                        <div class="hint">Nur Kleinbuchstaben, Zahlen, _ und -</div>
+                    </div>
+                    <div class="field">
+                        <label for="perm_label">Anzeigename</label>
+                        <input type="text" id="perm_label" name="perm_label" placeholder="z.B. Beiträge veröffentlichen">
+                    </div>
+                    <div class="field">
+                        <label for="perm_desc">Beschreibung</label>
+                        <textarea id="perm_desc" name="perm_desc" placeholder="Wofür ist diese Berechtigung?"></textarea>
+                    </div>
+                    <div class="actions">
+                        <button type="submit">Berechtigung anlegen</button>
+                    </div>
+                </form>
+            </div>
+        </dialog>
 
         <h2>Bestehende Berechtigungen</h2>
         <div class="grid">
@@ -296,34 +388,95 @@ try {
                     $usageCount = $usageCounts[$permKey] ?? 0;
                 ?>
                 <div class="card">
-                    <h3><?php echo htmlspecialchars($permLabel); ?></h3>
-                    <div class="hint">Schlüssel: <?php echo htmlspecialchars($permKey); ?> · Rollen: <?php echo (int)$usageCount; ?></div>
-                    <form method="POST">
-                        <input type="hidden" name="action" value="update_permission">
-                        <input type="hidden" name="perm_key" value="<?php echo htmlspecialchars($permKey); ?>">
-                        <div class="field">
-                            <label>Anzeigename</label>
-                            <input type="text" name="perm_label" value="<?php echo htmlspecialchars($permLabel); ?>">
+                    <div style="display:flex; justify-content: space-between; align-items: center; gap: 12px;">
+                        <div>
+                            <h3><?php echo htmlspecialchars($permLabel); ?></h3>
+                            <div class="hint">Schlüssel: <?php echo htmlspecialchars($permKey); ?> · Rollen: <?php echo (int)$usageCount; ?></div>
                         </div>
-                        <div class="field">
-                            <label>Beschreibung</label>
-                            <textarea name="perm_desc"><?php echo htmlspecialchars($permDesc); ?></textarea>
-                        </div>
-                        <div class="actions">
-                            <button type="submit">Speichern</button>
-                        </div>
-                    </form>
-                    <form method="POST" onsubmit="return confirm('Berechtigung wirklich löschen?');">
-                        <input type="hidden" name="action" value="delete_permission">
-                        <input type="hidden" name="perm_key" value="<?php echo htmlspecialchars($permKey); ?>">
-                        <div class="actions">
-                            <button type="submit" class="danger">Berechtigung löschen</button>
-                        </div>
-                    </form>
+                    </div>
+
+                    <div class="card-actions">
+                        <button type="button" class="icon-button" data-dialog-open="edit-permission-<?php echo htmlspecialchars($permKey); ?>" aria-label="Berechtigung bearbeiten" title="Berechtigung bearbeiten">✎</button>
+                        <button type="button" class="icon-button" data-dialog-open="info-permission-<?php echo htmlspecialchars($permKey); ?>" aria-label="Berechtigung anzeigen" title="Berechtigung anzeigen">ℹ</button>
+                        <form method="POST" onsubmit="return confirm('Berechtigung wirklich löschen?');">
+                            <input type="hidden" name="action" value="delete_permission">
+                            <input type="hidden" name="perm_key" value="<?php echo htmlspecialchars($permKey); ?>">
+                            <button type="submit" class="icon-button danger" aria-label="Berechtigung löschen" title="Berechtigung löschen">🗑</button>
+                        </form>
+                    </div>
                 </div>
+
+                <dialog id="info-permission-<?php echo htmlspecialchars($permKey); ?>">
+                    <div class="dialog-card">
+                        <div class="dialog-header">
+                            <h2>Berechtigung</h2>
+                            <button type="button" class="close-button" data-dialog-close>Schließen</button>
+                        </div>
+                        <p><strong><?php echo htmlspecialchars($permLabel); ?></strong></p>
+                        <p><?php echo htmlspecialchars($permDesc ?: 'Keine Beschreibung vorhanden.'); ?></p>
+                        <p class="hint">Schlüssel: <?php echo htmlspecialchars($permKey); ?> · Rollen: <?php echo (int)$usageCount; ?></p>
+                    </div>
+                </dialog>
+
+                <dialog id="edit-permission-<?php echo htmlspecialchars($permKey); ?>">
+                    <div class="dialog-card">
+                        <div class="dialog-header">
+                            <h2>Berechtigung bearbeiten</h2>
+                            <button type="button" class="close-button" data-dialog-close>Schließen</button>
+                        </div>
+                        <form method="POST" class="permission-form">
+                            <input type="hidden" name="action" value="update_permission">
+                            <input type="hidden" name="perm_key" value="<?php echo htmlspecialchars($permKey); ?>">
+                            <div class="field">
+                                <label>Anzeigename</label>
+                                <input type="text" name="perm_label" value="<?php echo htmlspecialchars($permLabel); ?>">
+                            </div>
+                            <div class="field">
+                                <label>Beschreibung</label>
+                                <textarea name="perm_desc"><?php echo htmlspecialchars($permDesc); ?></textarea>
+                            </div>
+                            <div class="actions">
+                                <button type="submit">Speichern</button>
+                            </div>
+                        </form>
+                    </div>
+                </dialog>
             <?php endforeach; ?>
         </div>
     </div>
 </body>
+
+<script>
+(() => {
+    const openButtons = Array.from(document.querySelectorAll('[data-dialog-open]'));
+    const closeButtons = Array.from(document.querySelectorAll('[data-dialog-close]'));
+
+    openButtons.forEach((button) => {
+        const dialogId = button.dataset.dialogOpen;
+        const dialog = dialogId ? document.getElementById(dialogId) : null;
+        if (!dialog || typeof dialog.showModal !== 'function') return;
+        button.addEventListener('click', () => {
+            dialog.showModal();
+        });
+    });
+
+    closeButtons.forEach((button) => {
+        const dialog = button.closest('dialog');
+        if (!dialog) return;
+        button.addEventListener('click', () => {
+            dialog.close();
+        });
+    });
+
+    const dialogs = Array.from(document.querySelectorAll('dialog'));
+    dialogs.forEach((dialog) => {
+        dialog.addEventListener('click', (event) => {
+            if (event.target === dialog) {
+                dialog.close();
+            }
+        });
+    });
+})();
+</script>
 
 </html>

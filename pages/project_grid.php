@@ -41,10 +41,15 @@ if ($canDeleteProjects && isset($_POST['delete_projects']) && isset($_POST['proj
     }
 }
 
-$projectsCursor = $db->projects->find(
-    ['is_draft' => ['$ne' => true]],
-    ['sort' => ['created_at' => -1]]
-);
+$canViewProjects = can('view_projects');
+if ($canViewProjects) {
+    $projectsCursor = $db->projects->find(
+        ['is_draft' => ['$ne' => true]],
+        ['sort' => ['created_at' => -1]]
+    );
+} else {
+    $projectsCursor = [];
+}
 ?>
 
 <head>
@@ -54,8 +59,11 @@ $projectsCursor = $db->projects->find(
 <form method="POST" action="index.php?page=project_grid" id="grid-delete-form">
 <div class="project-grid">
     <?php 
-    $projects = iterator_to_array($projectsCursor);
-    if (empty($projects)): 
+    $projects = is_array($projectsCursor) ? $projectsCursor : iterator_to_array($projectsCursor);
+    if (!$canViewProjects): 
+    ?>
+        <p>Du hast keine Berechtigung, Projekte anzusehen.</p>
+    <?php elseif (empty($projects)): 
     ?>
         <p>Keine Projekte gefunden.</p>
     <?php else: ?>

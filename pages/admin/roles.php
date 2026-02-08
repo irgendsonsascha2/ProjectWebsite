@@ -14,6 +14,9 @@ $notice = '';
 $error = '';
 
 $defaultPermissions = [
+    ['key' => 'view_projects', 'label' => 'Projekte ansehen', 'description' => 'Projekte im Frontend ansehen'],
+    ['key' => 'view_comments', 'label' => 'Kommentare ansehen', 'description' => 'Kommentare lesen'],
+    ['key' => 'view_likes', 'label' => 'Likes/Dislikes ansehen', 'description' => 'Like/Dislike-Zahlen anzeigen'],
     ['key' => 'create_project', 'label' => 'Projekt erstellen', 'description' => 'Neue Projekte anlegen'],
     ['key' => 'edit_all', 'label' => 'Alle Projekte bearbeiten', 'description' => 'Beliebige Projekte bearbeiten'],
     ['key' => 'edit_own', 'label' => 'Eigene Projekte bearbeiten', 'description' => 'Nur eigene Projekte bearbeiten'],
@@ -25,6 +28,9 @@ $defaultPermissions = [
 ];
 
 function normalize_permission_keys($keys) {
+    if ($keys instanceof Traversable) {
+        $keys = iterator_to_array($keys);
+    }
     if (!is_array($keys)) {
         return [];
     }
@@ -102,6 +108,17 @@ if (isset($_POST['action'])) {
 
 $permissions = iterator_to_array($db->permissions_config->find([], ['sort' => ['key' => 1]]));
 $roles = iterator_to_array($db->roles_config->find([], ['sort' => ['role' => 1]]));
+$permissionMap = [];
+foreach ($permissions as $permission) {
+    if (!isset($permission['key'])) {
+        continue;
+    }
+    $key = (string)$permission['key'];
+    $permissionMap[$key] = [
+        'label' => $permission['label'] ?? $key,
+        'description' => $permission['description'] ?? ''
+    ];
+}
 $roleCounts = [];
 try {
     $countsCursor = $db->users->aggregate([
@@ -264,6 +281,108 @@ try {
             color: #666;
             font-size: 12px;
         }
+
+        .role-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .card {
+            position: relative;
+            padding-bottom: 56px;
+        }
+
+        .card-actions {
+            position: absolute;
+            right: 12px;
+            bottom: 12px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .card-actions form {
+            margin: 0;
+        }
+
+        .permission-list {
+            display: grid;
+            gap: 6px;
+        }
+
+        .permission-item {
+            background: #fff;
+            border: 1px solid #e3e3e3;
+            border-radius: 6px;
+            padding: 8px 10px;
+        }
+
+        .permission-item small {
+            display: block;
+            color: #666;
+            font-size: 12px;
+        }
+
+        .dialog-button {
+            background: #111;
+        }
+
+        .icon-button {
+            background: #f2f2f2;
+            color: #111;
+            border: 1px solid #ccc;
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            font-size: 16px;
+        }
+
+        .icon-button:hover {
+            background: #e7e7e7;
+        }
+
+        dialog {
+            border: none;
+            border-radius: 10px;
+            padding: 0;
+            width: min(720px, 92vw);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        dialog::backdrop {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .dialog-card {
+            padding: 18px;
+        }
+
+        .dialog-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .dialog-header h2 {
+            margin: 0;
+        }
+
+        .close-button {
+            background: #666;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: flex-end;
+            margin: 14px 0;
+        }
     </style>
 </head>
 
@@ -288,48 +407,57 @@ try {
             <div class="alert success"><?php echo htmlspecialchars($notice); ?></div>
         <?php endif; ?>
 
-        <section class="card">
-            <h2>Neue Rolle erstellen</h2>
-            <form method="POST">
-                <input type="hidden" name="action" value="create_role">
-                <div class="field">
-                    <label for="role_key">Rollen-Schlüssel</label>
-                    <input type="text" id="role_key" name="role_key" placeholder="z.B. editor" required>
-                    <div class="hint">Nur Kleinbuchstaben, Zahlen, _ und -</div>
+        <div class="toolbar">
+            <button type="button" class="dialog-button" data-dialog-open="create-role-dialog">Neue Rolle</button>
+        </div>
+
+        <dialog id="create-role-dialog">
+            <div class="dialog-card">
+                <div class="dialog-header">
+                    <h2>Neue Rolle erstellen</h2>
+                    <button type="button" class="close-button" data-dialog-close>Schließen</button>
                 </div>
-                <div class="field">
-                    <label for="role_label">Anzeigename</label>
-                    <input type="text" id="role_label" name="role_label" placeholder="z.B. Editor">
-                </div>
-                <div class="field">
-                    <label>Berechtigungen</label>
-                    <div class="permissions">
-                        <?php foreach ($permissions as $permission): ?>
-                            <?php
-                                $permKey = $permission['key'] ?? '';
-                                $permLabel = $permission['label'] ?? $permKey;
-                                $permDesc = $permission['description'] ?? '';
-                                if (!$permKey) {
-                                    continue;
-                                }
-                            ?>
-                            <label>
-                                <input type="checkbox" name="permissions[]" value="<?php echo htmlspecialchars($permKey); ?>">
-                                <span>
-                                    <?php echo htmlspecialchars($permLabel); ?>
-                                    <?php if ($permDesc): ?>
-                                        <small><?php echo htmlspecialchars($permDesc); ?></small>
-                                    <?php endif; ?>
-                                </span>
-                            </label>
-                        <?php endforeach; ?>
+                <form method="POST" class="role-form">
+                    <input type="hidden" name="action" value="create_role">
+                    <div class="field">
+                        <label for="role_key">Rollen-Schlüssel</label>
+                        <input type="text" id="role_key" name="role_key" placeholder="z.B. editor" required>
+                        <div class="hint">Nur Kleinbuchstaben, Zahlen, _ und -</div>
                     </div>
-                </div>
-                <div class="actions">
-                    <button type="submit">Rolle anlegen</button>
-                </div>
-            </form>
-        </section>
+                    <div class="field">
+                        <label for="role_label">Anzeigename</label>
+                        <input type="text" id="role_label" name="role_label" placeholder="z.B. Editor">
+                    </div>
+                    <div class="field">
+                        <label>Berechtigungen</label>
+                        <div class="permissions">
+                            <?php foreach ($permissions as $permission): ?>
+                                <?php
+                                    $permKey = $permission['key'] ?? '';
+                                    $permLabel = $permission['label'] ?? $permKey;
+                                    $permDesc = $permission['description'] ?? '';
+                                    if (!$permKey) {
+                                        continue;
+                                    }
+                                ?>
+                                <label>
+                                    <input type="checkbox" name="permissions[]" value="<?php echo htmlspecialchars($permKey); ?>">
+                                    <span>
+                                        <?php echo htmlspecialchars($permLabel); ?>
+                                        <?php if ($permDesc): ?>
+                                            <small><?php echo htmlspecialchars($permDesc); ?></small>
+                                        <?php endif; ?>
+                                    </span>
+                                </label>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button type="submit">Rolle anlegen</button>
+                    </div>
+                </form>
+            </div>
+        </dialog>
 
         <h2>Bestehende Rollen</h2>
         <div class="grid">
@@ -345,55 +473,168 @@ try {
                     $userCount = $roleCounts[$roleKey] ?? 0;
                 ?>
                 <div class="card">
-                    <h3><?php echo htmlspecialchars($roleLabel); ?></h3>
-                    <div class="hint">Schlüssel: <?php echo htmlspecialchars($roleKey); ?> · Nutzer: <?php echo (int)$userCount; ?></div>
-                    <form method="POST">
-                        <input type="hidden" name="action" value="update_role">
-                        <input type="hidden" name="role_key" value="<?php echo htmlspecialchars($roleKey); ?>">
-                        <div class="field">
-                            <label>Anzeigename</label>
-                            <input type="text" name="role_label" value="<?php echo htmlspecialchars($roleLabel); ?>">
+                    <div class="role-header">
+                        <div>
+                            <h3><?php echo htmlspecialchars($roleLabel); ?></h3>
+                            <div class="hint">Schlüssel: <?php echo htmlspecialchars($roleKey); ?> · Nutzer: <?php echo (int)$userCount; ?></div>
                         </div>
-                        <div class="field">
-                            <label>Berechtigungen</label>
-                            <div class="permissions">
-                                <?php foreach ($permissions as $permission): ?>
-                                    <?php
-                                        $permKey = $permission['key'] ?? '';
-                                        $permLabel = $permission['label'] ?? $permKey;
-                                        $permDesc = $permission['description'] ?? '';
-                                        if (!$permKey) {
-                                            continue;
-                                        }
-                                        $isChecked = in_array($permKey, $rolePermissions, true);
-                                    ?>
-                                    <label>
-                                        <input type="checkbox" name="permissions[]" value="<?php echo htmlspecialchars($permKey); ?>" <?php echo $isChecked ? 'checked' : ''; ?>>
-                                        <span>
-                                            <?php echo htmlspecialchars($permLabel); ?>
-                                            <?php if ($permDesc): ?>
-                                                <small><?php echo htmlspecialchars($permDesc); ?></small>
-                                            <?php endif; ?>
-                                        </span>
-                                    </label>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
-                        <div class="actions">
-                            <button type="submit">Speichern</button>
-                        </div>
-                    </form>
-                    <form method="POST" onsubmit="return confirm('Rolle wirklich löschen?');">
+                    </div>
+
+                    <div class="card-actions">
+                        <button type="button" class="icon-button" data-dialog-open="edit-role-<?php echo htmlspecialchars($roleKey); ?>" aria-label="Rolle bearbeiten" title="Rolle bearbeiten">✎</button>
+                        <button type="button" class="icon-button" data-dialog-open="info-role-<?php echo htmlspecialchars($roleKey); ?>" aria-label="Berechtigungen anzeigen" title="Berechtigungen anzeigen">ℹ</button>
+                        <form method="POST" onsubmit="return confirm('Rolle wirklich löschen?');">
                         <input type="hidden" name="action" value="delete_role">
                         <input type="hidden" name="role_key" value="<?php echo htmlspecialchars($roleKey); ?>">
-                        <div class="actions">
-                            <button type="submit" class="danger">Rolle löschen</button>
-                        </div>
-                    </form>
+                            <button type="submit" class="icon-button danger" aria-label="Rolle löschen" title="Rolle löschen">🗑</button>
+                        </form>
+                    </div>
                 </div>
+
+                <dialog id="info-role-<?php echo htmlspecialchars($roleKey); ?>">
+                    <div class="dialog-card">
+                        <div class="dialog-header">
+                            <h2>Berechtigungen</h2>
+                            <button type="button" class="close-button" data-dialog-close>Schließen</button>
+                        </div>
+                        <div class="permission-list">
+                            <?php if (count($rolePermissions) === 0): ?>
+                                <div class="permission-item">Keine Berechtigungen zugeordnet.</div>
+                            <?php else: ?>
+                                <?php foreach ($rolePermissions as $permKey): ?>
+                                    <?php
+                                        $permLabel = $permissionMap[$permKey]['label'] ?? $permKey;
+                                        $permDesc = $permissionMap[$permKey]['description'] ?? '';
+                                    ?>
+                                    <div class="permission-item">
+                                        <?php echo htmlspecialchars($permLabel); ?>
+                                        <?php if ($permDesc): ?>
+                                            <small><?php echo htmlspecialchars($permDesc); ?></small>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </dialog>
+
+                <dialog id="edit-role-<?php echo htmlspecialchars($roleKey); ?>">
+                    <div class="dialog-card">
+                        <div class="dialog-header">
+                            <h2>Rolle bearbeiten</h2>
+                            <button type="button" class="close-button" data-dialog-close>Schließen</button>
+                        </div>
+                        <form method="POST" class="role-form" data-role="<?php echo htmlspecialchars($roleKey); ?>">
+                            <input type="hidden" name="action" value="update_role">
+                            <input type="hidden" name="role_key" value="<?php echo htmlspecialchars($roleKey); ?>">
+                            <div class="field">
+                                <label>Anzeigename</label>
+                                <input type="text" name="role_label" value="<?php echo htmlspecialchars($roleLabel); ?>">
+                            </div>
+                            <div class="field">
+                                <label>Berechtigungen</label>
+                                <div class="permissions">
+                                    <?php foreach ($permissions as $permission): ?>
+                                        <?php
+                                            $permKey = $permission['key'] ?? '';
+                                            $permLabel = $permission['label'] ?? $permKey;
+                                            $permDesc = $permission['description'] ?? '';
+                                            if (!$permKey) {
+                                                continue;
+                                            }
+                                            $isChecked = in_array($permKey, $rolePermissions, true);
+                                        ?>
+                                        <label>
+                                            <input type="checkbox" name="permissions[]" value="<?php echo htmlspecialchars($permKey); ?>" <?php echo $isChecked ? 'checked' : ''; ?>>
+                                            <span>
+                                                <?php echo htmlspecialchars($permLabel); ?>
+                                                <?php if ($permDesc): ?>
+                                                    <small><?php echo htmlspecialchars($permDesc); ?></small>
+                                                <?php endif; ?>
+                                            </span>
+                                        </label>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                            <div class="actions">
+                                <button type="submit" class="save-button" disabled>Speichern</button>
+                            </div>
+                        </form>
+                    </div>
+                </dialog>
             <?php endforeach; ?>
         </div>
     </div>
 </body>
+
+<script>
+(() => {
+    const forms = Array.from(document.querySelectorAll('.role-form'));
+    const openButtons = Array.from(document.querySelectorAll('[data-dialog-open]'));
+    const closeButtons = Array.from(document.querySelectorAll('[data-dialog-close]'));
+
+    function snapshotForm(form) {
+        const data = new FormData(form);
+        const entries = [];
+        for (const [key, value] of data.entries()) {
+            entries.push([key, value]);
+        }
+        entries.sort((a, b) => {
+            if (a[0] === b[0]) return a[1].localeCompare(b[1]);
+            return a[0].localeCompare(b[0]);
+        });
+        return JSON.stringify(entries);
+    }
+
+    forms.forEach((form) => {
+        const saveButton = form.querySelector('.save-button');
+        if (!saveButton) return;
+        let initial = snapshotForm(form);
+
+        function updateState() {
+            const current = snapshotForm(form);
+            const isDirty = current !== initial;
+            saveButton.disabled = !isDirty;
+        }
+
+        form.addEventListener('input', updateState);
+        form.addEventListener('change', updateState);
+        form.addEventListener('reset', () => {
+            initial = snapshotForm(form);
+            updateState();
+        });
+
+        form.addEventListener('submit', () => {
+            saveButton.disabled = true;
+        });
+    });
+
+    openButtons.forEach((button) => {
+        const dialogId = button.dataset.dialogOpen;
+        const dialog = dialogId ? document.getElementById(dialogId) : null;
+        if (!dialog || typeof dialog.showModal !== 'function') return;
+        button.addEventListener('click', () => {
+            dialog.showModal();
+        });
+    });
+
+    closeButtons.forEach((button) => {
+        const dialog = button.closest('dialog');
+        if (!dialog) return;
+        button.addEventListener('click', () => {
+            dialog.close();
+        });
+    });
+
+    const dialogs = Array.from(document.querySelectorAll('dialog'));
+    dialogs.forEach((dialog) => {
+        dialog.addEventListener('click', (event) => {
+            if (event.target === dialog) {
+                dialog.close();
+            }
+        });
+    });
+})();
+</script>
 
 </html>

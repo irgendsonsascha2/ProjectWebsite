@@ -80,6 +80,12 @@ $availableScripts = glob(__DIR__ . '/../../dbScripts/*.php');
             border-radius: 5px;
         }
 
+        .script-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
         button {
             background: #333;
             color: white;
@@ -101,6 +107,66 @@ $availableScripts = glob(__DIR__ . '/../../dbScripts/*.php');
             margin-top: 20px;
             font-family: monospace;
             white-space: pre-wrap;
+        }
+
+        .icon-button {
+            background: #f2f2f2;
+            color: #111;
+            border: 1px solid #ccc;
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            font-size: 16px;
+        }
+
+        .icon-button:hover {
+            background: #e7e7e7;
+        }
+
+        dialog {
+            border: none;
+            border-radius: 10px;
+            padding: 0;
+            width: min(900px, 92vw);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        dialog::backdrop {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .dialog-card {
+            padding: 18px;
+        }
+
+        .dialog-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .dialog-header h2 {
+            margin: 0;
+        }
+
+        .close-button {
+            background: #666;
+        }
+
+        .code-block {
+            background: #111;
+            color: #eaeaea;
+            padding: 14px;
+            border-radius: 8px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 60vh;
+            overflow: auto;
         }
 
         .admin-nav {
@@ -151,10 +217,23 @@ $availableScripts = glob(__DIR__ . '/../../dbScripts/*.php');
             <?php foreach ($availableScripts as $script): ?>
                 <li>
                     <span><?php echo htmlspecialchars(basename($script)); ?></span>
-                    <form method="POST" onsubmit="return confirm('Achtung! Sind Sie sicher, dass Sie das Skript <?php echo htmlspecialchars(basename($script)); ?> ausführen möchten? Dies kann Daten löschen.');">
-                        <input type="hidden" name="script_name" value="<?php echo htmlspecialchars(basename($script)); ?>">
-                        <button type="submit" name="run_script">Ausführen</button>
-                    </form>
+                    <div class="script-actions">
+                        <button type="button" class="icon-button" data-dialog-open="script-info-<?php echo htmlspecialchars(basename($script)); ?>" aria-label="Skript anzeigen" title="Skript anzeigen">ℹ</button>
+                        <form method="POST" onsubmit="return confirm('Achtung! Sind Sie sicher, dass Sie das Skript <?php echo htmlspecialchars(basename($script)); ?> ausführen möchten? Dies kann Daten löschen.');">
+                            <input type="hidden" name="script_name" value="<?php echo htmlspecialchars(basename($script)); ?>">
+                            <button type="submit" name="run_script">Ausführen</button>
+                        </form>
+                    </div>
+
+                    <dialog id="script-info-<?php echo htmlspecialchars(basename($script)); ?>">
+                        <div class="dialog-card">
+                            <div class="dialog-header">
+                                <h2><?php echo htmlspecialchars(basename($script)); ?></h2>
+                                <button type="button" class="close-button" data-dialog-close>Schließen</button>
+                            </div>
+                            <div class="code-block"><?php echo htmlspecialchars(file_get_contents($script)); ?></div>
+                        </div>
+                    </dialog>
                 </li>
             <?php endforeach; ?>
         </ul>
@@ -164,6 +243,39 @@ $availableScripts = glob(__DIR__ . '/../../dbScripts/*.php');
         <?php endif; ?>
 
     </div>
+
+    <script>
+    (() => {
+        const openButtons = Array.from(document.querySelectorAll('[data-dialog-open]'));
+        const closeButtons = Array.from(document.querySelectorAll('[data-dialog-close]'));
+        const dialogs = Array.from(document.querySelectorAll('dialog'));
+
+        openButtons.forEach((button) => {
+            const dialogId = button.dataset.dialogOpen;
+            const dialog = dialogId ? document.getElementById(dialogId) : null;
+            if (!dialog || typeof dialog.showModal !== 'function') return;
+            button.addEventListener('click', () => {
+                dialog.showModal();
+            });
+        });
+
+        closeButtons.forEach((button) => {
+            const dialog = button.closest('dialog');
+            if (!dialog) return;
+            button.addEventListener('click', () => {
+                dialog.close();
+            });
+        });
+
+        dialogs.forEach((dialog) => {
+            dialog.addEventListener('click', (event) => {
+                if (event.target === dialog) {
+                    dialog.close();
+                }
+            });
+        });
+    })();
+    </script>
 
 </body>
 

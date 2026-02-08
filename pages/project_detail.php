@@ -38,7 +38,14 @@ try {
 
 $message = '';
 $canDeleteProjects = $isLoggedIn && can('delete_all');
+$canViewProjects = can('view_projects');
+$canViewComments = can('view_comments');
+$canViewLikes = can('view_likes');
 $isAjax = false;
+if (!$canViewProjects) {
+    echo "Du hast keine Berechtigung, dieses Projekt anzusehen.";
+    return;
+}
 if (isset($_POST['ajax']) && $_POST['ajax'] === '1') {
     $isAjax = true;
 } elseif (isset($_SERVER['HTTP_X_REQUESTED_WITH'])) {
@@ -124,8 +131,8 @@ if ($isLoggedIn && can('like_dislike') && isset($_POST['interaction'])) {
         }
     }
     if ($isAjax) {
-        $likeCount = $db->likes->countDocuments(['project_id' => $projectObjectId, 'type' => 'like']);
-        $dislikeCount = $db->likes->countDocuments(['project_id' => $projectObjectId, 'type' => 'dislike']);
+        $likeCount = $canViewLikes ? $db->likes->countDocuments(['project_id' => $projectObjectId, 'type' => 'like']) : 0;
+        $dislikeCount = $canViewLikes ? $db->likes->countDocuments(['project_id' => $projectObjectId, 'type' => 'dislike']) : 0;
         $currentUserLike = $db->likes->findOne(['project_id' => $projectObjectId, 'user_id' => $userId]);
         $currentUserInteraction = $currentUserLike['type'] ?? null;
         if (ob_get_length()) {
@@ -218,8 +225,8 @@ if ($isLoggedIn && can('comment') && isset($_POST['submit_comment'])) {
 }
 
 // --- DATEN FÜR DIE ANZEIGE LADEN ---
-$likeCount = $db->likes->countDocuments(['project_id' => $projectObjectId, 'type' => 'like']);
-$dislikeCount = $db->likes->countDocuments(['project_id' => $projectObjectId, 'type' => 'dislike']);
+$likeCount = $canViewLikes ? $db->likes->countDocuments(['project_id' => $projectObjectId, 'type' => 'like']) : 0;
+$dislikeCount = $canViewLikes ? $db->likes->countDocuments(['project_id' => $projectObjectId, 'type' => 'dislike']) : 0;
 $userLikeType = null;
 if ($isLoggedIn && can('like_dislike')) {
     $userLike = $db->likes->findOne([
@@ -230,7 +237,7 @@ if ($isLoggedIn && can('like_dislike')) {
 }
 
 // Kommentare mit User-Infos laden
-$comments = fetch_comments_with_users($db, $projectObjectId);
+$comments = $canViewComments ? fetch_comments_with_users($db, $projectObjectId) : [];
 
 // User's eigenen Kommentar finden
 $userComment = null;
@@ -323,24 +330,30 @@ $ajaxActionUrl = 'pages/project_detail.php?id=' . urlencode($projectId);
                 <input type="hidden" name="ajax" value="1">
                 <button type="submit" name="interaction" value="like" class="<?php echo $userLikeType === 'like' ? 'is-active' : ''; ?>" aria-pressed="<?php echo $userLikeType === 'like' ? 'true' : 'false'; ?>">
                     <span class="interaction-emoji" aria-hidden="true">🔥</span>
-                    <span class="like-count"><?php echo $likeCount; ?></span>
+                    <?php if ($canViewLikes): ?>
+                        <span class="like-count"><?php echo $likeCount; ?></span>
+                    <?php endif; ?>
                 </button>
                 <button type="submit" name="interaction" value="dislike" class="<?php echo $userLikeType === 'dislike' ? 'is-active' : ''; ?>" aria-pressed="<?php echo $userLikeType === 'dislike' ? 'true' : 'false'; ?>">
                     <span class="interaction-emoji" aria-hidden="true">💩</span>
-                    <span class="dislike-count"><?php echo $dislikeCount; ?></span>
+                    <?php if ($canViewLikes): ?>
+                        <span class="dislike-count"><?php echo $dislikeCount; ?></span>
+                    <?php endif; ?>
                 </button>
             </form>
         <?php else: ?>
-            <div class="interaction-buttons" aria-hidden="true">
-                <div>
-                    <span class="interaction-emoji" aria-hidden="true">🔥</span>
-                    <span class="like-count"><?php echo $likeCount; ?></span>
+            <?php if ($canViewLikes): ?>
+                <div class="interaction-buttons" aria-hidden="true">
+                    <div>
+                        <span class="interaction-emoji" aria-hidden="true">🔥</span>
+                        <span class="like-count"><?php echo $likeCount; ?></span>
+                    </div>
+                    <div>
+                        <span class="interaction-emoji" aria-hidden="true">💩</span>
+                        <span class="dislike-count"><?php echo $dislikeCount; ?></span>
+                    </div>
                 </div>
-                <div>
-                    <span class="interaction-emoji" aria-hidden="true">💩</span>
-                    <span class="dislike-count"><?php echo $dislikeCount; ?></span>
-                </div>
-            </div>
+            <?php endif; ?>
         <?php endif; ?>
 
         <!-- KOMMENTAR-FORMULAR -->
@@ -364,7 +377,13 @@ $ajaxActionUrl = 'pages/project_detail.php?id=' . urlencode($projectId);
     <section class="comment-list" id="comment-list">
         <h3>Kommentare</h3>
         <div class="comment-items" id="comment-items">
-            <?php echo render_comment_items($comments); ?>
+            <?php
+                if ($canViewComments) {
+                    echo render_comment_items($comments);
+                } else {
+                    echo '<p>Keine Berechtigung, Kommentare zu sehen.</p>';
+                }
+            ?>
         </div>
     </section>
 </article>
