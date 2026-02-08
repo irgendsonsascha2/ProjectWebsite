@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../includes/bootstrap.php';
 
-$canDeleteProjects = isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'content_manager'], true);
+$canDeleteProjects = can('delete_all');
 
 function delete_project_files($project) {
     $gallery = normalize_gallery($project['gallery'] ?? []);

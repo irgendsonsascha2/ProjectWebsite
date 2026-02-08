@@ -57,6 +57,20 @@ if (isset($_SESSION['user_id']) && (
     }
 }
 
+if (!isset($_SESSION['user_id'])) {
+    if (!isset($_SESSION['role'])) {
+        $_SESSION['role'] = 'viewer';
+    }
+    if (!isset($_SESSION['permissions']) || !is_array($_SESSION['permissions'])) {
+        $roleData = $db->roles_config->findOne(['role' => $_SESSION['role']]);
+        if ($roleData && isset($roleData['permissions'])) {
+            $_SESSION['permissions'] = iterator_to_array($roleData['permissions']);
+        } else {
+            $_SESSION['permissions'] = [];
+        }
+    }
+}
+
 if (!function_exists('can')) {
     function can($permission) {
         return isset($_SESSION['permissions']) && in_array($permission, $_SESSION['permissions']);

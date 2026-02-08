@@ -4,7 +4,7 @@ require_once __DIR__ . '/../../includes/bootstrap.php';
 // --- BERECHTIGUNGS-CHECK ---
 // 1. Ist der User überhaupt eingeloggt?
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ../account.php'); // Zum Login umleiten
+    header('Location: ../../index.php?page=account'); // Zum Login umleiten
     exit();
 }
 
@@ -102,6 +102,26 @@ $availableScripts = glob(__DIR__ . '/../../dbScripts/*.php');
             font-family: monospace;
             white-space: pre-wrap;
         }
+
+        .admin-nav {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 10px 0 20px;
+        }
+
+        .admin-nav a {
+            text-decoration: none;
+            color: #111;
+            background: #f2f2f2;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+
+        .admin-nav a:hover {
+            background: #e9e9e9;
+        }
     </style>
 </head>
 
@@ -114,6 +134,13 @@ $availableScripts = glob(__DIR__ . '/../../dbScripts/*.php');
         </div>
 
         <p>Eingeloggt als: <strong><?php echo $_SESSION['email']; ?></strong></p>
+
+        <div class="admin-nav">
+            <a href="index.php">Dashboard</a>
+            <a href="roles.php">Rollen</a>
+            <a href="permissions.php">Berechtigungen</a>
+            <a href="../../index.php">Zur Hauptseite</a>
+        </div>
 
         <hr>
 

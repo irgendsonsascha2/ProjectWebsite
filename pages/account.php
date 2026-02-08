@@ -91,6 +91,25 @@ if (isset($_POST['generate_code']) && can('generate_codes')) {
 }
 
 $prefilledCode = isset($_GET['reg_token']) ? htmlspecialchars($_GET['reg_token']) : '';
+
+$roleOptions = [];
+try {
+    $roleOptions = iterator_to_array($db->roles_config->find([], ['sort' => ['role' => 1]]));
+} catch (Exception $e) {
+    $roleOptions = [];
+}
+if (count($roleOptions) === 0) {
+    $roleOptions = [
+        ['role' => 'content_manager', 'label' => 'Content Manager'],
+        ['role' => 'community_member', 'label' => 'Community Member'],
+        ['role' => 'admin', 'label' => 'Admin']
+    ];
+}
+if (!empty($roleOptions)) {
+    $roleOptions = array_values(array_filter($roleOptions, function ($roleOption) {
+        return isset($roleOption['role']) && $roleOption['role'] !== 'viewer';
+    }));
+}
 ?>
 
 <head>
@@ -144,9 +163,16 @@ $prefilledCode = isset($_GET['reg_token']) ? htmlspecialchars($_GET['reg_token']
                 <h3>Einladungscodes & Links</h3>
                 <form method="POST" style="display: flex; gap: 0.625rem; flex-wrap: wrap;">
                     <select name="target_role" style="flex: 2; min-width: 12.5rem;">
-                        <option value="content_manager">Content Manager</option>
-                        <option value="community_member">Community Member</option>
-                        <option value="admin">Admin</option>
+                        <?php foreach ($roleOptions as $roleOption): ?>
+                            <?php
+                                $roleKey = $roleOption['role'] ?? '';
+                                $roleLabel = $roleOption['label'] ?? $roleKey;
+                                if (!$roleKey) {
+                                    continue;
+                                }
+                            ?>
+                            <option value="<?php echo htmlspecialchars($roleKey); ?>"><?php echo htmlspecialchars($roleLabel); ?></option>
+                        <?php endforeach; ?>
                     </select>
                     <button type="submit" name="generate_code" style="flex: 1; min-width: 9.375rem;">Code generieren</button>
                 </form>

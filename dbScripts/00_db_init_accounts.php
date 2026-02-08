@@ -19,26 +19,50 @@ try {
 
     echo "<h1>Initialisierung: Account Management</h1>";
 
-    // --- A. ROLES_CONFIG (Rechte-Matrix) ---
+    // --- A. PERMISSIONS_CONFIG (Berechtigungen) ---
+    $db->dropCollection("permissions_config");
+    $db->createCollection("permissions_config");
+    $db->permissions_config->insertMany([
+        ['key' => 'create_project', 'label' => 'Projekt erstellen', 'description' => 'Neue Projekte anlegen'],
+        ['key' => 'edit_all', 'label' => 'Alle Projekte bearbeiten', 'description' => 'Beliebige Projekte bearbeiten'],
+        ['key' => 'edit_own', 'label' => 'Eigene Projekte bearbeiten', 'description' => 'Nur eigene Projekte bearbeiten'],
+        ['key' => 'delete_all', 'label' => 'Projekte löschen', 'description' => 'Projekte löschen (inkl. Kommentare/Likes)'],
+        ['key' => 'manage_users', 'label' => 'Benutzer verwalten', 'description' => 'Admin-Funktionen für Benutzer/Einladungen'],
+        ['key' => 'generate_codes', 'label' => 'Einladungscodes erzeugen', 'description' => 'Registrierungs-Codes erstellen'],
+        ['key' => 'comment', 'label' => 'Kommentieren', 'description' => 'Kommentare erstellen/bearbeiten'],
+        ['key' => 'like_dislike', 'label' => 'Likes/Dislikes', 'description' => 'Likes und Dislikes vergeben']
+    ]);
+    $db->permissions_config->createIndex(['key' => 1], ['unique' => true]);
+    echo "✅ Berechtigungen definiert.<br>";
+
+    // --- B. ROLES_CONFIG (Rechte-Matrix) ---
     $db->dropCollection("roles_config");
     $db->createCollection("roles_config");
     $db->roles_config->insertMany([
         [
-            'role' => 'admin', 
+            'role' => 'viewer',
+            'label' => 'Viewer',
+            'permissions' => []
+        ],
+        [
+            'role' => 'admin',
+            'label' => 'Administrator',
             'permissions' => ['create_project', 'edit_all', 'delete_all', 'manage_users', 'generate_codes', 'comment', 'like_dislike']
         ],
         [
-            'role' => 'content_manager', 
+            'role' => 'content_manager',
+            'label' => 'Content Manager',
             'permissions' => ['create_project', 'edit_own', 'comment', 'like_dislike']
         ],
         [
-            'role' => 'community_member', 
+            'role' => 'community_member',
+            'label' => 'Community Member',
             'permissions' => ['comment', 'like_dislike']
         ]
     ]);
     echo "✅ Rollen & Rechte definiert.<br>";
 
-    // --- B. REGISTRATION_CODES ---
+    // --- C. REGISTRATION_CODES ---
     $db->dropCollection("registration_codes");
     $db->createCollection("registration_codes", [
         'validator' => [
@@ -47,7 +71,7 @@ try {
                 'required' => ['code', 'role', 'is_used', 'created_at'],
                 'properties' => [
                     'code' => ['bsonType' => 'string'],
-                    'role' => ['enum' => ['admin', 'content_manager', 'community_member']],
+                    'role' => ['bsonType' => 'string'],
                     'is_used' => ['bsonType' => 'bool'],
                     'created_at' => ['bsonType' => 'date']
                 ]
@@ -57,7 +81,7 @@ try {
     $db->registration_codes->createIndex(['code' => 1], ['unique' => true]);
     echo "✅ Einmal-Code System bereit.<br>";
 
-    // --- C. USERS ---
+    // --- D. USERS ---
     $db->dropCollection("users");
     $db->createCollection("users", [
         'validator' => [
@@ -68,7 +92,7 @@ try {
                     'email' => ['bsonType' => 'string', 'pattern' => '^.+@.+$'],
                     'username' => ['bsonType' => 'string'],
                     'password' => ['bsonType' => 'string'],
-                    'role' => ['enum' => ['admin', 'content_manager', 'community_member']],
+                    'role' => ['bsonType' => 'string'],
                     'created_at' => ['bsonType' => 'date']
                 ]
             ]

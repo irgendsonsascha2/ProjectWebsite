@@ -37,7 +37,7 @@ try {
 }
 
 $message = '';
-$canDeleteProjects = $isLoggedIn && isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'content_manager'], true);
+$canDeleteProjects = $isLoggedIn && can('delete_all');
 $isAjax = false;
 if (isset($_POST['ajax']) && $_POST['ajax'] === '1') {
     $isAjax = true;
@@ -313,42 +313,51 @@ $ajaxActionUrl = 'pages/project_detail.php?id=' . urlencode($projectId);
 
 
     <!-- INTERACTION SECTION -->
-    <?php if ($isLoggedIn && (can('like_dislike') || can('comment'))): ?>
-        <section class="interaction-section">
-            <h2>Interaktionen</h2>
-            <p class="interaction-status" id="interaction-status" role="status" aria-live="polite"></p>
+    <section class="interaction-section">
+        <h2>Interaktionen</h2>
+        <p class="interaction-status" id="interaction-status" role="status" aria-live="polite"></p>
 
-            <!-- LIKES / DISLIKES -->
-            <?php if (can('like_dislike')): ?>
-                <form method="POST" class="interaction-buttons" data-ajax="true" data-ajax-action="<?php echo htmlspecialchars($ajaxActionUrl); ?>">
-                    <input type="hidden" name="ajax" value="1">
-                    <button type="submit" name="interaction" value="like" class="<?php echo $userLikeType === 'like' ? 'is-active' : ''; ?>" aria-pressed="<?php echo $userLikeType === 'like' ? 'true' : 'false'; ?>">
-                        <span class="interaction-emoji" aria-hidden="true">🔥</span>
-                        <span class="like-count"><?php echo $likeCount; ?></span>
-                    </button>
-                    <button type="submit" name="interaction" value="dislike" class="<?php echo $userLikeType === 'dislike' ? 'is-active' : ''; ?>" aria-pressed="<?php echo $userLikeType === 'dislike' ? 'true' : 'false'; ?>">
-                        <span class="interaction-emoji" aria-hidden="true">💩</span>
-                        <span class="dislike-count"><?php echo $dislikeCount; ?></span>
-                    </button>
-                </form>
-            <?php endif; ?>
+        <!-- LIKES / DISLIKES -->
+        <?php if (can('like_dislike')): ?>
+            <form method="POST" class="interaction-buttons" data-ajax="true" data-ajax-action="<?php echo htmlspecialchars($ajaxActionUrl); ?>">
+                <input type="hidden" name="ajax" value="1">
+                <button type="submit" name="interaction" value="like" class="<?php echo $userLikeType === 'like' ? 'is-active' : ''; ?>" aria-pressed="<?php echo $userLikeType === 'like' ? 'true' : 'false'; ?>">
+                    <span class="interaction-emoji" aria-hidden="true">🔥</span>
+                    <span class="like-count"><?php echo $likeCount; ?></span>
+                </button>
+                <button type="submit" name="interaction" value="dislike" class="<?php echo $userLikeType === 'dislike' ? 'is-active' : ''; ?>" aria-pressed="<?php echo $userLikeType === 'dislike' ? 'true' : 'false'; ?>">
+                    <span class="interaction-emoji" aria-hidden="true">💩</span>
+                    <span class="dislike-count"><?php echo $dislikeCount; ?></span>
+                </button>
+            </form>
+        <?php else: ?>
+            <div class="interaction-buttons" aria-hidden="true">
+                <div>
+                    <span class="interaction-emoji" aria-hidden="true">🔥</span>
+                    <span class="like-count"><?php echo $likeCount; ?></span>
+                </div>
+                <div>
+                    <span class="interaction-emoji" aria-hidden="true">💩</span>
+                    <span class="dislike-count"><?php echo $dislikeCount; ?></span>
+                </div>
+            </div>
+        <?php endif; ?>
 
-            <!-- KOMMENTAR-FORMULAR -->
-            <?php if (can('comment')): ?>
-                <h4>Dein Kommentar</h4>
-                <form method="POST" class="comment-form" data-ajax="true" data-ajax-action="<?php echo htmlspecialchars($ajaxActionUrl); ?>">
-                    <input type="hidden" name="ajax" value="1">
-                    <textarea name="comment_text" placeholder="Schreibe einen Kommentar..." maxlength="400" data-maxlength="400"><?php echo htmlspecialchars($userComment['text'] ?? ''); ?></textarea>
-                    <input type="hidden" name="submit_comment" value="1">
-                    <button type="submit" name="submit_comment" aria-label="Kommentieren">
-                        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-                            <path d="M2 21l21-9L2 3v7l15 2-15 2z" fill="currentColor"/>
-                        </svg>
-                    </button>
-                </form>
-            <?php endif; ?>
-        </section>
-    <?php endif; ?>
+        <!-- KOMMENTAR-FORMULAR -->
+        <?php if (can('comment')): ?>
+            <h4>Dein Kommentar</h4>
+            <form method="POST" class="comment-form" data-ajax="true" data-ajax-action="<?php echo htmlspecialchars($ajaxActionUrl); ?>">
+                <input type="hidden" name="ajax" value="1">
+                <textarea name="comment_text" placeholder="Schreibe einen Kommentar..." maxlength="400" data-maxlength="400"><?php echo htmlspecialchars($userComment['text'] ?? ''); ?></textarea>
+                <input type="hidden" name="submit_comment" value="1">
+                <button type="submit" name="submit_comment" aria-label="Kommentieren">
+                    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                        <path d="M2 21l21-9L2 3v7l15 2-15 2z" fill="currentColor"/>
+                    </svg>
+                </button>
+            </form>
+        <?php endif; ?>
+    </section>
 
 
     <!-- KOMMENTAR-LISTE -->
