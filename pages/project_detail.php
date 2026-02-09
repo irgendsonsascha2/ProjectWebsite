@@ -43,6 +43,7 @@ $canViewProjects = can('view_projects');
 $canViewComments = can('view_comments');
 $canViewLikes = can('view_likes');
 $canComment = $isLoggedIn && can('comment');
+$canCommentLimit = $isLoggedIn && can('comment_limit');
 $isAjax = false;
 if (!$canViewProjects) {
     echo "Du hast keine Berechtigung, dieses Projekt anzusehen.";
@@ -102,7 +103,7 @@ function sort_comments_by_created_at_asc(&$comments) {
     });
 }
 
-function render_comment_items($comments, $commentLimitReached, $ajaxActionUrl, $currentUserId, $currentUserRole, $deleteRolesAllowed, $canDeleteOthers, $canComment) {
+function render_comment_items($comments, $commentLimitReached, $commentLimit, $ajaxActionUrl, $currentUserId, $currentUserRole, $deleteRolesAllowed, $canDeleteOthers, $canComment) {
     $tree = build_comment_tree($comments);
     $topLevel = $tree[null] ?? [];
     sort_comments_by_created_at_desc($topLevel);
@@ -173,8 +174,8 @@ function render_comment_items($comments, $commentLimitReached, $ajaxActionUrl, $
     if (count($topLevel) === 0) {
         echo '<p>Noch keine Kommentare vorhanden.</p>';
     }
-    if ($commentLimitReached && $canComment) {
-        echo '<p class="comment-limit-note">Kommentar-Limit erreicht (max. 10 pro Nutzer).</p>';
+    if ($commentLimitReached && $canComment && $commentLimit > 0) {
+        echo '<p class="comment-limit-note">Kommentar-Limit erreicht (max. ' . (int)$commentLimit . ' pro Nutzer).</p>';
     }
     return ob_get_clean();
 }
@@ -289,9 +290,10 @@ if ($isLoggedIn && isset($_POST['delete_comment'])) {
     $canDeleteOwn = can('comment') && (string)$comment['user_id'] === (string)$userId;
     $canDeleteOthers = can('delete_comments');
     $deleteRolesAllowed = [];
-    if ($canDeleteOthers && isset($_SESSION['role'])) {
+    $roleData = null;
+    if (isset($_SESSION['role'])) {
         $roleData = $db->roles_config->findOne(['role' => $_SESSION['role']]);
-        if ($roleData && isset($roleData['comment_delete_roles'])) {
+        if ($canDeleteOthers && $roleData && isset($roleData['comment_delete_roles'])) {
             $deleteRolesAllowed = is_array($roleData['comment_delete_roles']) ? $roleData['comment_delete_roles'] : iterator_to_array($roleData['comment_delete_roles']);
         }
     }
@@ -333,7 +335,14 @@ if ($isLoggedIn && isset($_POST['delete_comment'])) {
             'project_id' => $projectObjectId,
             'user_id' => $userId
         ]);
-        $commentLimitReached = $userCommentCount >= 10;
+        $commentLimit = 0;
+        if ($canCommentLimit) {
+            $roleData = $db->roles_config->findOne(['role' => $_SESSION['role'] ?? '']);
+            if ($roleData && isset($roleData['comment_limit'])) {
+                $commentLimit = max(0, (int)$roleData['comment_limit']);
+            }
+        }
+        $commentLimitReached = $commentLimit > 0 && $userCommentCount >= $commentLimit;
         if (ob_get_length()) {
             ob_clean();
         }
@@ -345,6 +354,7 @@ if ($isLoggedIn && isset($_POST['delete_comment'])) {
             'commentsHtml' => render_comment_items(
                 $comments,
                 $commentLimitReached,
+                $commentLimit,
                 $ajaxActionUrl,
                 (string)$userId,
                 $_SESSION['role'] ?? '',
@@ -352,7 +362,8 @@ if ($isLoggedIn && isset($_POST['delete_comment'])) {
                 $canDeleteOthers,
                 $canComment
             ),
-            'commentLimitReached' => $commentLimitReached
+            'commentLimitReached' => $commentLimitReached,
+            'commentLimit' => $commentLimit
         ]);
         exit();
     }
@@ -425,7 +436,14 @@ if ($isLoggedIn && can('comment') && isset($_POST['submit_comment'])) {
         'project_id' => $projectObjectId,
         'user_id' => $userId
     ]);
-    if ($userCommentCount >= 10) {
+    $commentLimit = 0;
+    if ($canCommentLimit) {
+        $roleData = $roleData ?? $db->roles_config->findOne(['role' => $_SESSION['role'] ?? '']);
+        if ($roleData && isset($roleData['comment_limit'])) {
+            $commentLimit = max(0, (int)$roleData['comment_limit']);
+        }
+    }
+    if ($commentLimit > 0 && $userCommentCount >= $commentLimit) {
         if ($isAjax) {
             if (ob_get_length()) {
                 ob_clean();
@@ -434,8 +452,8 @@ if ($isLoggedIn && can('comment') && isset($_POST['submit_comment'])) {
             echo json_encode([
                 'ok' => false,
                 'action' => 'comment',
-                'message' => 'Kommentar-Limit erreicht (max. 10 pro Nutzer).'
-            ]);
+                    'message' => 'Kommentar-Limit erreicht (max. ' . $commentLimit . ' pro Nutzer).'
+                ]);
             exit();
         }
         header("Location: " . $_SERVER['REQUEST_URI']);
@@ -484,7 +502,14 @@ if ($isLoggedIn && can('comment') && isset($_POST['submit_comment'])) {
             'project_id' => $projectObjectId,
             'user_id' => $userId
         ]);
-        $commentLimitReached = $userCommentCount >= 10;
+        $commentLimit = 0;
+        if ($canCommentLimit) {
+            $roleData = $db->roles_config->findOne(['role' => $_SESSION['role'] ?? '']);
+            if ($roleData && isset($roleData['comment_limit'])) {
+                $commentLimit = max(0, (int)$roleData['comment_limit']);
+            }
+        }
+        $commentLimitReached = $commentLimit > 0 && $userCommentCount >= $commentLimit;
         $deleteRolesAllowed = [];
         $canDeleteOthers = can('delete_comments');
         if ($canDeleteOthers && isset($_SESSION['role'])) {
@@ -504,6 +529,7 @@ if ($isLoggedIn && can('comment') && isset($_POST['submit_comment'])) {
             'commentsHtml' => render_comment_items(
                 $comments,
                 $commentLimitReached,
+                $commentLimit,
                 $ajaxActionUrl,
                 (string)$userId,
                 $_SESSION['role'] ?? '',
@@ -511,7 +537,8 @@ if ($isLoggedIn && can('comment') && isset($_POST['submit_comment'])) {
                 $canDeleteOthers,
                 $canComment
             ),
-            'commentLimitReached' => $commentLimitReached
+            'commentLimitReached' => $commentLimitReached,
+            'commentLimit' => $commentLimit
         ]);
         exit();
     }
@@ -534,6 +561,7 @@ if ($isLoggedIn && can('like_dislike')) {
 // Kommentare mit User-Infos laden
 $comments = $canViewComments ? fetch_comments_with_users($db, $projectObjectId) : [];
 $commentLimitReached = false;
+$commentLimit = 0;
 $currentUserId = null;
 $currentUserRole = $_SESSION['role'] ?? '';
 $canDeleteOthers = $isLoggedIn && can('delete_comments');
@@ -544,12 +572,13 @@ if ($isLoggedIn) {
         'project_id' => $projectObjectId,
         'user_id' => new ObjectId($_SESSION['user_id'])
     ]);
-    $commentLimitReached = $userCommentCount >= 10;
-    if ($canDeleteOthers) {
-        $roleData = $db->roles_config->findOne(['role' => $currentUserRole]);
-        if ($roleData && isset($roleData['comment_delete_roles'])) {
-            $deleteRolesAllowed = is_array($roleData['comment_delete_roles']) ? $roleData['comment_delete_roles'] : iterator_to_array($roleData['comment_delete_roles']);
-        }
+    $roleData = $db->roles_config->findOne(['role' => $currentUserRole]);
+    if ($canCommentLimit && $roleData && isset($roleData['comment_limit'])) {
+        $commentLimit = max(0, (int)$roleData['comment_limit']);
+    }
+    $commentLimitReached = $commentLimit > 0 && $userCommentCount >= $commentLimit;
+    if ($canDeleteOthers && $roleData && isset($roleData['comment_delete_roles'])) {
+        $deleteRolesAllowed = is_array($roleData['comment_delete_roles']) ? $roleData['comment_delete_roles'] : iterator_to_array($roleData['comment_delete_roles']);
     }
 }
 
@@ -666,9 +695,11 @@ $hasMore = count($gallery) > $mediaLimit;
         <!-- KOMMENTAR-FORMULAR -->
         <?php if ($canComment): ?>
             <h4>Dein Kommentar</h4>
-            <?php if ($commentLimitReached): ?>
-                <p class="comment-limit-note">Kommentar-Limit erreicht (max. 10 pro Nutzer).</p>
-            <?php endif; ?>
+            <p class="comment-limit-note">
+                <?php if ($commentLimitReached && $commentLimit > 0): ?>
+                    Kommentar-Limit erreicht (max. <?php echo (int)$commentLimit; ?> pro Nutzer).
+                <?php endif; ?>
+            </p>
             <form method="POST" class="comment-form" data-ajax="true" data-ajax-action="<?php echo htmlspecialchars($ajaxActionUrl); ?>">
                 <input type="hidden" name="ajax" value="1">
                 <textarea name="comment_text" placeholder="Schreibe einen Kommentar..." maxlength="400" data-maxlength="400" <?php echo $commentLimitReached ? 'disabled' : ''; ?>></textarea>
@@ -692,6 +723,7 @@ $hasMore = count($gallery) > $mediaLimit;
                     echo render_comment_items(
                         $comments,
                         $commentLimitReached,
+                        $commentLimit,
                         $ajaxActionUrl,
                         $currentUserId,
                         $currentUserRole,
@@ -835,7 +867,13 @@ $hasMore = count($gallery) > $mediaLimit;
                     commentItems.innerHTML = data.commentsHtml;
                     setupTextareas(commentItems);
                 }
-                if (data.commentLimitReached !== undefined) {
+                if (typeof data.commentLimit === 'number') {
+                    const note = document.querySelector('.interaction-section .comment-limit-note');
+                    if (note && data.commentLimitReached && data.commentLimit > 0) {
+                        note.textContent = `Kommentar-Limit erreicht (max. ${data.commentLimit} pro Nutzer).`;
+                    }
+                }
+            if (data.commentLimitReached !== undefined) {
                     const mainForm = document.querySelector('.interaction-section .comment-form:not(.reply-form)');
                     if (mainForm) {
                         const textarea = mainForm.querySelector('textarea');
@@ -850,6 +888,14 @@ $hasMore = count($gallery) > $mediaLimit;
                         commentItems.querySelectorAll('.reply-form button[type="submit"]').forEach((el) => {
                             el.disabled = data.commentLimitReached;
                         });
+                    }
+                    if (data.commentLimit !== undefined) {
+                        const note = document.querySelector('.interaction-section .comment-limit-note');
+                        if (note) {
+                            note.textContent = data.commentLimitReached && data.commentLimit > 0
+                                ? `Kommentar-Limit erreicht (max. ${data.commentLimit} pro Nutzer).`
+                                : '';
+                        }
                     }
                 }
                 if (form) {

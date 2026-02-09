@@ -22,6 +22,7 @@ $defaultPermissions = [
     ['key' => 'edit_own', 'label' => 'Eigene Projekte bearbeiten', 'description' => 'Nur eigene Projekte bearbeiten'],
     ['key' => 'delete_all', 'label' => 'Projekte löschen', 'description' => 'Projekte löschen (inkl. Kommentare/Likes)'],
     ['key' => 'delete_comments', 'label' => 'Kommentare löschen', 'description' => 'Kommentare anderer Nutzer löschen (Rollenzuordnung)'],
+    ['key' => 'comment_limit', 'label' => 'Kommentar-Limit', 'description' => 'Kommentar-Anzahl pro Rolle begrenzen'],
     ['key' => 'manage_users', 'label' => 'Benutzer verwalten', 'description' => 'Admin-Funktionen für Benutzer/Einladungen'],
     ['key' => 'generate_codes', 'label' => 'Einladungscodes erzeugen', 'description' => 'Registrierungs-Codes erstellen'],
     ['key' => 'comment', 'label' => 'Kommentieren', 'description' => 'Kommentare erstellen/bearbeiten'],
@@ -84,6 +85,10 @@ if (isset($_POST['action'])) {
         $roleLabel = trim($_POST['role_label'] ?? '');
         $permissions = normalize_permission_keys($_POST['permissions'] ?? []);
         $commentDeleteRoles = normalize_role_keys($_POST['comment_delete_roles'] ?? []);
+        $commentLimit = isset($_POST['comment_limit']) ? (int)$_POST['comment_limit'] : 0;
+        if ($commentLimit < 0) {
+            $commentLimit = 0;
+        }
 
         if (!preg_match('/^[a-z0-9_-]{2,40}$/', $roleKey)) {
             $error = 'Rollen-Schlüssel ist ungültig (2-40 Zeichen, a-z, 0-9, _ -).';
@@ -94,7 +99,8 @@ if (isset($_POST['action'])) {
                 'role' => $roleKey,
                 'label' => $roleLabel ?: $roleKey,
                 'permissions' => $permissions,
-                'comment_delete_roles' => $commentDeleteRoles
+                'comment_delete_roles' => $commentDeleteRoles,
+                'comment_limit' => $commentLimit
             ]);
             $notice = 'Rolle wurde erstellt.';
         }
@@ -103,13 +109,17 @@ if (isset($_POST['action'])) {
         $roleLabel = trim($_POST['role_label'] ?? '');
         $permissions = normalize_permission_keys($_POST['permissions'] ?? []);
         $commentDeleteRoles = normalize_role_keys($_POST['comment_delete_roles'] ?? []);
+        $commentLimit = isset($_POST['comment_limit']) ? (int)$_POST['comment_limit'] : 0;
+        if ($commentLimit < 0) {
+            $commentLimit = 0;
+        }
 
         if (!$roleKey) {
             $error = 'Rolle fehlt.';
         } else {
             $db->roles_config->updateOne(
                 ['role' => $roleKey],
-                ['$set' => ['label' => $roleLabel ?: $roleKey, 'permissions' => $permissions, 'comment_delete_roles' => $commentDeleteRoles]]
+                ['$set' => ['label' => $roleLabel ?: $roleKey, 'permissions' => $permissions, 'comment_delete_roles' => $commentDeleteRoles, 'comment_limit' => $commentLimit]]
             );
             $notice = 'Rolle wurde aktualisiert.';
         }
@@ -142,6 +152,46 @@ foreach ($permissions as $permission) {
         'label' => $permission['label'] ?? $key,
         'description' => $permission['description'] ?? ''
     ];
+}
+$permissionGroups = [
+    'Anzeigen' => ['view_projects', 'view_comments', 'view_likes'],
+    'Projekte' => ['create_project', 'edit_own', 'edit_all', 'delete_all'],
+    'Interaktionen' => ['like_dislike'],
+    'Kommentare' => ['comment', 'delete_comments', 'comment_limit'],
+    'Administration' => ['manage_users', 'generate_codes']
+];
+$groupedPermissions = [];
+$usedPermissions = [];
+foreach ($permissionGroups as $label => $keys) {
+    $items = [];
+    foreach ($keys as $key) {
+        if (!isset($permissionMap[$key])) {
+            continue;
+        }
+        $items[] = [
+            'key' => $key,
+            'label' => $permissionMap[$key]['label'] ?? $key,
+            'description' => $permissionMap[$key]['description'] ?? ''
+        ];
+        $usedPermissions[$key] = true;
+    }
+    if (count($items) > 0) {
+        $groupedPermissions[] = ['label' => $label, 'items' => $items];
+    }
+}
+foreach ($permissionMap as $key => $meta) {
+    if (isset($usedPermissions[$key])) {
+        continue;
+    }
+    $groupedPermissions[] = [
+        'label' => 'Weitere',
+        'items' => [[
+            'key' => $key,
+            'label' => $meta['label'] ?? $key,
+            'description' => $meta['description'] ?? ''
+        ]]
+    ];
+    $usedPermissions[$key] = true;
 }
 $rolesMap = [];
 foreach ($roles as $roleItem) {
@@ -281,6 +331,85 @@ try {
             display: block;
             color: #666;
             font-size: 12px;
+        }
+
+        .permission-group {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 6px;
+            background: #f8fafc;
+        }
+
+        .permission-group-title {
+            font-weight: 600;
+            color: #0f172a;
+            margin: 2px 0 6px 2px;
+            font-size: 0.95rem;
+        }
+
+        .permission-subfield {
+            margin: 6px 0 10px 28px;
+            padding-left: 8px;
+            border-left: 2px solid #e2e8f0;
+        }
+
+        .comment-limit-field.is-disabled {
+            opacity: 0.6;
+        }
+
+        .role-selector {
+            position: relative;
+        }
+
+        .role-selector.is-disabled {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .role-selector-toggle {
+            width: 100%;
+            text-align: left;
+            background: #f1f5f9;
+            border: 1px solid #cbd5f5;
+            color: #0f172a;
+            padding: 8px 10px;
+            border-radius: 6px;
+        }
+
+        .role-selector-panel {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 8px;
+            z-index: 5;
+            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        .role-selector-search input {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #cbd5f5;
+            border-radius: 6px;
+        }
+
+        .role-selector-list {
+            max-height: 180px;
+            overflow: auto;
+            margin-top: 6px;
+            display: grid;
+            gap: 6px;
+        }
+
+        .role-selector-all {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-top: 6px;
+            font-weight: 600;
         }
 
         .actions {
@@ -465,43 +594,58 @@ try {
                     <div class="field">
                         <label>Berechtigungen</label>
                         <div class="permissions">
-                            <?php foreach ($permissions as $permission): ?>
-                                <?php
-                                    $permKey = $permission['key'] ?? '';
-                                    $permLabel = $permission['label'] ?? $permKey;
-                                    $permDesc = $permission['description'] ?? '';
-                                    if (!$permKey) {
-                                        continue;
-                                    }
-                                ?>
-                                <label>
-                                    <input type="checkbox" name="permissions[]" value="<?php echo htmlspecialchars($permKey); ?>">
-                                    <span>
-                                        <?php echo htmlspecialchars($permLabel); ?>
-                                        <?php if ($permDesc): ?>
-                                            <small><?php echo htmlspecialchars($permDesc); ?></small>
+                            <?php foreach ($groupedPermissions as $group): ?>
+                                <div class="permission-group">
+                                    <div class="permission-group-title"><?php echo htmlspecialchars($group['label']); ?></div>
+                                    <?php foreach ($group['items'] as $perm): ?>
+                                        <label>
+                                            <input type="checkbox" name="permissions[]" value="<?php echo htmlspecialchars($perm['key']); ?>">
+                                            <span>
+                                                <?php echo htmlspecialchars($perm['label']); ?>
+                                                <?php if (!empty($perm['description'])): ?>
+                                                    <small><?php echo htmlspecialchars($perm['description']); ?></small>
+                                                <?php endif; ?>
+                                            </span>
+                                        </label>
+                                        <?php if ($perm['key'] === 'comment_limit'): ?>
+                                            <div class="permission-subfield comment-limit-field" data-limit-field>
+                                                <div class="hint">Nur wirksam mit Berechtigung "Kommentar-Limit". 0 = unbegrenzt.</div>
+                                                <input type="number" name="comment_limit" min="0" step="1" value="0" disabled>
+                                            </div>
+                                        <?php elseif ($perm['key'] === 'delete_comments'): ?>
+                                            <div class="permission-subfield">
+                                                <div class="hint">Gilt nur mit Berechtigung "Kommentare löschen".</div>
+                                                <div class="role-selector" data-role-selector>
+                                                    <button type="button" class="role-selector-toggle" aria-expanded="false">Rollen auswählen</button>
+                                                    <div class="role-selector-panel" hidden>
+                                                        <div class="role-selector-search">
+                                                            <input type="text" placeholder="Rollen suchen..." aria-label="Rollen suchen">
+                                                        </div>
+                                                        <label class="role-selector-all">
+                                                            <input type="checkbox" data-role-select-all>
+                                                            <span>Alle Rollen auswählen</span>
+                                                        </label>
+                                                        <div class="role-selector-list">
+                                                            <?php foreach ($roles as $roleItem): ?>
+                                                                <?php
+                                                                    $targetRoleKey = $roleItem['role'] ?? '';
+                                                                    $targetRoleLabel = $roleItem['label'] ?? $targetRoleKey;
+                                                                    if (!$targetRoleKey) {
+                                                                        continue;
+                                                                    }
+                                                                ?>
+                                                                <label>
+                                                                    <input type="checkbox" name="comment_delete_roles[]" value="<?php echo htmlspecialchars($targetRoleKey); ?>">
+                                                                    <span><?php echo htmlspecialchars($targetRoleLabel); ?></span>
+                                                                </label>
+                                                            <?php endforeach; ?>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         <?php endif; ?>
-                                    </span>
-                                </label>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                    <div class="field">
-                        <label>Kommentare löschen von Rollen</label>
-                        <div class="hint">Gilt nur mit Berechtigung "Kommentare löschen".</div>
-                        <div class="permissions">
-                            <?php foreach ($roles as $roleItem): ?>
-                                <?php
-                                    $targetRoleKey = $roleItem['role'] ?? '';
-                                    $targetRoleLabel = $roleItem['label'] ?? $targetRoleKey;
-                                    if (!$targetRoleKey) {
-                                        continue;
-                                    }
-                                ?>
-                                <label>
-                                    <input type="checkbox" name="comment_delete_roles[]" value="<?php echo htmlspecialchars($targetRoleKey); ?>">
-                                    <span><?php echo htmlspecialchars($targetRoleLabel); ?></span>
-                                </label>
+                                    <?php endforeach; ?>
+                                </div>
                             <?php endforeach; ?>
                         </div>
                     </div>
@@ -525,6 +669,7 @@ try {
                     $rolePermissions = normalize_permission_keys($rolePermissions);
                     $roleDeleteRoles = $role['comment_delete_roles'] ?? [];
                     $roleDeleteRoles = normalize_role_keys($roleDeleteRoles);
+                    $roleCommentLimit = isset($role['comment_limit']) ? (int)$role['comment_limit'] : 0;
                     $userCount = $roleCounts[$roleKey] ?? 0;
                 ?>
                 <div class="card">
@@ -571,6 +716,12 @@ try {
                             <?php endif; ?>
                         </div>
                         <div class="permission-list" style="margin-top: 1rem;">
+                            <div class="permission-item" style="font-weight: 600;">Kommentar-Limit (pro Nutzer/Projekt)</div>
+                            <div class="permission-item">
+                                <?php echo $roleCommentLimit > 0 ? (int)$roleCommentLimit : 'Unbegrenzt'; ?>
+                            </div>
+                        </div>
+                        <div class="permission-list" style="margin-top: 1rem;">
                             <div class="permission-item" style="font-weight: 600;">Kommentare löschen von Rollen</div>
                             <?php if (count($roleDeleteRoles) === 0): ?>
                                 <div class="permission-item">Keine Rollen ausgewählt.</div>
@@ -602,45 +753,60 @@ try {
                             <div class="field">
                                 <label>Berechtigungen</label>
                                 <div class="permissions">
-                                    <?php foreach ($permissions as $permission): ?>
-                                        <?php
-                                            $permKey = $permission['key'] ?? '';
-                                            $permLabel = $permission['label'] ?? $permKey;
-                                            $permDesc = $permission['description'] ?? '';
-                                            if (!$permKey) {
-                                                continue;
-                                            }
-                                            $isChecked = in_array($permKey, $rolePermissions, true);
-                                        ?>
-                                        <label>
-                                            <input type="checkbox" name="permissions[]" value="<?php echo htmlspecialchars($permKey); ?>" <?php echo $isChecked ? 'checked' : ''; ?>>
-                                            <span>
-                                                <?php echo htmlspecialchars($permLabel); ?>
-                                                <?php if ($permDesc): ?>
-                                                    <small><?php echo htmlspecialchars($permDesc); ?></small>
+                                    <?php foreach ($groupedPermissions as $group): ?>
+                                        <div class="permission-group">
+                                            <div class="permission-group-title"><?php echo htmlspecialchars($group['label']); ?></div>
+                                            <?php foreach ($group['items'] as $perm): ?>
+                                                <?php $isChecked = in_array($perm['key'], $rolePermissions, true); ?>
+                                                <label>
+                                                    <input type="checkbox" name="permissions[]" value="<?php echo htmlspecialchars($perm['key']); ?>" <?php echo $isChecked ? 'checked' : ''; ?>>
+                                                    <span>
+                                                        <?php echo htmlspecialchars($perm['label']); ?>
+                                                        <?php if (!empty($perm['description'])): ?>
+                                                            <small><?php echo htmlspecialchars($perm['description']); ?></small>
+                                                        <?php endif; ?>
+                                                    </span>
+                                                </label>
+                                                <?php if ($perm['key'] === 'comment_limit'): ?>
+                                                    <div class="permission-subfield comment-limit-field" data-limit-field>
+                                                        <div class="hint">Nur wirksam mit Berechtigung "Kommentar-Limit". 0 = unbegrenzt.</div>
+                                                        <input type="number" name="comment_limit" min="0" step="1" value="<?php echo (int)$roleCommentLimit; ?>" disabled>
+                                                    </div>
+                                                <?php elseif ($perm['key'] === 'delete_comments'): ?>
+                                                    <div class="permission-subfield">
+                                                        <div class="hint">Gilt nur mit Berechtigung "Kommentare löschen".</div>
+                                                        <div class="role-selector" data-role-selector>
+                                                            <button type="button" class="role-selector-toggle" aria-expanded="false">Rollen auswählen</button>
+                                                            <div class="role-selector-panel" hidden>
+                                                                <div class="role-selector-search">
+                                                                    <input type="text" placeholder="Rollen suchen..." aria-label="Rollen suchen">
+                                                                </div>
+                                                                <label class="role-selector-all">
+                                                                    <input type="checkbox" data-role-select-all>
+                                                                    <span>Alle Rollen auswählen</span>
+                                                                </label>
+                                                                <div class="role-selector-list">
+                                                                    <?php foreach ($roles as $roleItem): ?>
+                                                                        <?php
+                                                                            $targetRoleKey = $roleItem['role'] ?? '';
+                                                                            $targetRoleLabel = $roleItem['label'] ?? $targetRoleKey;
+                                                                            if (!$targetRoleKey) {
+                                                                                continue;
+                                                                            }
+                                                                            $isChecked = in_array($targetRoleKey, $roleDeleteRoles, true);
+                                                                        ?>
+                                                                        <label>
+                                                                            <input type="checkbox" name="comment_delete_roles[]" value="<?php echo htmlspecialchars($targetRoleKey); ?>" <?php echo $isChecked ? 'checked' : ''; ?>>
+                                                                            <span><?php echo htmlspecialchars($targetRoleLabel); ?></span>
+                                                                        </label>
+                                                                    <?php endforeach; ?>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 <?php endif; ?>
-                                            </span>
-                                        </label>
-                                    <?php endforeach; ?>
-                                </div>
-                            </div>
-                            <div class="field">
-                                <label>Kommentare löschen von Rollen</label>
-                                <div class="hint">Gilt nur mit Berechtigung "Kommentare löschen".</div>
-                                <div class="permissions">
-                                    <?php foreach ($roles as $roleItem): ?>
-                                        <?php
-                                            $targetRoleKey = $roleItem['role'] ?? '';
-                                            $targetRoleLabel = $roleItem['label'] ?? $targetRoleKey;
-                                            if (!$targetRoleKey) {
-                                                continue;
-                                            }
-                                            $isChecked = in_array($targetRoleKey, $roleDeleteRoles, true);
-                                        ?>
-                                        <label>
-                                            <input type="checkbox" name="comment_delete_roles[]" value="<?php echo htmlspecialchars($targetRoleKey); ?>" <?php echo $isChecked ? 'checked' : ''; ?>>
-                                            <span><?php echo htmlspecialchars($targetRoleLabel); ?></span>
-                                        </label>
+                                            <?php endforeach; ?>
+                                        </div>
                                     <?php endforeach; ?>
                                 </div>
                             </div>
@@ -674,6 +840,28 @@ try {
         return JSON.stringify(entries);
     }
 
+    function updateCommentLimitState(form) {
+        const limitPermission = form.querySelector('input[name="permissions[]"][value="comment_limit"]');
+        const limitField = form.querySelector('[data-limit-field]');
+        if (!limitField) return;
+        const limitInput = limitField.querySelector('input[name="comment_limit"]');
+        if (!limitInput) return;
+        const enabled = limitPermission && limitPermission.checked;
+        limitInput.disabled = !enabled;
+        limitField.classList.toggle('is-disabled', !enabled);
+    }
+
+    function updateDeleteRolesState(form) {
+        const deletePermission = form.querySelector('input[name="permissions[]"][value="delete_comments"]');
+        const selector = form.querySelector('[data-role-selector]');
+        if (!selector) return;
+        const enabled = deletePermission && deletePermission.checked;
+        selector.classList.toggle('is-disabled', !enabled);
+        selector.querySelectorAll('button, input').forEach((el) => {
+            el.disabled = !enabled;
+        });
+    }
+
     forms.forEach((form) => {
         const saveButton = form.querySelector('.save-button');
         if (!saveButton) return;
@@ -687,14 +875,23 @@ try {
 
         form.addEventListener('input', updateState);
         form.addEventListener('change', updateState);
+        form.addEventListener('input', () => updateCommentLimitState(form));
+        form.addEventListener('change', () => updateCommentLimitState(form));
+        form.addEventListener('input', () => updateDeleteRolesState(form));
+        form.addEventListener('change', () => updateDeleteRolesState(form));
         form.addEventListener('reset', () => {
             initial = snapshotForm(form);
             updateState();
+            updateCommentLimitState(form);
+            updateDeleteRolesState(form);
         });
 
         form.addEventListener('submit', () => {
             saveButton.disabled = true;
         });
+
+        updateCommentLimitState(form);
+        updateDeleteRolesState(form);
     });
 
     openButtons.forEach((button) => {
@@ -721,6 +918,89 @@ try {
                 dialog.close();
             }
         });
+    });
+
+    const roleSelectors = Array.from(document.querySelectorAll('[data-role-selector]'));
+    roleSelectors.forEach((selector) => {
+        const toggle = selector.querySelector('.role-selector-toggle');
+        const panel = selector.querySelector('.role-selector-panel');
+        const searchInput = selector.querySelector('.role-selector-search input');
+        const selectAll = selector.querySelector('[data-role-select-all]');
+        const items = Array.from(selector.querySelectorAll('.role-selector-list label'));
+        if (!toggle || !panel) return;
+
+        function updateToggleLabel() {
+            const checked = items.filter((item) => item.querySelector('input')?.checked).length;
+            toggle.textContent = checked > 0 ? `${checked} Rolle(n) ausgewählt` : 'Rollen auswählen';
+        }
+
+        function updateSelectAllState() {
+            const inputs = items.map((item) => item.querySelector('input')).filter(Boolean);
+            const checkedCount = inputs.filter((input) => input.checked).length;
+            if (selectAll) {
+                selectAll.checked = checkedCount > 0 && checkedCount === inputs.length;
+                selectAll.indeterminate = checkedCount > 0 && checkedCount < inputs.length;
+            }
+        }
+
+        function filterList() {
+            const query = (searchInput?.value || '').trim().toLowerCase();
+            items.forEach((item) => {
+                const text = item.textContent ? item.textContent.toLowerCase() : '';
+                item.style.display = text.includes(query) ? '' : 'none';
+            });
+        }
+
+        toggle.addEventListener('click', () => {
+            const isOpen = !panel.hasAttribute('hidden');
+            if (isOpen) {
+                panel.setAttribute('hidden', '');
+                toggle.setAttribute('aria-expanded', 'false');
+            } else {
+                panel.removeAttribute('hidden');
+                toggle.setAttribute('aria-expanded', 'true');
+                if (searchInput) {
+                    searchInput.focus();
+                }
+            }
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!selector.contains(event.target)) {
+                panel.setAttribute('hidden', '');
+                toggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        items.forEach((item) => {
+            const input = item.querySelector('input');
+            if (!input) return;
+            input.addEventListener('change', () => {
+                updateSelectAllState();
+                updateToggleLabel();
+            });
+        });
+
+        if (selectAll) {
+            selectAll.addEventListener('change', () => {
+                const checked = selectAll.checked;
+                items.forEach((item) => {
+                    const input = item.querySelector('input');
+                    if (input) {
+                        input.checked = checked;
+                    }
+                });
+                updateSelectAllState();
+                updateToggleLabel();
+            });
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener('input', filterList);
+        }
+
+        updateSelectAllState();
+        updateToggleLabel();
     });
 })();
 </script>

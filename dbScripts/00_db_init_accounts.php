@@ -31,6 +31,7 @@ try {
         ['key' => 'edit_own', 'label' => 'Eigene Projekte bearbeiten', 'description' => 'Nur eigene Projekte bearbeiten'],
         ['key' => 'delete_all', 'label' => 'Projekte löschen', 'description' => 'Projekte löschen (inkl. Kommentare/Likes)'],
         ['key' => 'delete_comments', 'label' => 'Kommentare löschen', 'description' => 'Kommentare anderer Nutzer löschen (Rollenzuordnung)'],
+        ['key' => 'comment_limit', 'label' => 'Kommentar-Limit', 'description' => 'Kommentar-Anzahl pro Rolle begrenzen'],
         ['key' => 'manage_users', 'label' => 'Benutzer verwalten', 'description' => 'Admin-Funktionen für Benutzer/Einladungen'],
         ['key' => 'generate_codes', 'label' => 'Einladungscodes erzeugen', 'description' => 'Registrierungs-Codes erstellen'],
         ['key' => 'comment', 'label' => 'Kommentieren', 'description' => 'Kommentare erstellen/bearbeiten'],
@@ -47,25 +48,29 @@ try {
             'role' => 'viewer',
             'label' => 'Viewer',
             'permissions' => ['view_projects', 'view_comments', 'view_likes'],
-            'comment_delete_roles' => []
+            'comment_delete_roles' => [],
+            'comment_limit' => 0
         ],
         [
             'role' => 'admin',
             'label' => 'Administrator',
             'permissions' => ['view_projects', 'view_comments', 'view_likes', 'create_project', 'edit_all', 'delete_all', 'delete_comments', 'manage_users', 'generate_codes', 'comment', 'like_dislike'],
-            'comment_delete_roles' => ['admin', 'content_manager', 'community_member', 'viewer']
+            'comment_delete_roles' => ['admin', 'content_manager', 'community_member', 'viewer'],
+            'comment_limit' => 0
         ],
         [
             'role' => 'content_manager',
             'label' => 'Content Manager',
             'permissions' => ['view_projects', 'view_comments', 'view_likes', 'create_project', 'edit_own', 'comment', 'like_dislike', 'delete_comments'],
-            'comment_delete_roles' => ['content_manager', 'community_member', 'viewer']
+            'comment_delete_roles' => ['content_manager', 'community_member', 'viewer'],
+            'comment_limit' => 0
         ],
         [
             'role' => 'community_member',
             'label' => 'Community Member',
-            'permissions' => ['view_projects', 'view_comments', 'view_likes', 'comment', 'like_dislike'],
-            'comment_delete_roles' => []
+            'permissions' => ['view_projects', 'view_comments', 'view_likes', 'comment', 'like_dislike', 'comment_limit'],
+            'comment_delete_roles' => [],
+            'comment_limit' => 10
         ]
     ]);
     echo "✅ Rollen & Rechte definiert.<br>";
