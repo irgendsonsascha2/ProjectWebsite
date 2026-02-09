@@ -448,7 +448,7 @@ if ($isAjax) {
 </head>
 
 <div class="container">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
+    <div class="page-header">
         <h1>Neues Projekt</h1>
         <?php if ($draftProject): ?>
             <span class="draft-badge">Entwurf aktiv</span>

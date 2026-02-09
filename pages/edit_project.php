@@ -410,7 +410,7 @@ if ($isAjax) {
 </head>
 
 <div class="container">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
+    <div class="page-header">
         <h1>Projekt bearbeiten</h1>
         <a href="index.php?page=project_detail&id=<?php echo (string)$projectObjectId; ?>">Zurück zum Projekt</a>
     </div>

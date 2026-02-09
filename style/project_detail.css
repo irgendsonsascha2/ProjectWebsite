@@ -208,6 +208,7 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
+    perspective: 75rem;
 }
 
 .media-card {
@@ -219,13 +220,19 @@
 .media-item {
     border: none;
     padding: 0;
-    background: none;
+    background: #fff;
     cursor: pointer;
+    display: flex;
+    flex-direction: column;
     position: relative;
-    border-radius: 0.5rem;
+    border-radius: 0.75rem;
     overflow: hidden;
-    box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.12);
+    box-shadow: 0 0.25rem 0.9375rem rgba(0,0,0,0.1);
     aspect-ratio: 1 / 1;
+    transform-style: preserve-3d;
+    transform: translateY(var(--lift, 0)) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    transition: transform 0.2s ease, box-shadow 0.3s ease;
+    will-change: transform;
 }
 
 .media-item img,
@@ -234,6 +241,27 @@
     height: 100%;
     object-fit: cover;
     display: block;
+    transform: translateZ(1.25rem);
+}
+
+.media-item::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(0, 0, 0, 0.32), rgba(0, 0, 0, 0) 45%);
+    transform: translateZ(-0.75rem);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+
+.media-item.is-tilting::before {
+    opacity: 1;
+}
+
+.media-item:hover {
+    --lift: -0.3125rem;
+    box-shadow: 0 0.5rem 1.5625rem rgba(0,0,0,0.15);
 }
 
 .placeholder-tile {
@@ -273,13 +301,14 @@
     padding: 0.2rem 0.5rem;
     border-radius: 999rem;
     font-size: 0.75rem;
+    transform: translateZ(1.25rem);
 }
 
 .media-play {
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%) translateZ(1.25rem);
     width: 2.2rem;
     height: 2.2rem;
     border-radius: 999rem;

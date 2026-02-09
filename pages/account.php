@@ -142,7 +142,7 @@ if (!empty($roleOptions)) {
                 <form method="POST" id="register-form">
                     <input type="text" id="reg_code" name="reg_code" placeholder="Einmal-Code" value="<?php echo $prefilledCode; ?>" autocomplete="one-time-code" required>
                     <input type="text" id="reg_username" name="username" placeholder="Username" autocomplete="new-username" required>
-                    <small style="color:#64748b; display:block; margin-bottom:0.5rem;">3–20 Zeichen: a–z, 0–9, . _ -</small>
+                    <small class="field-hint">3–20 Zeichen: a–z, 0–9, . _ -</small>
                     <input type="email" id="reg_email" name="email" placeholder="E-Mail Adresse" autocomplete="email" required>
                     <input type="password" id="reg_password" name="password" placeholder="Passwort wählen" autocomplete="new-password" required>
                     <button type="submit" name="register">Konto erstellen</button>
@@ -151,18 +151,18 @@ if (!empty($roleOptions)) {
         </div>
 
     <?php else: ?>
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+        <div class="account-header">
             <p>Eingeloggt als: <strong><?php echo htmlspecialchars($_SESSION['username'] ?? $_SESSION['email']); ?></strong> (<?php echo htmlspecialchars($_SESSION['email']); ?>) (Rolle: <?php echo $_SESSION['role']; ?>)</p>
             <a href="index.php?page=account&logout=1">Abmelden</a>
         </div>
 
-        <hr style="border: 0; border-top: 0.0625rem solid #eee; margin: 1.25rem 0;">
+        <hr class="account-divider">
 
         <?php if (can('generate_codes')): ?>
             <section class="admin-panel">
                 <h3>Einladungscodes & Links</h3>
-                <form method="POST" style="display: flex; gap: 0.625rem; flex-wrap: wrap;">
-                    <select name="target_role" style="flex: 2; min-width: 12.5rem;">
+                <form method="POST" class="code-form">
+                    <select name="target_role" class="code-select">
                         <?php foreach ($roleOptions as $roleOption): ?>
                             <?php
                                 $roleKey = $roleOption['role'] ?? '';
@@ -174,10 +174,10 @@ if (!empty($roleOptions)) {
                             <option value="<?php echo htmlspecialchars($roleKey); ?>"><?php echo htmlspecialchars($roleLabel); ?></option>
                         <?php endforeach; ?>
                     </select>
-                    <button type="submit" name="generate_code" style="flex: 1; min-width: 9.375rem;">Code generieren</button>
+                    <button type="submit" name="generate_code" class="code-button">Code generieren</button>
                 </form>
 
-                <div style="overflow-x: auto;">
+                <div class="table-wrap">
                     <table>
                         <tr>
                             <th>Rolle</th>
@@ -192,7 +192,7 @@ if (!empty($roleOptions)) {
                             <tr>
                                 <td><?php echo $c['role']; ?></td>
                                 <td><code><?php echo $c['code']; ?></code></td>
-                                <td><input type="text" value="<?php echo $link; ?>" readonly onclick="this.select();" style="font-size: 0.8rem;"></td>
+                                <td><input type="text" value="<?php echo $link; ?>" readonly onclick="this.select();" class="code-link-input"></td>
                             </tr>
                         <?php endforeach; ?>
                     </table>

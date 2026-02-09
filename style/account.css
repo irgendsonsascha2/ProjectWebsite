@@ -38,6 +38,50 @@
       font-size: 1rem;
   }
 
+  .field-hint {
+      color: #64748b;
+      display: block;
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+  }
+
+  .account-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+  }
+
+  .account-divider {
+      border: 0;
+      border-top: 0.0625rem solid #eee;
+      margin: 1.25rem 0;
+  }
+
+  .code-form {
+      display: flex;
+      gap: 0.625rem;
+      flex-wrap: wrap;
+  }
+
+  .code-select {
+      flex: 2;
+      min-width: 12.5rem;
+  }
+
+  .code-button {
+      flex: 1;
+      min-width: 9.375rem;
+  }
+
+  .table-wrap {
+      overflow-x: auto;
+  }
+
+  .code-link-input {
+      font-size: 0.8rem;
+  }
+
   button {
       background: #333;
       color: white;

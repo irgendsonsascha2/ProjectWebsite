@@ -7,6 +7,13 @@
         box-shadow: 0 0.125rem 0.625rem rgba(0, 0, 0, 0.1);
     }
 
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+    }
+
     input,
     textarea,
     button {

@@ -38,7 +38,6 @@ if ($isAjax) {
     <nav>
         <a href="index.php?page=project_grid">Home</a>
         <a href="index.php?page=account">Account</a>
-        <a href="index.php?page=acc">Error</a>
         <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
             <a href="pages/admin/index.php" style="color: red;">Admin</a>
         <?php endif; ?>
