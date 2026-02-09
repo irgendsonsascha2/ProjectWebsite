@@ -30,6 +30,7 @@ try {
         ['key' => 'edit_all', 'label' => 'Alle Projekte bearbeiten', 'description' => 'Beliebige Projekte bearbeiten'],
         ['key' => 'edit_own', 'label' => 'Eigene Projekte bearbeiten', 'description' => 'Nur eigene Projekte bearbeiten'],
         ['key' => 'delete_all', 'label' => 'Projekte löschen', 'description' => 'Projekte löschen (inkl. Kommentare/Likes)'],
+        ['key' => 'delete_comments', 'label' => 'Kommentare löschen', 'description' => 'Kommentare anderer Nutzer löschen (Rollenzuordnung)'],
         ['key' => 'manage_users', 'label' => 'Benutzer verwalten', 'description' => 'Admin-Funktionen für Benutzer/Einladungen'],
         ['key' => 'generate_codes', 'label' => 'Einladungscodes erzeugen', 'description' => 'Registrierungs-Codes erstellen'],
         ['key' => 'comment', 'label' => 'Kommentieren', 'description' => 'Kommentare erstellen/bearbeiten'],
@@ -45,22 +46,26 @@ try {
         [
             'role' => 'viewer',
             'label' => 'Viewer',
-            'permissions' => ['view_projects', 'view_comments', 'view_likes']
+            'permissions' => ['view_projects', 'view_comments', 'view_likes'],
+            'comment_delete_roles' => []
         ],
         [
             'role' => 'admin',
             'label' => 'Administrator',
-            'permissions' => ['view_projects', 'view_comments', 'view_likes', 'create_project', 'edit_all', 'delete_all', 'manage_users', 'generate_codes', 'comment', 'like_dislike']
+            'permissions' => ['view_projects', 'view_comments', 'view_likes', 'create_project', 'edit_all', 'delete_all', 'delete_comments', 'manage_users', 'generate_codes', 'comment', 'like_dislike'],
+            'comment_delete_roles' => ['admin', 'content_manager', 'community_member', 'viewer']
         ],
         [
             'role' => 'content_manager',
             'label' => 'Content Manager',
-            'permissions' => ['view_projects', 'view_comments', 'view_likes', 'create_project', 'edit_own', 'comment', 'like_dislike']
+            'permissions' => ['view_projects', 'view_comments', 'view_likes', 'create_project', 'edit_own', 'comment', 'like_dislike', 'delete_comments'],
+            'comment_delete_roles' => ['content_manager', 'community_member', 'viewer']
         ],
         [
             'role' => 'community_member',
             'label' => 'Community Member',
-            'permissions' => ['view_projects', 'view_comments', 'view_likes', 'comment', 'like_dislike']
+            'permissions' => ['view_projects', 'view_comments', 'view_likes', 'comment', 'like_dislike'],
+            'comment_delete_roles' => []
         ]
     ]);
     echo "✅ Rollen & Rechte definiert.<br>";

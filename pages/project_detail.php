@@ -15,6 +15,7 @@ if (!$projectId) {
     echo "Projekt nicht gefunden.";
     return;
 }
+$ajaxActionUrl = 'pages/project_detail.php?id=' . urlencode($projectId);
 
 try {
     $projectObjectId = new ObjectId($projectId);
@@ -41,6 +42,7 @@ $canDeleteProjects = $isLoggedIn && can('delete_all');
 $canViewProjects = can('view_projects');
 $canViewComments = can('view_comments');
 $canViewLikes = can('view_likes');
+$canComment = $isLoggedIn && can('comment');
 $isAjax = false;
 if (!$canViewProjects) {
     echo "Du hast keine Berechtigung, dieses Projekt anzusehen.";
@@ -64,24 +66,115 @@ function fetch_comments_with_users($db, $projectObjectId) {
             'as' => 'user_info'
         ]],
         ['$unwind' => '$user_info'],
-        ['$sort' => ['updated_at' => -1]]
+        ['$sort' => ['created_at' => 1]]
     ]);
     return iterator_to_array($commentsCursor);
 }
 
-function render_comment_items($comments) {
-    ob_start();
+function build_comment_tree($comments) {
+    $tree = [];
     foreach ($comments as $comment) {
+        $parentKey = null;
+        if (isset($comment['parent_comment_id'])) {
+            $parentKey = (string)$comment['parent_comment_id'];
+        }
+        if (!isset($tree[$parentKey])) {
+            $tree[$parentKey] = [];
+        }
+        $tree[$parentKey][] = $comment;
+    }
+    return $tree;
+}
+
+function sort_comments_by_created_at_desc(&$comments) {
+    usort($comments, function ($a, $b) {
+        $aTime = $a['created_at']->toDateTime()->getTimestamp();
+        $bTime = $b['created_at']->toDateTime()->getTimestamp();
+        return $bTime <=> $aTime;
+    });
+}
+
+function sort_comments_by_created_at_asc(&$comments) {
+    usort($comments, function ($a, $b) {
+        $aTime = $a['created_at']->toDateTime()->getTimestamp();
+        $bTime = $b['created_at']->toDateTime()->getTimestamp();
+        return $aTime <=> $bTime;
+    });
+}
+
+function render_comment_items($comments, $commentLimitReached, $ajaxActionUrl, $currentUserId, $currentUserRole, $deleteRolesAllowed, $canDeleteOthers, $canComment) {
+    $tree = build_comment_tree($comments);
+    $topLevel = $tree[null] ?? [];
+    sort_comments_by_created_at_desc($topLevel);
+
+    ob_start();
+    foreach ($topLevel as $comment) {
+        $commentId = (string)$comment['_id'];
+        $authorRole = $comment['user_info']['role'] ?? '';
+        $isOwnComment = $currentUserId && (string)$comment['user_id'] === $currentUserId;
+        $canDelete = $isOwnComment || ($canDeleteOthers && ($deleteRolesAllowed === ['*'] || in_array($authorRole, $deleteRolesAllowed, true)));
         ?>
-        <div class="comment">
+        <div class="comment" data-comment-id="<?php echo htmlspecialchars($commentId); ?>">
             <p class="author"><?php echo htmlspecialchars($comment['user_info']['username'] ?? $comment['user_info']['email']); ?></p>
-            <p class="date"><?php echo $comment['updated_at']->toDateTime()->format('d.m.Y H:i'); ?></p>
+            <p class="date"><?php echo $comment['created_at']->toDateTime()->format('d.m.Y H:i'); ?></p>
             <p><?php echo nl2br(htmlspecialchars($comment['text'])); ?></p>
+            <?php if ($canDelete): ?>
+                <form method="POST" class="comment-delete-form" data-ajax="true" data-ajax-action="<?php echo htmlspecialchars($ajaxActionUrl); ?>">
+                    <input type="hidden" name="ajax" value="1">
+                    <input type="hidden" name="comment_id" value="<?php echo htmlspecialchars($commentId); ?>">
+                    <button type="submit" name="delete_comment" value="1" class="comment-delete-button">Löschen</button>
+                </form>
+            <?php endif; ?>
+            <?php if ($canComment): ?>
+                <button type="button" class="reply-toggle" data-reply-to="<?php echo htmlspecialchars($commentId); ?>">Antworten</button>
+                <form method="POST" class="comment-form reply-form" data-ajax="true" data-ajax-action="<?php echo htmlspecialchars($ajaxActionUrl); ?>">
+                    <input type="hidden" name="ajax" value="1">
+                    <input type="hidden" name="parent_comment_id" value="<?php echo htmlspecialchars($commentId); ?>">
+                    <textarea name="comment_text" placeholder="Antwort schreiben..." maxlength="400" data-maxlength="400" <?php echo $commentLimitReached ? 'disabled' : ''; ?>></textarea>
+                    <input type="hidden" name="submit_comment" value="1">
+                    <button type="submit" name="submit_comment" aria-label="Antworten" <?php echo $commentLimitReached ? 'disabled' : ''; ?>>
+                        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                            <path d="M2 21l21-9L2 3v7l15 2-15 2z" fill="currentColor"/>
+                        </svg>
+                    </button>
+                </form>
+            <?php endif; ?>
+            <?php
+            $replies = $tree[$commentId] ?? [];
+            if (count($replies) > 0) {
+                sort_comments_by_created_at_asc($replies);
+                echo '<div class="comment-replies">';
+                foreach ($replies as $reply) {
+                    $replyId = (string)$reply['_id'];
+                    $replyAuthorRole = $reply['user_info']['role'] ?? '';
+                    $replyIsOwn = $currentUserId && (string)$reply['user_id'] === $currentUserId;
+                    $replyCanDelete = $replyIsOwn || ($canDeleteOthers && ($deleteRolesAllowed === ['*'] || in_array($replyAuthorRole, $deleteRolesAllowed, true)));
+                    ?>
+                    <div class="comment comment-reply" data-comment-id="<?php echo htmlspecialchars($replyId); ?>">
+                        <p class="author"><?php echo htmlspecialchars($reply['user_info']['username'] ?? $reply['user_info']['email']); ?></p>
+                        <p class="date"><?php echo $reply['created_at']->toDateTime()->format('d.m.Y H:i'); ?></p>
+                        <p><?php echo nl2br(htmlspecialchars($reply['text'])); ?></p>
+                        <?php if ($replyCanDelete): ?>
+                            <form method="POST" class="comment-delete-form" data-ajax="true" data-ajax-action="<?php echo htmlspecialchars($ajaxActionUrl); ?>">
+                                <input type="hidden" name="ajax" value="1">
+                                <input type="hidden" name="comment_id" value="<?php echo htmlspecialchars($replyId); ?>">
+                                <button type="submit" name="delete_comment" value="1" class="comment-delete-button">Löschen</button>
+                            </form>
+                        <?php endif; ?>
+                    </div>
+                    <?php
+                }
+                echo '</div>';
+            }
+            ?>
         </div>
         <?php
     }
-    if (count($comments) === 0) {
+    if (count($topLevel) === 0) {
         echo '<p>Noch keine Kommentare vorhanden.</p>';
+    }
+    if ($commentLimitReached && $canComment) {
+        echo '<p class="comment-limit-note">Kommentar-Limit erreicht (max. 10 pro Nutzer).</p>';
     }
     return ob_get_clean();
 }
@@ -153,10 +246,146 @@ if ($isLoggedIn && can('like_dislike') && isset($_POST['interaction'])) {
 }
 
 // --- LOGIK: KOMMENTAR ---
+if ($isLoggedIn && isset($_POST['delete_comment'])) {
+    $userId = new ObjectId($_SESSION['user_id']);
+    $commentIdRaw = trim($_POST['comment_id'] ?? '');
+    try {
+        $commentId = new ObjectId($commentIdRaw);
+    } catch (Exception $e) {
+        if ($isAjax) {
+            if (ob_get_length()) {
+                ob_clean();
+            }
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'ok' => false,
+                'action' => 'comment',
+                'message' => 'Ungültiger Kommentar.'
+            ]);
+            exit();
+        }
+        header("Location: " . $_SERVER['REQUEST_URI']);
+        exit();
+    }
+
+    $comment = $db->comments->findOne(['_id' => $commentId, 'project_id' => $projectObjectId]);
+    if (!$comment) {
+        if ($isAjax) {
+            if (ob_get_length()) {
+                ob_clean();
+            }
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'ok' => false,
+                'action' => 'comment',
+                'message' => 'Kommentar nicht gefunden.'
+            ]);
+            exit();
+        }
+        header("Location: " . $_SERVER['REQUEST_URI']);
+        exit();
+    }
+
+    $canDeleteOwn = can('comment') && (string)$comment['user_id'] === (string)$userId;
+    $canDeleteOthers = can('delete_comments');
+    $deleteRolesAllowed = [];
+    if ($canDeleteOthers && isset($_SESSION['role'])) {
+        $roleData = $db->roles_config->findOne(['role' => $_SESSION['role']]);
+        if ($roleData && isset($roleData['comment_delete_roles'])) {
+            $deleteRolesAllowed = is_array($roleData['comment_delete_roles']) ? $roleData['comment_delete_roles'] : iterator_to_array($roleData['comment_delete_roles']);
+        }
+    }
+    $allowed = $canDeleteOwn;
+    if (!$allowed && $canDeleteOthers) {
+        $author = $db->users->findOne(['_id' => $comment['user_id']], ['projection' => ['role' => 1]]);
+        $authorRole = $author['role'] ?? '';
+        if ($deleteRolesAllowed === ['*'] || in_array($authorRole, $deleteRolesAllowed, true)) {
+            $allowed = true;
+        }
+    }
+
+    if (!$allowed) {
+        if ($isAjax) {
+            if (ob_get_length()) {
+                ob_clean();
+            }
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'ok' => false,
+                'action' => 'comment',
+                'message' => 'Keine Berechtigung zum Löschen.'
+            ]);
+            exit();
+        }
+        header("Location: " . $_SERVER['REQUEST_URI']);
+        exit();
+    }
+
+    $db->comments->deleteMany([
+        '$or' => [
+            ['_id' => $commentId],
+            ['parent_comment_id' => $commentId]
+        ]
+    ]);
+    if ($isAjax) {
+        $comments = fetch_comments_with_users($db, $projectObjectId);
+        $userCommentCount = $db->comments->countDocuments([
+            'project_id' => $projectObjectId,
+            'user_id' => $userId
+        ]);
+        $commentLimitReached = $userCommentCount >= 10;
+        if (ob_get_length()) {
+            ob_clean();
+        }
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'ok' => true,
+            'action' => 'comment',
+            'message' => 'Kommentar gelöscht.',
+            'commentsHtml' => render_comment_items(
+                $comments,
+                $commentLimitReached,
+                $ajaxActionUrl,
+                (string)$userId,
+                $_SESSION['role'] ?? '',
+                $deleteRolesAllowed,
+                $canDeleteOthers,
+                $canComment
+            ),
+            'commentLimitReached' => $commentLimitReached
+        ]);
+        exit();
+    }
+    header("Location: " . $_SERVER['REQUEST_URI']);
+    exit();
+}
+
 if ($isLoggedIn && can('comment') && isset($_POST['submit_comment'])) {
     $userId = new ObjectId($_SESSION['user_id']);
     $commentText = trim($_POST['comment_text']);
     $commentLimit = 400;
+    $parentCommentIdRaw = trim($_POST['parent_comment_id'] ?? '');
+    $parentCommentId = null;
+    if ($parentCommentIdRaw !== '') {
+        try {
+            $parentCommentId = new ObjectId($parentCommentIdRaw);
+        } catch (Exception $e) {
+            if ($isAjax) {
+                if (ob_get_length()) {
+                    ob_clean();
+                }
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode([
+                    'ok' => false,
+                    'action' => 'comment',
+                    'message' => 'Ungültige Antwort.'
+                ]);
+                exit();
+            }
+            header("Location: " . $_SERVER['REQUEST_URI']);
+            exit();
+        }
+    }
 
     if (empty($commentText)) {
         if ($isAjax) {
@@ -192,22 +421,78 @@ if ($isLoggedIn && can('comment') && isset($_POST['submit_comment'])) {
         exit();
     }
 
-    $db->comments->updateOne(
-        ['project_id' => $projectObjectId, 'user_id' => $userId],
-        [
-            '$set' => [
-                'text' => $commentText,
-                'updated_at' => new UTCDateTime()
-            ],
-            '$setOnInsert' => [
-                'created_at' => new UTCDateTime()
-            ]
-        ],
-        ['upsert' => true]
-    );
+    $userCommentCount = $db->comments->countDocuments([
+        'project_id' => $projectObjectId,
+        'user_id' => $userId
+    ]);
+    if ($userCommentCount >= 10) {
+        if ($isAjax) {
+            if (ob_get_length()) {
+                ob_clean();
+            }
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'ok' => false,
+                'action' => 'comment',
+                'message' => 'Kommentar-Limit erreicht (max. 10 pro Nutzer).'
+            ]);
+            exit();
+        }
+        header("Location: " . $_SERVER['REQUEST_URI']);
+        exit();
+    }
+
+    if ($parentCommentId !== null) {
+        $parentExists = $db->comments->countDocuments([
+            '_id' => $parentCommentId,
+            'project_id' => $projectObjectId
+        ]) > 0;
+        if (!$parentExists) {
+            if ($isAjax) {
+                if (ob_get_length()) {
+                    ob_clean();
+                }
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode([
+                    'ok' => false,
+                    'action' => 'comment',
+                    'message' => 'Antwort nicht möglich.'
+                ]);
+                exit();
+            }
+            header("Location: " . $_SERVER['REQUEST_URI']);
+            exit();
+        }
+    }
+
+    $payload = [
+        'project_id' => $projectObjectId,
+        'user_id' => $userId,
+        'text' => $commentText,
+        'created_at' => new UTCDateTime(),
+        'updated_at' => new UTCDateTime()
+    ];
+    if ($parentCommentId !== null) {
+        $payload['parent_comment_id'] = $parentCommentId;
+    }
+
+    $db->comments->insertOne($payload);
     $message = "Kommentar gespeichert!";
     if ($isAjax) {
         $comments = fetch_comments_with_users($db, $projectObjectId);
+        $userCommentCount = $db->comments->countDocuments([
+            'project_id' => $projectObjectId,
+            'user_id' => $userId
+        ]);
+        $commentLimitReached = $userCommentCount >= 10;
+        $deleteRolesAllowed = [];
+        $canDeleteOthers = can('delete_comments');
+        if ($canDeleteOthers && isset($_SESSION['role'])) {
+            $roleData = $db->roles_config->findOne(['role' => $_SESSION['role']]);
+            if ($roleData && isset($roleData['comment_delete_roles'])) {
+                $deleteRolesAllowed = is_array($roleData['comment_delete_roles']) ? $roleData['comment_delete_roles'] : iterator_to_array($roleData['comment_delete_roles']);
+            }
+        }
         if (ob_get_length()) {
             ob_clean();
         }
@@ -216,7 +501,17 @@ if ($isLoggedIn && can('comment') && isset($_POST['submit_comment'])) {
             'ok' => true,
             'action' => 'comment',
             'message' => $message,
-            'commentsHtml' => render_comment_items($comments)
+            'commentsHtml' => render_comment_items(
+                $comments,
+                $commentLimitReached,
+                $ajaxActionUrl,
+                (string)$userId,
+                $_SESSION['role'] ?? '',
+                $deleteRolesAllowed,
+                $canDeleteOthers,
+                $canComment
+            ),
+            'commentLimitReached' => $commentLimitReached
         ]);
         exit();
     }
@@ -238,11 +533,24 @@ if ($isLoggedIn && can('like_dislike')) {
 
 // Kommentare mit User-Infos laden
 $comments = $canViewComments ? fetch_comments_with_users($db, $projectObjectId) : [];
-
-// User's eigenen Kommentar finden
-$userComment = null;
-if($isLoggedIn) {
-    $userComment = $db->comments->findOne(['project_id' => $projectObjectId, 'user_id' => new ObjectId($_SESSION['user_id'])]);
+$commentLimitReached = false;
+$currentUserId = null;
+$currentUserRole = $_SESSION['role'] ?? '';
+$canDeleteOthers = $isLoggedIn && can('delete_comments');
+$deleteRolesAllowed = [];
+if ($isLoggedIn) {
+    $currentUserId = $_SESSION['user_id'];
+    $userCommentCount = $db->comments->countDocuments([
+        'project_id' => $projectObjectId,
+        'user_id' => new ObjectId($_SESSION['user_id'])
+    ]);
+    $commentLimitReached = $userCommentCount >= 10;
+    if ($canDeleteOthers) {
+        $roleData = $db->roles_config->findOne(['role' => $currentUserRole]);
+        if ($roleData && isset($roleData['comment_delete_roles'])) {
+            $deleteRolesAllowed = is_array($roleData['comment_delete_roles']) ? $roleData['comment_delete_roles'] : iterator_to_array($roleData['comment_delete_roles']);
+        }
+    }
 }
 
 // Berechtigungs-Logik für den Edit-Button
@@ -263,7 +571,6 @@ if ($mediaLimit === 0) {
 }
 $gallerySlice = array_slice($gallery, 0, $mediaLimit);
 $hasMore = count($gallery) > $mediaLimit;
-$ajaxActionUrl = 'pages/project_detail.php?id=' . urlencode($projectId);
 ?>
 
 <link rel="stylesheet" href="style/project_detail.css">
@@ -357,13 +664,16 @@ $ajaxActionUrl = 'pages/project_detail.php?id=' . urlencode($projectId);
         <?php endif; ?>
 
         <!-- KOMMENTAR-FORMULAR -->
-        <?php if (can('comment')): ?>
+        <?php if ($canComment): ?>
             <h4>Dein Kommentar</h4>
+            <?php if ($commentLimitReached): ?>
+                <p class="comment-limit-note">Kommentar-Limit erreicht (max. 10 pro Nutzer).</p>
+            <?php endif; ?>
             <form method="POST" class="comment-form" data-ajax="true" data-ajax-action="<?php echo htmlspecialchars($ajaxActionUrl); ?>">
                 <input type="hidden" name="ajax" value="1">
-                <textarea name="comment_text" placeholder="Schreibe einen Kommentar..." maxlength="400" data-maxlength="400"><?php echo htmlspecialchars($userComment['text'] ?? ''); ?></textarea>
+                <textarea name="comment_text" placeholder="Schreibe einen Kommentar..." maxlength="400" data-maxlength="400" <?php echo $commentLimitReached ? 'disabled' : ''; ?>></textarea>
                 <input type="hidden" name="submit_comment" value="1">
-                <button type="submit" name="submit_comment" aria-label="Kommentieren">
+                <button type="submit" name="submit_comment" aria-label="Kommentieren" <?php echo $commentLimitReached ? 'disabled' : ''; ?>>
                     <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
                         <path d="M2 21l21-9L2 3v7l15 2-15 2z" fill="currentColor"/>
                     </svg>
@@ -379,7 +689,16 @@ $ajaxActionUrl = 'pages/project_detail.php?id=' . urlencode($projectId);
         <div class="comment-items" id="comment-items">
             <?php
                 if ($canViewComments) {
-                    echo render_comment_items($comments);
+                    echo render_comment_items(
+                        $comments,
+                        $commentLimitReached,
+                        $ajaxActionUrl,
+                        $currentUserId,
+                        $currentUserRole,
+                        $deleteRolesAllowed,
+                        $canDeleteOthers,
+                        $canComment
+                    );
                 } else {
                     echo '<p>Keine Berechtigung, Kommentare zu sehen.</p>';
                 }
@@ -441,7 +760,6 @@ $ajaxActionUrl = 'pages/project_detail.php?id=' . urlencode($projectId);
     const commentItems = document.getElementById('comment-items');
     const likeCountEl = document.querySelector('.like-count');
     const dislikeCountEl = document.querySelector('.dislike-count');
-    const commentTextarea = document.querySelector('.comment-form textarea');
 
     async function submitAjaxForm(form, submitter) {
         const formData = new FormData(form);
@@ -515,6 +833,31 @@ $ajaxActionUrl = 'pages/project_detail.php?id=' . urlencode($projectId);
             } else if (data.action === 'comment') {
                 if (commentItems && typeof data.commentsHtml === 'string') {
                     commentItems.innerHTML = data.commentsHtml;
+                    setupTextareas(commentItems);
+                }
+                if (data.commentLimitReached !== undefined) {
+                    const mainForm = document.querySelector('.interaction-section .comment-form:not(.reply-form)');
+                    if (mainForm) {
+                        const textarea = mainForm.querySelector('textarea');
+                        const button = mainForm.querySelector('button[type="submit"]');
+                        if (textarea) textarea.disabled = data.commentLimitReached;
+                        if (button) button.disabled = data.commentLimitReached;
+                    }
+                    if (commentItems) {
+                        commentItems.querySelectorAll('.reply-form textarea').forEach((el) => {
+                            el.disabled = data.commentLimitReached;
+                        });
+                        commentItems.querySelectorAll('.reply-form button[type="submit"]').forEach((el) => {
+                            el.disabled = data.commentLimitReached;
+                        });
+                    }
+                }
+                if (form) {
+                    const textarea = form.querySelector('textarea');
+                    if (textarea) {
+                        textarea.value = '';
+                        autoGrowTextarea(textarea);
+                    }
                 }
                 if (statusEl) statusEl.textContent = data.message || 'Kommentar gespeichert.';
             }
@@ -528,34 +871,60 @@ $ajaxActionUrl = 'pages/project_detail.php?id=' . urlencode($projectId);
         textarea.style.height = `${textarea.scrollHeight}px`;
     }
 
-    if (commentTextarea) {
-        autoGrowTextarea(commentTextarea);
-        commentTextarea.addEventListener('input', (event) => {
-            const max = parseInt(commentTextarea.dataset.maxlength || '400', 10);
-            if (commentTextarea.value.length >= max && event.inputType && event.inputType.startsWith('insert')) {
-                if (statusEl) statusEl.textContent = 'Keine Romane Schreiben bitte';
-            } else if (statusEl && statusEl.textContent === 'Keine Romane Schreiben bitte') {
-                statusEl.textContent = '';
-            }
-            autoGrowTextarea(commentTextarea);
-        });
+    function setupTextareas(root) {
+        const textareas = root.querySelectorAll('.comment-form textarea');
+        textareas.forEach((textarea) => {
+            if (textarea.dataset.enhanced === '1') return;
+            textarea.dataset.enhanced = '1';
+            autoGrowTextarea(textarea);
+            textarea.addEventListener('input', (event) => {
+                const max = parseInt(textarea.dataset.maxlength || '400', 10);
+                if (textarea.value.length >= max && event.inputType && event.inputType.startsWith('insert')) {
+                    if (statusEl) statusEl.textContent = 'Keine Romane Schreiben bitte';
+                } else if (statusEl && statusEl.textContent === 'Keine Romane Schreiben bitte') {
+                    statusEl.textContent = '';
+                }
+                autoGrowTextarea(textarea);
+            });
 
-        commentTextarea.addEventListener('paste', (event) => {
-            const max = parseInt(commentTextarea.dataset.maxlength || '400', 10);
-            const text = (event.clipboardData || window.clipboardData).getData('text');
-            const selection = commentTextarea.selectionEnd - commentTextarea.selectionStart;
-            const available = max - (commentTextarea.value.length - selection);
-            if (text.length > available) {
-                event.preventDefault();
-                const insert = text.slice(0, Math.max(0, available));
-                const start = commentTextarea.selectionStart;
-                const end = commentTextarea.selectionEnd;
-                commentTextarea.setRangeText(insert, start, end, 'end');
-                if (statusEl) statusEl.textContent = 'Keine Romane Schreiben bitte';
-                autoGrowTextarea(commentTextarea);
-            }
+            textarea.addEventListener('paste', (event) => {
+                const max = parseInt(textarea.dataset.maxlength || '400', 10);
+                const text = (event.clipboardData || window.clipboardData).getData('text');
+                const selection = textarea.selectionEnd - textarea.selectionStart;
+                const available = max - (textarea.value.length - selection);
+                if (text.length > available) {
+                    event.preventDefault();
+                    const insert = text.slice(0, Math.max(0, available));
+                    const start = textarea.selectionStart;
+                    const end = textarea.selectionEnd;
+                    textarea.setRangeText(insert, start, end, 'end');
+                    if (statusEl) statusEl.textContent = 'Keine Romane Schreiben bitte';
+                    autoGrowTextarea(textarea);
+                }
+            });
         });
     }
+
+    setupTextareas(document);
+
+    document.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        const toggle = target.closest('.reply-toggle');
+        if (!toggle) return;
+        const comment = toggle.closest('.comment');
+        if (!comment) return;
+        const form = comment.querySelector('.reply-form');
+        if (!form) return;
+        form.classList.toggle('is-open');
+        if (form.classList.contains('is-open')) {
+            const textarea = form.querySelector('textarea');
+            if (textarea) {
+                textarea.focus();
+                autoGrowTextarea(textarea);
+            }
+        }
+    });
 
     const lightbox = document.getElementById('lightbox');
     const lightboxMedia = lightbox.querySelector('.lightbox-media');

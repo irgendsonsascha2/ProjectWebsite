@@ -57,11 +57,21 @@
     overflow: hidden;
 }
 
+.comment-form textarea:disabled {
+    background: #f1f1f1;
+    cursor: not-allowed;
+}
+
 .comment-form button {
     background: #333;
     color: white;
     padding: 0.625rem 0.9375rem;
     border-radius: 0.25rem;
+}
+
+.comment-form button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .comment-list {
@@ -74,6 +84,52 @@
     border: 0.0625rem solid #eee;
     border-radius: 0.3125rem;
     margin-bottom: 0.625rem;
+}
+
+.reply-toggle {
+    margin-top: 0.5rem;
+    background: transparent;
+    border: none;
+    color: #1d4ed8;
+    cursor: pointer;
+    padding: 0;
+}
+
+.reply-form {
+    display: none;
+    margin-top: 0.75rem;
+}
+
+.reply-form.is-open {
+    display: block;
+}
+
+.comment-replies {
+    margin-top: 0.75rem;
+    padding-left: 1rem;
+    border-left: 0.125rem solid #e5e7eb;
+}
+
+.comment-reply {
+    background: #fafafa;
+}
+
+.comment-delete-form {
+    margin-top: 0.5rem;
+}
+
+.comment-delete-button {
+    background: transparent;
+    border: none;
+    color: #b91c1c;
+    cursor: pointer;
+    padding: 0;
+}
+
+.comment-limit-note {
+    margin: 0.5rem 0 0.75rem;
+    color: #b45309;
+    font-size: 0.9rem;
 }
 
 .comment p {

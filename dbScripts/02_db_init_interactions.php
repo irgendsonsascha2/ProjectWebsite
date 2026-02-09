@@ -28,6 +28,7 @@ try {
                 'properties' => [
                     'project_id' => ['bsonType' => 'objectId'],
                     'user_id' => ['bsonType' => 'objectId'],
+                    'parent_comment_id' => ['bsonType' => 'objectId'],
                     'text' => ['bsonType' => 'string', 'maxLength' => 400],
                     'created_at' => ['bsonType' => 'date'],
                     'updated_at' => ['bsonType' => 'date']
@@ -37,7 +38,7 @@ try {
     ]);
     $db->comments->createIndex(['project_id' => 1]);
     $db->comments->createIndex(['user_id' => 1]);
-    $db->comments->createIndex(['project_id' => 1, 'user_id' => 1], ['unique' => true]);
+    $db->comments->createIndex(['parent_comment_id' => 1]);
     echo "✅ Comments-Collection erstellt.<br>";
 
     // --- B. LIKES ---

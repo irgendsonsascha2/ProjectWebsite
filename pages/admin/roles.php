@@ -21,6 +21,7 @@ $defaultPermissions = [
     ['key' => 'edit_all', 'label' => 'Alle Projekte bearbeiten', 'description' => 'Beliebige Projekte bearbeiten'],
     ['key' => 'edit_own', 'label' => 'Eigene Projekte bearbeiten', 'description' => 'Nur eigene Projekte bearbeiten'],
     ['key' => 'delete_all', 'label' => 'Projekte löschen', 'description' => 'Projekte löschen (inkl. Kommentare/Likes)'],
+    ['key' => 'delete_comments', 'label' => 'Kommentare löschen', 'description' => 'Kommentare anderer Nutzer löschen (Rollenzuordnung)'],
     ['key' => 'manage_users', 'label' => 'Benutzer verwalten', 'description' => 'Admin-Funktionen für Benutzer/Einladungen'],
     ['key' => 'generate_codes', 'label' => 'Einladungscodes erzeugen', 'description' => 'Registrierungs-Codes erstellen'],
     ['key' => 'comment', 'label' => 'Kommentieren', 'description' => 'Kommentare erstellen/bearbeiten'],
@@ -28,6 +29,26 @@ $defaultPermissions = [
 ];
 
 function normalize_permission_keys($keys) {
+    if ($keys instanceof Traversable) {
+        $keys = iterator_to_array($keys);
+    }
+    if (!is_array($keys)) {
+        return [];
+    }
+    $filtered = [];
+    foreach ($keys as $key) {
+        if (!is_string($key)) {
+            continue;
+        }
+        $key = trim($key);
+        if ($key !== '' && !in_array($key, $filtered, true)) {
+            $filtered[] = $key;
+        }
+    }
+    return $filtered;
+}
+
+function normalize_role_keys($keys) {
     if ($keys instanceof Traversable) {
         $keys = iterator_to_array($keys);
     }
@@ -62,6 +83,7 @@ if (isset($_POST['action'])) {
         $roleKey = strtolower(trim($_POST['role_key'] ?? ''));
         $roleLabel = trim($_POST['role_label'] ?? '');
         $permissions = normalize_permission_keys($_POST['permissions'] ?? []);
+        $commentDeleteRoles = normalize_role_keys($_POST['comment_delete_roles'] ?? []);
 
         if (!preg_match('/^[a-z0-9_-]{2,40}$/', $roleKey)) {
             $error = 'Rollen-Schlüssel ist ungültig (2-40 Zeichen, a-z, 0-9, _ -).';
@@ -71,7 +93,8 @@ if (isset($_POST['action'])) {
             $db->roles_config->insertOne([
                 'role' => $roleKey,
                 'label' => $roleLabel ?: $roleKey,
-                'permissions' => $permissions
+                'permissions' => $permissions,
+                'comment_delete_roles' => $commentDeleteRoles
             ]);
             $notice = 'Rolle wurde erstellt.';
         }
@@ -79,13 +102,14 @@ if (isset($_POST['action'])) {
         $roleKey = strtolower(trim($_POST['role_key'] ?? ''));
         $roleLabel = trim($_POST['role_label'] ?? '');
         $permissions = normalize_permission_keys($_POST['permissions'] ?? []);
+        $commentDeleteRoles = normalize_role_keys($_POST['comment_delete_roles'] ?? []);
 
         if (!$roleKey) {
             $error = 'Rolle fehlt.';
         } else {
             $db->roles_config->updateOne(
                 ['role' => $roleKey],
-                ['$set' => ['label' => $roleLabel ?: $roleKey, 'permissions' => $permissions]]
+                ['$set' => ['label' => $roleLabel ?: $roleKey, 'permissions' => $permissions, 'comment_delete_roles' => $commentDeleteRoles]]
             );
             $notice = 'Rolle wurde aktualisiert.';
         }
@@ -117,6 +141,16 @@ foreach ($permissions as $permission) {
     $permissionMap[$key] = [
         'label' => $permission['label'] ?? $key,
         'description' => $permission['description'] ?? ''
+    ];
+}
+$rolesMap = [];
+foreach ($roles as $roleItem) {
+    $roleKey = $roleItem['role'] ?? '';
+    if (!$roleKey) {
+        continue;
+    }
+    $rolesMap[$roleKey] = [
+        'label' => $roleItem['label'] ?? $roleKey
     ];
 }
 $roleCounts = [];
@@ -452,6 +486,25 @@ try {
                             <?php endforeach; ?>
                         </div>
                     </div>
+                    <div class="field">
+                        <label>Kommentare löschen von Rollen</label>
+                        <div class="hint">Gilt nur mit Berechtigung "Kommentare löschen".</div>
+                        <div class="permissions">
+                            <?php foreach ($roles as $roleItem): ?>
+                                <?php
+                                    $targetRoleKey = $roleItem['role'] ?? '';
+                                    $targetRoleLabel = $roleItem['label'] ?? $targetRoleKey;
+                                    if (!$targetRoleKey) {
+                                        continue;
+                                    }
+                                ?>
+                                <label>
+                                    <input type="checkbox" name="comment_delete_roles[]" value="<?php echo htmlspecialchars($targetRoleKey); ?>">
+                                    <span><?php echo htmlspecialchars($targetRoleLabel); ?></span>
+                                </label>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
                     <div class="actions">
                         <button type="submit">Rolle anlegen</button>
                     </div>
@@ -470,6 +523,8 @@ try {
                     $roleLabel = $role['label'] ?? $roleKey;
                     $rolePermissions = $role['permissions'] ?? [];
                     $rolePermissions = normalize_permission_keys($rolePermissions);
+                    $roleDeleteRoles = $role['comment_delete_roles'] ?? [];
+                    $roleDeleteRoles = normalize_role_keys($roleDeleteRoles);
                     $userCount = $roleCounts[$roleKey] ?? 0;
                 ?>
                 <div class="card">
@@ -515,6 +570,19 @@ try {
                                 <?php endforeach; ?>
                             <?php endif; ?>
                         </div>
+                        <div class="permission-list" style="margin-top: 1rem;">
+                            <div class="permission-item" style="font-weight: 600;">Kommentare löschen von Rollen</div>
+                            <?php if (count($roleDeleteRoles) === 0): ?>
+                                <div class="permission-item">Keine Rollen ausgewählt.</div>
+                            <?php else: ?>
+                                <?php foreach ($roleDeleteRoles as $deleteRoleKey): ?>
+                                    <?php
+                                        $deleteRoleLabel = $rolesMap[$deleteRoleKey]['label'] ?? $deleteRoleKey;
+                                    ?>
+                                    <div class="permission-item"><?php echo htmlspecialchars($deleteRoleLabel); ?></div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </dialog>
 
@@ -552,6 +620,26 @@ try {
                                                     <small><?php echo htmlspecialchars($permDesc); ?></small>
                                                 <?php endif; ?>
                                             </span>
+                                        </label>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label>Kommentare löschen von Rollen</label>
+                                <div class="hint">Gilt nur mit Berechtigung "Kommentare löschen".</div>
+                                <div class="permissions">
+                                    <?php foreach ($roles as $roleItem): ?>
+                                        <?php
+                                            $targetRoleKey = $roleItem['role'] ?? '';
+                                            $targetRoleLabel = $roleItem['label'] ?? $targetRoleKey;
+                                            if (!$targetRoleKey) {
+                                                continue;
+                                            }
+                                            $isChecked = in_array($targetRoleKey, $roleDeleteRoles, true);
+                                        ?>
+                                        <label>
+                                            <input type="checkbox" name="comment_delete_roles[]" value="<?php echo htmlspecialchars($targetRoleKey); ?>" <?php echo $isChecked ? 'checked' : ''; ?>>
+                                            <span><?php echo htmlspecialchars($targetRoleLabel); ?></span>
                                         </label>
                                     <?php endforeach; ?>
                                 </div>
