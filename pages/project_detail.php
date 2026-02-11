@@ -877,7 +877,7 @@ if ($canViewComments && !empty($mediaIds)) {
                                         <?php endif; ?>
                                     </div>
                                 <?php endif; ?>
-                                <?php if ($canViewComments && $hoverHtml): ?>
+                                <?php if ($canViewComments): ?>
                                     <div class="media-hover-comments" data-media-id="<?php echo htmlspecialchars($mediaIdStr); ?>">
                                         <?php echo $hoverHtml; ?>
                                     </div>
