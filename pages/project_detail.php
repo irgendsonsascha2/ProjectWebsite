@@ -57,9 +57,21 @@ if (isset($_POST['ajax']) && $_POST['ajax'] === '1') {
     $isAjax = true;
 }
 
-function fetch_comments_with_users($db, $projectObjectId) {
+function parse_media_id($raw) {
+    $raw = trim((string)$raw);
+    if ($raw === '') {
+        return null;
+    }
+    try {
+        return new ObjectId($raw);
+    } catch (Exception $e) {
+        return null;
+    }
+}
+
+function fetch_comments_with_users($db, $projectObjectId, $mediaObjectId) {
     $commentsCursor = $db->comments->aggregate([
-        ['$match' => ['project_id' => $projectObjectId]],
+        ['$match' => ['project_id' => $projectObjectId, 'media_id' => $mediaObjectId]],
         ['$lookup' => [
             'from' => 'users',
             'localField' => 'user_id',
@@ -70,6 +82,22 @@ function fetch_comments_with_users($db, $projectObjectId) {
         ['$sort' => ['created_at' => 1]]
     ]);
     return iterator_to_array($commentsCursor);
+}
+
+function fetch_recent_comments_with_users($db, $projectObjectId, $mediaObjectId, $limit = 2) {
+    $cursor = $db->comments->aggregate([
+        ['$match' => ['project_id' => $projectObjectId, 'media_id' => $mediaObjectId]],
+        ['$sort' => ['created_at' => -1]],
+        ['$limit' => max(1, (int)$limit)],
+        ['$lookup' => [
+            'from' => 'users',
+            'localField' => 'user_id',
+            'foreignField' => '_id',
+            'as' => 'user_info'
+        ]],
+        ['$unwind' => '$user_info']
+    ]);
+    return iterator_to_array($cursor);
 }
 
 function build_comment_tree($comments) {
@@ -103,7 +131,7 @@ function sort_comments_by_created_at_asc(&$comments) {
     });
 }
 
-function render_comment_items($comments, $commentLimitReached, $commentLimit, $ajaxActionUrl, $currentUserId, $currentUserRole, $deleteRolesAllowed, $canDeleteOthers, $canComment) {
+function render_comment_items($comments, $commentLimitReached, $commentLimit, $ajaxActionUrl, $currentUserId, $currentUserRole, $deleteRolesAllowed, $canDeleteOthers, $canComment, $mediaIdStr) {
     $tree = build_comment_tree($comments);
     $topLevel = $tree[null] ?? [];
     sort_comments_by_created_at_desc($topLevel);
@@ -122,6 +150,7 @@ function render_comment_items($comments, $commentLimitReached, $commentLimit, $a
             <?php if ($canDelete): ?>
                 <form method="POST" class="comment-delete-form" data-ajax="true" data-ajax-action="<?php echo htmlspecialchars($ajaxActionUrl); ?>">
                     <input type="hidden" name="ajax" value="1">
+                    <input type="hidden" name="media_id" value="<?php echo htmlspecialchars($mediaIdStr); ?>">
                     <input type="hidden" name="comment_id" value="<?php echo htmlspecialchars($commentId); ?>">
                     <button type="submit" name="delete_comment" value="1" class="comment-delete-button">Löschen</button>
                 </form>
@@ -130,6 +159,7 @@ function render_comment_items($comments, $commentLimitReached, $commentLimit, $a
                 <button type="button" class="reply-toggle" data-reply-to="<?php echo htmlspecialchars($commentId); ?>">Antworten</button>
                 <form method="POST" class="comment-form reply-form" data-ajax="true" data-ajax-action="<?php echo htmlspecialchars($ajaxActionUrl); ?>">
                     <input type="hidden" name="ajax" value="1">
+                    <input type="hidden" name="media_id" value="<?php echo htmlspecialchars($mediaIdStr); ?>">
                     <input type="hidden" name="parent_comment_id" value="<?php echo htmlspecialchars($commentId); ?>">
                     <textarea name="comment_text" placeholder="Antwort schreiben..." maxlength="400" data-maxlength="400" <?php echo $commentLimitReached ? 'disabled' : ''; ?>></textarea>
                     <input type="hidden" name="submit_comment" value="1">
@@ -158,6 +188,7 @@ function render_comment_items($comments, $commentLimitReached, $commentLimit, $a
                         <?php if ($replyCanDelete): ?>
                             <form method="POST" class="comment-delete-form" data-ajax="true" data-ajax-action="<?php echo htmlspecialchars($ajaxActionUrl); ?>">
                                 <input type="hidden" name="ajax" value="1">
+                                <input type="hidden" name="media_id" value="<?php echo htmlspecialchars($mediaIdStr); ?>">
                                 <input type="hidden" name="comment_id" value="<?php echo htmlspecialchars($replyId); ?>">
                                 <button type="submit" name="delete_comment" value="1" class="comment-delete-button">Löschen</button>
                             </form>
@@ -176,6 +207,24 @@ function render_comment_items($comments, $commentLimitReached, $commentLimit, $a
     }
     if ($commentLimitReached && $canComment && $commentLimit > 0) {
         echo '<p class="comment-limit-note">Kommentar-Limit erreicht (max. ' . (int)$commentLimit . ' pro Nutzer).</p>';
+    }
+    return ob_get_clean();
+}
+
+function render_hover_comment_items($comments) {
+    if (empty($comments)) {
+        return '';
+    }
+    ob_start();
+    foreach ($comments as $comment) {
+        $author = $comment['user_info']['username'] ?? $comment['user_info']['email'] ?? 'User';
+        $text = $comment['text'] ?? '';
+        ?>
+        <div class="hover-comment">
+            <span class="hover-author"><?php echo htmlspecialchars($author); ?></span>
+            <span class="hover-text"><?php echo htmlspecialchars($text); ?></span>
+        </div>
+        <?php
     }
     return ob_get_clean();
 }
@@ -206,18 +255,41 @@ if ($canDeleteProjects && isset($_POST['delete_project'])) {
 if ($isLoggedIn && can('like_dislike') && isset($_POST['interaction'])) {
     $userId = new ObjectId($_SESSION['user_id']);
     $type = $_POST['interaction']; // 'like' or 'dislike'
+    $mediaObjectId = parse_media_id($_POST['media_id'] ?? '');
 
-    $existing = $db->likes->findOne(['project_id' => $projectObjectId, 'user_id' => $userId]);
+    if (!$mediaObjectId) {
+        if ($isAjax) {
+            if (ob_get_length()) {
+                ob_clean();
+            }
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'ok' => false,
+                'action' => 'interaction',
+                'message' => 'Ungültiges Medium.'
+            ]);
+            exit();
+        }
+        header("Location: " . $_SERVER['REQUEST_URI']);
+        exit();
+    }
+
+    $existing = $db->likes->findOne([
+        'project_id' => $projectObjectId,
+        'media_id' => $mediaObjectId,
+        'user_id' => $userId
+    ]);
 
     if ($type === 'like' || $type === 'dislike') {
         if ($existing && ($existing['type'] ?? null) === $type) {
             // Nochmal klicken => Vote entfernen
-            $db->likes->deleteOne(['project_id' => $projectObjectId, 'user_id' => $userId]);
+            $db->likes->deleteOne(['project_id' => $projectObjectId, 'media_id' => $mediaObjectId, 'user_id' => $userId]);
         } else {
             // Wechsel oder erster Vote
-            $db->likes->deleteOne(['project_id' => $projectObjectId, 'user_id' => $userId]);
+            $db->likes->deleteOne(['project_id' => $projectObjectId, 'media_id' => $mediaObjectId, 'user_id' => $userId]);
             $db->likes->insertOne([
                 'project_id' => $projectObjectId,
+                'media_id' => $mediaObjectId,
                 'user_id' => $userId,
                 'type' => $type,
                 'created_at' => new UTCDateTime()
@@ -225,9 +297,9 @@ if ($isLoggedIn && can('like_dislike') && isset($_POST['interaction'])) {
         }
     }
     if ($isAjax) {
-        $likeCount = $canViewLikes ? $db->likes->countDocuments(['project_id' => $projectObjectId, 'type' => 'like']) : 0;
-        $dislikeCount = $canViewLikes ? $db->likes->countDocuments(['project_id' => $projectObjectId, 'type' => 'dislike']) : 0;
-        $currentUserLike = $db->likes->findOne(['project_id' => $projectObjectId, 'user_id' => $userId]);
+        $likeCount = $canViewLikes ? $db->likes->countDocuments(['project_id' => $projectObjectId, 'media_id' => $mediaObjectId, 'type' => 'like']) : 0;
+        $dislikeCount = $canViewLikes ? $db->likes->countDocuments(['project_id' => $projectObjectId, 'media_id' => $mediaObjectId, 'type' => 'dislike']) : 0;
+        $currentUserLike = $db->likes->findOne(['project_id' => $projectObjectId, 'media_id' => $mediaObjectId, 'user_id' => $userId]);
         $currentUserInteraction = $currentUserLike['type'] ?? null;
         if (ob_get_length()) {
             ob_clean();
@@ -236,6 +308,7 @@ if ($isLoggedIn && can('like_dislike') && isset($_POST['interaction'])) {
         echo json_encode([
             'ok' => true,
             'action' => 'interaction',
+            'mediaId' => (string)$mediaObjectId,
             'likeCount' => $likeCount,
             'dislikeCount' => $dislikeCount,
             'currentUserInteraction' => $currentUserInteraction
@@ -250,6 +323,23 @@ if ($isLoggedIn && can('like_dislike') && isset($_POST['interaction'])) {
 if ($isLoggedIn && isset($_POST['delete_comment'])) {
     $userId = new ObjectId($_SESSION['user_id']);
     $commentIdRaw = trim($_POST['comment_id'] ?? '');
+    $mediaObjectId = parse_media_id($_POST['media_id'] ?? '');
+    if (!$mediaObjectId) {
+        if ($isAjax) {
+            if (ob_get_length()) {
+                ob_clean();
+            }
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'ok' => false,
+                'action' => 'comment',
+                'message' => 'Ungültiges Medium.'
+            ]);
+            exit();
+        }
+        header("Location: " . $_SERVER['REQUEST_URI']);
+        exit();
+    }
     try {
         $commentId = new ObjectId($commentIdRaw);
     } catch (Exception $e) {
@@ -269,7 +359,11 @@ if ($isLoggedIn && isset($_POST['delete_comment'])) {
         exit();
     }
 
-    $comment = $db->comments->findOne(['_id' => $commentId, 'project_id' => $projectObjectId]);
+    $comment = $db->comments->findOne([
+        '_id' => $commentId,
+        'project_id' => $projectObjectId,
+        'media_id' => $mediaObjectId
+    ]);
     if (!$comment) {
         if ($isAjax) {
             if (ob_get_length()) {
@@ -324,15 +418,17 @@ if ($isLoggedIn && isset($_POST['delete_comment'])) {
     }
 
     $db->comments->deleteMany([
+        'media_id' => $mediaObjectId,
         '$or' => [
             ['_id' => $commentId],
             ['parent_comment_id' => $commentId]
         ]
     ]);
     if ($isAjax) {
-        $comments = fetch_comments_with_users($db, $projectObjectId);
+        $comments = fetch_comments_with_users($db, $projectObjectId, $mediaObjectId);
         $userCommentCount = $db->comments->countDocuments([
             'project_id' => $projectObjectId,
+            'media_id' => $mediaObjectId,
             'user_id' => $userId
         ]);
         $commentLimit = 0;
@@ -351,6 +447,7 @@ if ($isLoggedIn && isset($_POST['delete_comment'])) {
             'ok' => true,
             'action' => 'comment',
             'message' => 'Kommentar gelöscht.',
+            'mediaId' => (string)$mediaObjectId,
             'commentsHtml' => render_comment_items(
                 $comments,
                 $commentLimitReached,
@@ -360,8 +457,11 @@ if ($isLoggedIn && isset($_POST['delete_comment'])) {
                 $_SESSION['role'] ?? '',
                 $deleteRolesAllowed,
                 $canDeleteOthers,
-                $canComment
+                $canComment,
+                (string)$mediaObjectId
             ),
+            'commentCount' => $canViewComments ? $db->comments->countDocuments(['project_id' => $projectObjectId, 'media_id' => $mediaObjectId]) : 0,
+            'hoverHtml' => $canViewComments ? render_hover_comment_items(fetch_recent_comments_with_users($db, $projectObjectId, $mediaObjectId)) : '',
             'commentLimitReached' => $commentLimitReached,
             'commentLimit' => $commentLimit
         ]);
@@ -376,6 +476,23 @@ if ($isLoggedIn && can('comment') && isset($_POST['submit_comment'])) {
     $commentText = trim($_POST['comment_text']);
     $commentLimit = 400;
     $parentCommentIdRaw = trim($_POST['parent_comment_id'] ?? '');
+    $mediaObjectId = parse_media_id($_POST['media_id'] ?? '');
+    if (!$mediaObjectId) {
+        if ($isAjax) {
+            if (ob_get_length()) {
+                ob_clean();
+            }
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'ok' => false,
+                'action' => 'comment',
+                'message' => 'Ungültiges Medium.'
+            ]);
+            exit();
+        }
+        header("Location: " . $_SERVER['REQUEST_URI']);
+        exit();
+    }
     $parentCommentId = null;
     if ($parentCommentIdRaw !== '') {
         try {
@@ -434,6 +551,7 @@ if ($isLoggedIn && can('comment') && isset($_POST['submit_comment'])) {
 
     $userCommentCount = $db->comments->countDocuments([
         'project_id' => $projectObjectId,
+        'media_id' => $mediaObjectId,
         'user_id' => $userId
     ]);
     $commentLimit = 0;
@@ -463,7 +581,8 @@ if ($isLoggedIn && can('comment') && isset($_POST['submit_comment'])) {
     if ($parentCommentId !== null) {
         $parentExists = $db->comments->countDocuments([
             '_id' => $parentCommentId,
-            'project_id' => $projectObjectId
+            'project_id' => $projectObjectId,
+            'media_id' => $mediaObjectId
         ]) > 0;
         if (!$parentExists) {
             if ($isAjax) {
@@ -485,6 +604,7 @@ if ($isLoggedIn && can('comment') && isset($_POST['submit_comment'])) {
 
     $payload = [
         'project_id' => $projectObjectId,
+        'media_id' => $mediaObjectId,
         'user_id' => $userId,
         'text' => $commentText,
         'created_at' => new UTCDateTime(),
@@ -497,9 +617,10 @@ if ($isLoggedIn && can('comment') && isset($_POST['submit_comment'])) {
     $db->comments->insertOne($payload);
     $message = "Kommentar gespeichert!";
     if ($isAjax) {
-        $comments = fetch_comments_with_users($db, $projectObjectId);
+        $comments = fetch_comments_with_users($db, $projectObjectId, $mediaObjectId);
         $userCommentCount = $db->comments->countDocuments([
             'project_id' => $projectObjectId,
+            'media_id' => $mediaObjectId,
             'user_id' => $userId
         ]);
         $commentLimit = 0;
@@ -526,6 +647,7 @@ if ($isLoggedIn && can('comment') && isset($_POST['submit_comment'])) {
             'ok' => true,
             'action' => 'comment',
             'message' => $message,
+            'mediaId' => (string)$mediaObjectId,
             'commentsHtml' => render_comment_items(
                 $comments,
                 $commentLimitReached,
@@ -535,8 +657,11 @@ if ($isLoggedIn && can('comment') && isset($_POST['submit_comment'])) {
                 $_SESSION['role'] ?? '',
                 $deleteRolesAllowed,
                 $canDeleteOthers,
-                $canComment
+                $canComment,
+                (string)$mediaObjectId
             ),
+            'commentCount' => $canViewComments ? $db->comments->countDocuments(['project_id' => $projectObjectId, 'media_id' => $mediaObjectId]) : 0,
+            'hoverHtml' => $canViewComments ? render_hover_comment_items(fetch_recent_comments_with_users($db, $projectObjectId, $mediaObjectId)) : '',
             'commentLimitReached' => $commentLimitReached,
             'commentLimit' => $commentLimit
         ]);
@@ -546,42 +671,87 @@ if ($isLoggedIn && can('comment') && isset($_POST['submit_comment'])) {
     exit();
 }
 
+if ($isAjax && isset($_POST['load_media'])) {
+    $mediaObjectId = parse_media_id($_POST['media_id'] ?? '');
+    if (!$mediaObjectId) {
+        if (ob_get_length()) {
+            ob_clean();
+        }
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'ok' => false,
+            'action' => 'load_media',
+            'message' => 'Ungültiges Medium.'
+        ]);
+        exit();
+    }
+
+    $likeCount = $canViewLikes ? $db->likes->countDocuments(['project_id' => $projectObjectId, 'media_id' => $mediaObjectId, 'type' => 'like']) : 0;
+    $dislikeCount = $canViewLikes ? $db->likes->countDocuments(['project_id' => $projectObjectId, 'media_id' => $mediaObjectId, 'type' => 'dislike']) : 0;
+    $currentUserInteraction = null;
+    if ($isLoggedIn && can('like_dislike')) {
+        $userLike = $db->likes->findOne([
+            'project_id' => $projectObjectId,
+            'media_id' => $mediaObjectId,
+            'user_id' => new ObjectId($_SESSION['user_id'])
+        ]);
+        $currentUserInteraction = $userLike['type'] ?? null;
+    }
+
+    $comments = $canViewComments ? fetch_comments_with_users($db, $projectObjectId, $mediaObjectId) : [];
+    $commentLimitReached = false;
+    $commentLimit = 0;
+    $currentUserId = $isLoggedIn ? $_SESSION['user_id'] : null;
+    $currentUserRole = $_SESSION['role'] ?? '';
+    $canDeleteOthers = $isLoggedIn && can('delete_comments');
+    $deleteRolesAllowed = [];
+    if ($isLoggedIn) {
+        $userCommentCount = $db->comments->countDocuments([
+            'project_id' => $projectObjectId,
+            'media_id' => $mediaObjectId,
+            'user_id' => new ObjectId($_SESSION['user_id'])
+        ]);
+        $roleData = $db->roles_config->findOne(['role' => $currentUserRole]);
+        if ($canCommentLimit && $roleData && isset($roleData['comment_limit'])) {
+            $commentLimit = max(0, (int)$roleData['comment_limit']);
+        }
+        $commentLimitReached = $commentLimit > 0 && $userCommentCount >= $commentLimit;
+        if ($canDeleteOthers && $roleData && isset($roleData['comment_delete_roles'])) {
+            $deleteRolesAllowed = is_array($roleData['comment_delete_roles']) ? $roleData['comment_delete_roles'] : iterator_to_array($roleData['comment_delete_roles']);
+        }
+    }
+
+    if (ob_get_length()) {
+        ob_clean();
+    }
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode([
+        'ok' => true,
+        'action' => 'load_media',
+        'mediaId' => (string)$mediaObjectId,
+        'likeCount' => $likeCount,
+        'dislikeCount' => $dislikeCount,
+        'commentCount' => $canViewComments ? $db->comments->countDocuments(['project_id' => $projectObjectId, 'media_id' => $mediaObjectId]) : 0,
+        'currentUserInteraction' => $currentUserInteraction,
+        'commentsHtml' => $canViewComments ? render_comment_items(
+            $comments,
+            $commentLimitReached,
+            $commentLimit,
+            $ajaxActionUrl,
+            $currentUserId,
+            $currentUserRole,
+            $deleteRolesAllowed,
+            $canDeleteOthers,
+            $canComment,
+            (string)$mediaObjectId
+        ) : '<p>Keine Berechtigung, Kommentare zu sehen.</p>',
+        'commentLimitReached' => $commentLimitReached,
+        'commentLimit' => $commentLimit
+    ]);
+    exit();
+}
+
 // --- DATEN FÜR DIE ANZEIGE LADEN ---
-$likeCount = $canViewLikes ? $db->likes->countDocuments(['project_id' => $projectObjectId, 'type' => 'like']) : 0;
-$dislikeCount = $canViewLikes ? $db->likes->countDocuments(['project_id' => $projectObjectId, 'type' => 'dislike']) : 0;
-$userLikeType = null;
-if ($isLoggedIn && can('like_dislike')) {
-    $userLike = $db->likes->findOne([
-        'project_id' => $projectObjectId,
-        'user_id' => new ObjectId($_SESSION['user_id'])
-    ]);
-    $userLikeType = $userLike['type'] ?? null;
-}
-
-// Kommentare mit User-Infos laden
-$comments = $canViewComments ? fetch_comments_with_users($db, $projectObjectId) : [];
-$commentLimitReached = false;
-$commentLimit = 0;
-$currentUserId = null;
-$currentUserRole = $_SESSION['role'] ?? '';
-$canDeleteOthers = $isLoggedIn && can('delete_comments');
-$deleteRolesAllowed = [];
-if ($isLoggedIn) {
-    $currentUserId = $_SESSION['user_id'];
-    $userCommentCount = $db->comments->countDocuments([
-        'project_id' => $projectObjectId,
-        'user_id' => new ObjectId($_SESSION['user_id'])
-    ]);
-    $roleData = $db->roles_config->findOne(['role' => $currentUserRole]);
-    if ($canCommentLimit && $roleData && isset($roleData['comment_limit'])) {
-        $commentLimit = max(0, (int)$roleData['comment_limit']);
-    }
-    $commentLimitReached = $commentLimit > 0 && $userCommentCount >= $commentLimit;
-    if ($canDeleteOthers && $roleData && isset($roleData['comment_delete_roles'])) {
-        $deleteRolesAllowed = is_array($roleData['comment_delete_roles']) ? $roleData['comment_delete_roles'] : iterator_to_array($roleData['comment_delete_roles']);
-    }
-}
-
 // Berechtigungs-Logik für den Edit-Button
 $canEdit = false;
 if ($isLoggedIn) {
@@ -600,6 +770,60 @@ if ($mediaLimit === 0) {
 }
 $gallerySlice = array_slice($gallery, 0, $mediaLimit);
 $hasMore = count($gallery) > $mediaLimit;
+
+$mediaIds = [];
+foreach ($gallerySlice as $item) {
+    if (!empty($item['media_id']) && $item['media_id'] instanceof ObjectId) {
+        $mediaIds[] = $item['media_id'];
+    }
+}
+
+$likeCounts = [];
+$dislikeCounts = [];
+if ($canViewLikes && !empty($mediaIds)) {
+    $likeAgg = $db->likes->aggregate([
+        ['$match' => ['project_id' => $projectObjectId, 'media_id' => ['$in' => $mediaIds]]],
+        ['$group' => [
+            '_id' => ['media_id' => '$media_id', 'type' => '$type'],
+            'count' => ['$sum' => 1]
+        ]]
+    ]);
+    foreach ($likeAgg as $row) {
+        $mediaKey = (string)$row['_id']['media_id'];
+        $type = $row['_id']['type'] ?? '';
+        if ($type === 'like') {
+            $likeCounts[$mediaKey] = (int)$row['count'];
+        } elseif ($type === 'dislike') {
+            $dislikeCounts[$mediaKey] = (int)$row['count'];
+        }
+    }
+}
+
+$commentCounts = [];
+if ($canViewComments && !empty($mediaIds)) {
+    $commentAgg = $db->comments->aggregate([
+        ['$match' => ['project_id' => $projectObjectId, 'media_id' => ['$in' => $mediaIds]]],
+        ['$group' => [
+            '_id' => '$media_id',
+            'count' => ['$sum' => 1]
+        ]]
+    ]);
+    foreach ($commentAgg as $row) {
+        $commentCounts[(string)$row['_id']] = (int)$row['count'];
+    }
+}
+
+$hoverPreviews = [];
+if ($canViewComments && !empty($mediaIds)) {
+    foreach ($gallerySlice as $item) {
+        if (empty($item['media_id']) || !($item['media_id'] instanceof ObjectId)) {
+            continue;
+        }
+        $mediaKey = (string)$item['media_id'];
+        $preview = fetch_recent_comments_with_users($db, $projectObjectId, $item['media_id'], 2);
+        $hoverPreviews[$mediaKey] = render_hover_comment_items($preview);
+    }
+}
 ?>
 
 <link rel="stylesheet" href="style/project_detail.css">
@@ -616,16 +840,47 @@ $hasMore = count($gallery) > $mediaLimit;
                     <?php
                         $type = $item['type'] ?? 'image';
                         $url = $item['url'] ?? '';
+                        $mediaId = $item['media_id'] ?? null;
+                        $mediaIdStr = ($mediaId instanceof ObjectId) ? (string)$mediaId : '';
+                        $likeCount = $mediaIdStr !== '' ? ($likeCounts[$mediaIdStr] ?? 0) : 0;
+                        $dislikeCount = $mediaIdStr !== '' ? ($dislikeCounts[$mediaIdStr] ?? 0) : 0;
+                        $commentCount = $mediaIdStr !== '' ? ($commentCounts[$mediaIdStr] ?? 0) : 0;
+                        $hoverHtml = $mediaIdStr !== '' ? ($hoverPreviews[$mediaIdStr] ?? '') : '';
                     ?>
                     <?php if ($url): ?>
                         <div class="media-card">
-                            <button class="media-item" data-type="<?php echo htmlspecialchars($type); ?>" data-src="<?php echo htmlspecialchars($url); ?>">
+                            <button class="media-item" data-type="<?php echo htmlspecialchars($type); ?>" data-src="<?php echo htmlspecialchars($url); ?>" data-media-id="<?php echo htmlspecialchars($mediaIdStr); ?>">
                                 <?php if ($type === 'video'): ?>
                                     <video src="<?php echo htmlspecialchars($url); ?>" preload="metadata" muted playsinline></video>
                                     <span class="media-badge">Video</span>
                                     <span class="media-play">▶</span>
                                 <?php else: ?>
                                     <img src="<?php echo htmlspecialchars($url); ?>" alt="Bild" loading="lazy">
+                                <?php endif; ?>
+                                <?php if ($canViewLikes || $canViewComments): ?>
+                                    <div class="media-metrics" data-media-id="<?php echo htmlspecialchars($mediaIdStr); ?>">
+                                        <?php if ($canViewLikes): ?>
+                                            <span class="metric" title="Likes">
+                                                <span class="metric-icon" aria-hidden="true">🔥</span>
+                                                <span class="metric-count" data-kind="like"><?php echo (int)$likeCount; ?></span>
+                                            </span>
+                                            <span class="metric" title="Dislikes">
+                                                <span class="metric-icon" aria-hidden="true">💩</span>
+                                                <span class="metric-count" data-kind="dislike"><?php echo (int)$dislikeCount; ?></span>
+                                            </span>
+                                        <?php endif; ?>
+                                        <?php if ($canViewComments): ?>
+                                            <span class="metric" title="Kommentare">
+                                                <span class="metric-icon" aria-hidden="true">💬</span>
+                                                <span class="metric-count" data-kind="comment"><?php echo (int)$commentCount; ?></span>
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endif; ?>
+                                <?php if ($canViewComments && $hoverHtml): ?>
+                                    <div class="media-hover-comments" data-media-id="<?php echo htmlspecialchars($mediaIdStr); ?>">
+                                        <?php echo $hoverHtml; ?>
+                                    </div>
                                 <?php endif; ?>
                             </button>
                         </div>
@@ -655,88 +910,7 @@ $hasMore = count($gallery) > $mediaLimit;
     <p>Gepostet am: <?php echo $project['created_at']->toDateTime()->format('d.m.Y'); ?></p>
 
 
-    <!-- INTERACTION SECTION -->
-    <section class="interaction-section">
-        <h2>Interaktionen</h2>
-        <p class="interaction-status" id="interaction-status" role="status" aria-live="polite"></p>
-
-        <!-- LIKES / DISLIKES -->
-        <?php if (can('like_dislike')): ?>
-            <form method="POST" class="interaction-buttons" data-ajax="true" data-ajax-action="<?php echo htmlspecialchars($ajaxActionUrl); ?>">
-                <input type="hidden" name="ajax" value="1">
-                <button type="submit" name="interaction" value="like" class="<?php echo $userLikeType === 'like' ? 'is-active' : ''; ?>" aria-pressed="<?php echo $userLikeType === 'like' ? 'true' : 'false'; ?>">
-                    <span class="interaction-emoji" aria-hidden="true">🔥</span>
-                    <?php if ($canViewLikes): ?>
-                        <span class="like-count"><?php echo $likeCount; ?></span>
-                    <?php endif; ?>
-                </button>
-                <button type="submit" name="interaction" value="dislike" class="<?php echo $userLikeType === 'dislike' ? 'is-active' : ''; ?>" aria-pressed="<?php echo $userLikeType === 'dislike' ? 'true' : 'false'; ?>">
-                    <span class="interaction-emoji" aria-hidden="true">💩</span>
-                    <?php if ($canViewLikes): ?>
-                        <span class="dislike-count"><?php echo $dislikeCount; ?></span>
-                    <?php endif; ?>
-                </button>
-            </form>
-        <?php else: ?>
-            <?php if ($canViewLikes): ?>
-                <div class="interaction-buttons" aria-hidden="true">
-                    <div>
-                        <span class="interaction-emoji" aria-hidden="true">🔥</span>
-                        <span class="like-count"><?php echo $likeCount; ?></span>
-                    </div>
-                    <div>
-                        <span class="interaction-emoji" aria-hidden="true">💩</span>
-                        <span class="dislike-count"><?php echo $dislikeCount; ?></span>
-                    </div>
-                </div>
-            <?php endif; ?>
-        <?php endif; ?>
-
-        <!-- KOMMENTAR-FORMULAR -->
-        <?php if ($canComment): ?>
-            <h4>Dein Kommentar</h4>
-            <p class="comment-limit-note">
-                <?php if ($commentLimitReached && $commentLimit > 0): ?>
-                    Kommentar-Limit erreicht (max. <?php echo (int)$commentLimit; ?> pro Nutzer).
-                <?php endif; ?>
-            </p>
-            <form method="POST" class="comment-form" data-ajax="true" data-ajax-action="<?php echo htmlspecialchars($ajaxActionUrl); ?>">
-                <input type="hidden" name="ajax" value="1">
-                <textarea name="comment_text" placeholder="Schreibe einen Kommentar..." maxlength="400" data-maxlength="400" <?php echo $commentLimitReached ? 'disabled' : ''; ?>></textarea>
-                <input type="hidden" name="submit_comment" value="1">
-                <button type="submit" name="submit_comment" aria-label="Kommentieren" <?php echo $commentLimitReached ? 'disabled' : ''; ?>>
-                    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-                        <path d="M2 21l21-9L2 3v7l15 2-15 2z" fill="currentColor"/>
-                    </svg>
-                </button>
-            </form>
-        <?php endif; ?>
-    </section>
-
-
-    <!-- KOMMENTAR-LISTE -->
-    <section class="comment-list" id="comment-list">
-        <h3>Kommentare</h3>
-        <div class="comment-items" id="comment-items">
-            <?php
-                if ($canViewComments) {
-                    echo render_comment_items(
-                        $comments,
-                        $commentLimitReached,
-                        $commentLimit,
-                        $ajaxActionUrl,
-                        $currentUserId,
-                        $currentUserRole,
-                        $deleteRolesAllowed,
-                        $canDeleteOthers,
-                        $canComment
-                    );
-                } else {
-                    echo '<p>Keine Berechtigung, Kommentare zu sehen.</p>';
-                }
-            ?>
-        </div>
-    </section>
+    
 </article>
 
 <?php if ($canEdit): ?>
@@ -757,7 +931,68 @@ $hasMore = count($gallery) > $mediaLimit;
 <div class="lightbox" id="lightbox" aria-hidden="true">
     <div class="lightbox-content" role="dialog" aria-modal="true">
         <button class="lightbox-close" type="button" aria-label="Schließen">×</button>
-        <div class="lightbox-media"></div>
+        <div class="lightbox-body">
+            <div class="lightbox-media"></div>
+            <aside class="lightbox-panel">
+                <p class="interaction-status" id="interaction-status" role="status" aria-live="polite"></p>
+
+                <?php if (can('like_dislike')): ?>
+                    <form method="POST" class="interaction-buttons lightbox-interaction-form" data-ajax="true" data-ajax-action="<?php echo htmlspecialchars($ajaxActionUrl); ?>">
+                        <input type="hidden" name="ajax" value="1">
+                        <input type="hidden" name="media_id" value="">
+                        <button type="submit" name="interaction" value="like" aria-pressed="false">
+                            <span class="interaction-emoji" aria-hidden="true">🔥</span>
+                            <?php if ($canViewLikes): ?>
+                                <span class="like-count">0</span>
+                            <?php endif; ?>
+                        </button>
+                        <button type="submit" name="interaction" value="dislike" aria-pressed="false">
+                            <span class="interaction-emoji" aria-hidden="true">💩</span>
+                            <?php if ($canViewLikes): ?>
+                                <span class="dislike-count">0</span>
+                            <?php endif; ?>
+                        </button>
+                    </form>
+                <?php else: ?>
+                    <?php if ($canViewLikes): ?>
+                        <div class="interaction-buttons lightbox-interaction-display" aria-hidden="true">
+                            <div>
+                                <span class="interaction-emoji" aria-hidden="true">🔥</span>
+                                <span class="like-count">0</span>
+                            </div>
+                            <div>
+                                <span class="interaction-emoji" aria-hidden="true">💩</span>
+                                <span class="dislike-count">0</span>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                <?php endif; ?>
+
+                <?php if ($canComment): ?>
+                    <p class="comment-limit-note"></p>
+                    <form method="POST" class="comment-form lightbox-comment-form" data-ajax="true" data-ajax-action="<?php echo htmlspecialchars($ajaxActionUrl); ?>">
+                        <input type="hidden" name="ajax" value="1">
+                        <input type="hidden" name="media_id" value="">
+                        <textarea name="comment_text" placeholder="Schreibe einen Kommentar..." maxlength="400" data-maxlength="400"></textarea>
+                        <input type="hidden" name="submit_comment" value="1">
+                        <button type="submit" name="submit_comment" aria-label="Kommentieren">
+                            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                                <path d="M2 21l21-9L2 3v7l15 2-15 2z" fill="currentColor"/>
+                            </svg>
+                        </button>
+                    </form>
+                <?php endif; ?>
+
+                <section class="comment-list lightbox-comment-list">
+                    <h3>Kommentare</h3>
+                    <div class="comment-items" id="lightbox-comment-items">
+                        <?php if (!$canViewComments): ?>
+                            <p>Keine Berechtigung, Kommentare zu sehen.</p>
+                        <?php endif; ?>
+                    </div>
+                </section>
+            </aside>
+        </div>
     </div>
 </div>
 
@@ -788,10 +1023,18 @@ $hasMore = count($gallery) > $mediaLimit;
         }
     });
 
+    const lightbox = document.getElementById('lightbox');
+    const lightboxMedia = lightbox.querySelector('.lightbox-media');
+    const lightboxPanel = lightbox.querySelector('.lightbox-panel');
+    const closeBtn = lightbox.querySelector('.lightbox-close');
+
     const statusEl = document.getElementById('interaction-status');
-    const commentItems = document.getElementById('comment-items');
-    const likeCountEl = document.querySelector('.like-count');
-    const dislikeCountEl = document.querySelector('.dislike-count');
+    const commentItems = document.getElementById('lightbox-comment-items');
+    const likeCountEl = lightboxPanel ? lightboxPanel.querySelector('.like-count') : null;
+    const dislikeCountEl = lightboxPanel ? lightboxPanel.querySelector('.dislike-count') : null;
+    const lightboxInteractionForm = lightbox.querySelector('.lightbox-interaction-form');
+    const lightboxCommentForm = lightbox.querySelector('.lightbox-comment-form');
+    let activeMediaId = null;
 
     async function submitAjaxForm(form, submitter) {
         const formData = new FormData(form);
@@ -822,6 +1065,91 @@ $hasMore = count($gallery) > $mediaLimit;
         }
     }
 
+    function setActiveMediaId(mediaId) {
+        activeMediaId = mediaId;
+        lightbox.querySelectorAll('input[name="media_id"]').forEach((input) => {
+            input.value = mediaId || '';
+        });
+    }
+
+    function updateMetricCount(mediaId, kind, value) {
+        if (!mediaId) return;
+        const metric = document.querySelector(`.media-metrics[data-media-id="${mediaId}"] .metric-count[data-kind="${kind}"]`);
+        if (metric) {
+            metric.textContent = value;
+        }
+    }
+
+    function updateHoverPreview(mediaId, html) {
+        if (!mediaId) return;
+        const container = document.querySelector(`.media-hover-comments[data-media-id="${mediaId}"]`);
+        if (container) {
+            container.innerHTML = html || '';
+            setupHoverRotationFor(container);
+        }
+    }
+
+    async function loadMediaData(mediaId) {
+        if (!mediaId) return;
+        const formData = new FormData();
+        formData.set('ajax', '1');
+        formData.set('load_media', '1');
+        formData.set('media_id', mediaId);
+        const response = await fetch(window.location.href, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: formData
+        });
+        if (!response.ok) {
+            throw new Error('Serverfehler');
+        }
+        const data = await response.json();
+        if (data.ok === false) {
+            if (statusEl) statusEl.textContent = data.message || 'Fehler beim Laden.';
+            return;
+        }
+        if (likeCountEl && data.likeCount !== undefined) likeCountEl.textContent = data.likeCount;
+        if (dislikeCountEl && data.dislikeCount !== undefined) dislikeCountEl.textContent = data.dislikeCount;
+        if (commentItems && typeof data.commentsHtml === 'string') {
+            commentItems.innerHTML = data.commentsHtml;
+            setupTextareas(commentItems);
+        }
+        if (typeof data.commentLimit === 'number') {
+            const note = lightboxPanel ? lightboxPanel.querySelector('.comment-limit-note') : null;
+            if (note) {
+                note.textContent = data.commentLimitReached && data.commentLimit > 0
+                    ? `Kommentar-Limit erreicht (max. ${data.commentLimit} pro Nutzer).`
+                    : '';
+            }
+            if (lightboxCommentForm) {
+                const textarea = lightboxCommentForm.querySelector('textarea');
+                const button = lightboxCommentForm.querySelector('button[type="submit"]');
+                if (textarea) textarea.disabled = !!data.commentLimitReached;
+                if (button) button.disabled = !!data.commentLimitReached;
+            }
+        }
+        if (data.currentUserInteraction !== undefined) {
+            const likeBtn = lightbox.querySelector('button[name="interaction"][value="like"]');
+            const dislikeBtn = lightbox.querySelector('button[name="interaction"][value="dislike"]');
+            if (likeBtn) {
+                const isActive = data.currentUserInteraction === 'like';
+                likeBtn.classList.toggle('is-active', isActive);
+                likeBtn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+            }
+            if (dislikeBtn) {
+                const isActive = data.currentUserInteraction === 'dislike';
+                dislikeBtn.classList.toggle('is-active', isActive);
+                dislikeBtn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+            }
+        }
+        if (data.commentCount !== undefined) {
+            updateMetricCount(mediaId, 'comment', data.commentCount);
+        }
+    }
+
     let lastSubmitter = null;
     document.addEventListener('click', (event) => {
         const target = event.target;
@@ -845,11 +1173,12 @@ $hasMore = count($gallery) > $mediaLimit;
                 return;
             }
             if (data.action === 'interaction') {
+                const mediaId = data.mediaId || activeMediaId;
                 if (likeCountEl) likeCountEl.textContent = data.likeCount ?? likeCountEl.textContent;
                 if (dislikeCountEl) dislikeCountEl.textContent = data.dislikeCount ?? dislikeCountEl.textContent;
                 if (data.currentUserInteraction !== undefined) {
-                    const likeBtn = document.querySelector('button[name="interaction"][value="like"]');
-                    const dislikeBtn = document.querySelector('button[name="interaction"][value="dislike"]');
+                    const likeBtn = lightbox.querySelector('button[name="interaction"][value="like"]');
+                    const dislikeBtn = lightbox.querySelector('button[name="interaction"][value="dislike"]');
                     if (likeBtn) {
                         const isActive = data.currentUserInteraction === 'like';
                         likeBtn.classList.toggle('is-active', isActive);
@@ -861,6 +1190,10 @@ $hasMore = count($gallery) > $mediaLimit;
                         dislikeBtn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
                     }
                 }
+                if (mediaId) {
+                    if (data.likeCount !== undefined) updateMetricCount(mediaId, 'like', data.likeCount);
+                    if (data.dislikeCount !== undefined) updateMetricCount(mediaId, 'dislike', data.dislikeCount);
+                }
                 if (statusEl) statusEl.textContent = '';
             } else if (data.action === 'comment') {
                 if (commentItems && typeof data.commentsHtml === 'string') {
@@ -868,13 +1201,15 @@ $hasMore = count($gallery) > $mediaLimit;
                     setupTextareas(commentItems);
                 }
                 if (typeof data.commentLimit === 'number') {
-                    const note = document.querySelector('.interaction-section .comment-limit-note');
-                    if (note && data.commentLimitReached && data.commentLimit > 0) {
-                        note.textContent = `Kommentar-Limit erreicht (max. ${data.commentLimit} pro Nutzer).`;
+                    const note = lightboxPanel ? lightboxPanel.querySelector('.comment-limit-note') : null;
+                    if (note) {
+                        note.textContent = data.commentLimitReached && data.commentLimit > 0
+                            ? `Kommentar-Limit erreicht (max. ${data.commentLimit} pro Nutzer).`
+                            : '';
                     }
                 }
             if (data.commentLimitReached !== undefined) {
-                    const mainForm = document.querySelector('.interaction-section .comment-form:not(.reply-form)');
+                    const mainForm = lightboxCommentForm;
                     if (mainForm) {
                         const textarea = mainForm.querySelector('textarea');
                         const button = mainForm.querySelector('button[type="submit"]');
@@ -890,7 +1225,7 @@ $hasMore = count($gallery) > $mediaLimit;
                         });
                     }
                     if (data.commentLimit !== undefined) {
-                        const note = document.querySelector('.interaction-section .comment-limit-note');
+                        const note = lightboxPanel ? lightboxPanel.querySelector('.comment-limit-note') : null;
                         if (note) {
                             note.textContent = data.commentLimitReached && data.commentLimit > 0
                                 ? `Kommentar-Limit erreicht (max. ${data.commentLimit} pro Nutzer).`
@@ -904,6 +1239,14 @@ $hasMore = count($gallery) > $mediaLimit;
                         textarea.value = '';
                         autoGrowTextarea(textarea);
                     }
+                }
+                if (data.commentCount !== undefined) {
+                    const mediaId = data.mediaId || activeMediaId;
+                    if (mediaId) updateMetricCount(mediaId, 'comment', data.commentCount);
+                }
+                if (data.hoverHtml !== undefined) {
+                    const mediaId = data.mediaId || activeMediaId;
+                    if (mediaId) updateHoverPreview(mediaId, data.hoverHtml);
                 }
                 if (statusEl) statusEl.textContent = data.message || 'Kommentar gespeichert.';
             }
@@ -953,6 +1296,45 @@ $hasMore = count($gallery) > $mediaLimit;
 
     setupTextareas(document);
 
+    function setupHoverRotationFor(container) {
+        if (!container) return;
+        const comments = Array.from(container.querySelectorAll('.hover-comment'));
+        if (comments.length === 0) return;
+        comments.forEach((item) => item.classList.remove('is-active'));
+        comments[0].classList.add('is-active');
+        container.dataset.hoverIndex = '0';
+    }
+
+    function rotateHoverComment(container) {
+        const comments = Array.from(container.querySelectorAll('.hover-comment'));
+        if (comments.length <= 1) return;
+        const currentIndex = parseInt(container.dataset.hoverIndex || '0', 10) || 0;
+        const nextIndex = (currentIndex + 1) % comments.length;
+        comments[currentIndex].classList.remove('is-active');
+        comments[nextIndex].classList.add('is-active');
+        container.dataset.hoverIndex = String(nextIndex);
+    }
+
+    document.querySelectorAll('.media-hover-comments').forEach((container) => {
+        setupHoverRotationFor(container);
+        const card = container.closest('.media-item');
+        if (!card) return;
+        let intervalId = null;
+        card.addEventListener('pointerenter', (event) => {
+            if (event.pointerType === 'touch') return;
+            if (intervalId) return;
+            intervalId = window.setInterval(() => rotateHoverComment(container), 2500);
+        });
+        card.addEventListener('pointerleave', (event) => {
+            if (event.pointerType === 'touch') return;
+            if (intervalId) {
+                window.clearInterval(intervalId);
+                intervalId = null;
+            }
+            setupHoverRotationFor(container);
+        });
+    });
+
     document.addEventListener('click', (event) => {
         const target = event.target;
         if (!(target instanceof Element)) return;
@@ -972,11 +1354,19 @@ $hasMore = count($gallery) > $mediaLimit;
         }
     });
 
-    const lightbox = document.getElementById('lightbox');
-    const lightboxMedia = lightbox.querySelector('.lightbox-media');
-    const closeBtn = lightbox.querySelector('.lightbox-close');
+    function resetLightboxState() {
+        if (likeCountEl) likeCountEl.textContent = '0';
+        if (dislikeCountEl) dislikeCountEl.textContent = '0';
+        if (commentItems) commentItems.innerHTML = '';
+        const note = lightboxPanel ? lightboxPanel.querySelector('.comment-limit-note') : null;
+        if (note) note.textContent = '';
+        const likeBtn = lightbox.querySelector('button[name="interaction"][value="like"]');
+        const dislikeBtn = lightbox.querySelector('button[name="interaction"][value="dislike"]');
+        if (likeBtn) likeBtn.classList.remove('is-active');
+        if (dislikeBtn) dislikeBtn.classList.remove('is-active');
+    }
 
-    function openLightbox(type, src) {
+    function openLightbox(type, src, mediaId) {
         lightboxMedia.innerHTML = '';
         if (type === 'video') {
             const video = document.createElement('video');
@@ -991,19 +1381,26 @@ $hasMore = count($gallery) > $mediaLimit;
             img.alt = 'Bild';
             lightboxMedia.appendChild(img);
         }
+        setActiveMediaId(mediaId || '');
+        resetLightboxState();
         lightbox.classList.add('is-open');
         lightbox.setAttribute('aria-hidden', 'false');
+        if (mediaId) {
+            loadMediaData(mediaId).catch(() => {});
+        }
     }
 
     function closeLightbox() {
         lightbox.classList.remove('is-open');
         lightbox.setAttribute('aria-hidden', 'true');
         lightboxMedia.innerHTML = '';
+        setActiveMediaId('');
+        resetLightboxState();
     }
 
     document.querySelectorAll('.media-item[data-src]').forEach((item) => {
         item.addEventListener('click', () => {
-            openLightbox(item.dataset.type, item.dataset.src);
+            openLightbox(item.dataset.type, item.dataset.src, item.dataset.mediaId || '');
         });
     });
 

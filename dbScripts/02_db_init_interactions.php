@@ -24,9 +24,10 @@ try {
         'validator' => [
             '$jsonSchema' => [
                 'bsonType' => 'object',
-                'required' => ['project_id', 'user_id', 'text', 'created_at', 'updated_at'],
+                'required' => ['project_id', 'media_id', 'user_id', 'text', 'created_at', 'updated_at'],
                 'properties' => [
                     'project_id' => ['bsonType' => 'objectId'],
+                    'media_id' => ['bsonType' => 'objectId'],
                     'user_id' => ['bsonType' => 'objectId'],
                     'parent_comment_id' => ['bsonType' => 'objectId'],
                     'text' => ['bsonType' => 'string', 'maxLength' => 400],
@@ -36,7 +37,7 @@ try {
             ]
         ]
     ]);
-    $db->comments->createIndex(['project_id' => 1]);
+    $db->comments->createIndex(['project_id' => 1, 'media_id' => 1]);
     $db->comments->createIndex(['user_id' => 1]);
     $db->comments->createIndex(['parent_comment_id' => 1]);
     echo "✅ Comments-Collection erstellt.<br>";
@@ -47,9 +48,10 @@ try {
         'validator' => [
             '$jsonSchema' => [
                 'bsonType' => 'object',
-                'required' => ['project_id', 'user_id', 'type', 'created_at'],
+                'required' => ['project_id', 'media_id', 'user_id', 'type', 'created_at'],
                 'properties' => [
                     'project_id' => ['bsonType' => 'objectId'],
+                    'media_id' => ['bsonType' => 'objectId'],
                     'user_id' => ['bsonType' => 'objectId'],
                     'type' => ['enum' => ['like', 'dislike']],
                     'created_at' => ['bsonType' => 'date']
@@ -57,9 +59,9 @@ try {
             ]
         ]
     ]);
-    $db->likes->createIndex(['project_id' => 1]);
+    $db->likes->createIndex(['project_id' => 1, 'media_id' => 1]);
     $db->likes->createIndex(['user_id' => 1]);
-    $db->likes->createIndex(['project_id' => 1, 'user_id' => 1], ['unique' => true]);
+    $db->likes->createIndex(['project_id' => 1, 'media_id' => 1, 'user_id' => 1], ['unique' => true]);
     echo "✅ Likes-Collection erstellt.<br>";
 
 } catch (Exception $e) {

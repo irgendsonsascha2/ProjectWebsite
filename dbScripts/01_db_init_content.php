@@ -32,8 +32,9 @@ try {
                         'bsonType' => 'array',
                         'items' => [
                             'bsonType' => 'object',
-                            'required' => ['type', 'url'],
+                            'required' => ['media_id', 'type', 'url'],
                             'properties' => [
+                                'media_id' => ['bsonType' => 'objectId'],
                                 'type' => ['enum' => ['image', 'video']],
                                 'url' => ['bsonType' => 'string']
                             ]

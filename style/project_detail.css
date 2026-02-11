@@ -46,6 +46,15 @@
     line-height: 1;
 }
 
+.lightbox-panel .interaction-buttons button {
+    color: #f8fafc;
+}
+
+.lightbox-panel .interaction-buttons button.is-active {
+    background: #1e293b;
+    color: #fff;
+}
+
 .comment-form textarea {
     width: 100%;
     min-height: 5rem;
@@ -67,6 +76,17 @@
     color: white;
     padding: 0.625rem 0.9375rem;
     border-radius: 0.25rem;
+}
+
+.lightbox-panel .comment-form textarea {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-color: #263244;
+}
+
+.lightbox-panel .comment-form button {
+    background: #e2e8f0;
+    color: #111;
 }
 
 .comment-form button:disabled {
@@ -235,6 +255,88 @@
     will-change: transform;
 }
 
+.media-metrics {
+    position: absolute;
+    bottom: 0.5rem;
+    right: 0.5rem;
+    display: inline-flex;
+    gap: 0.45rem;
+    padding: 0.3rem 0.45rem;
+    background: rgba(12, 14, 18, 0.65);
+    border-radius: 999rem;
+    color: #fff;
+    font-size: 0.7rem;
+    line-height: 1;
+    transform: translateZ(1.25rem);
+}
+
+.media-metrics .metric {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+}
+
+.media-metrics .metric-icon {
+    font-size: 0.85rem;
+}
+
+.media-metrics .metric-count {
+    font-variant-numeric: tabular-nums;
+}
+
+.media-hover-comments {
+    position: absolute;
+    left: 0.5rem;
+    right: auto;
+    bottom: 2.2rem;
+    display: inline-flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    max-width: calc(100% - 1rem);
+    color: #fff;
+    font-size: 0.75rem;
+    text-align: left;
+    opacity: 0;
+    transform: translateY(0.4rem);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+    transform-style: preserve-3d;
+    translate: 0 0;
+}
+
+.media-hover-comments .hover-comment {
+    display: none;
+    gap: 0.35rem;
+    align-items: baseline;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0.3rem 0.5rem;
+    background: rgba(12, 14, 18, 0.65);
+    border-radius: 0.6rem;
+}
+
+.media-hover-comments .hover-comment.is-active {
+    display: flex;
+}
+
+.media-hover-comments .hover-author {
+    font-weight: 600;
+}
+
+.media-hover-comments .hover-text {
+    opacity: 0.85;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .media-item:hover .media-hover-comments {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .media-item img,
 .media-item video {
     width: 100%;
@@ -242,21 +344,6 @@
     object-fit: cover;
     display: block;
     transform: translateZ(1.25rem);
-}
-
-.media-item::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(0, 0, 0, 0.32), rgba(0, 0, 0, 0) 45%);
-    transform: translateZ(-0.75rem);
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    pointer-events: none;
-}
-
-.media-item.is-tilting::before {
-    opacity: 1;
 }
 
 .media-item:hover {
@@ -363,12 +450,60 @@
     color: #fff;
 }
 
+.lightbox-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.lightbox-media {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .lightbox-media img,
 .lightbox-media video {
     max-width: 80vw;
     max-height: 70vh;
     display: block;
     margin: 0 auto;
+}
+
+.lightbox-panel {
+    background: #0b0d12;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    min-width: 16rem;
+}
+
+.lightbox-panel .comment-list {
+    margin-top: 1rem;
+}
+
+@media (min-width: 64rem) {
+    .lightbox-content {
+        max-width: 92vw;
+        max-height: 88vh;
+    }
+
+    .lightbox-body {
+        flex-direction: row;
+        align-items: flex-start;
+    }
+
+    .lightbox-panel {
+        width: min(24rem, 30vw);
+        max-height: 80vh;
+        overflow: auto;
+    }
+
+    .lightbox-media img,
+    .lightbox-media video {
+        max-width: 60vw;
+        max-height: 78vh;
+    }
 }
 
 

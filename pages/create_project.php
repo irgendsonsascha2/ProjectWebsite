@@ -81,6 +81,7 @@ function handle_media_uploads($files, $contentImageDir, $contentVideoDir) {
         if (move_uploaded_file($tmpPath, $targetFile)) {
             $publicPath = 'content/' . ($type === 'video' ? 'videos' : 'images') . '/' . $filename;
             $newItems[] = [
+                'media_id' => new ObjectId(),
                 'type' => $type,
                 'url' => $publicPath
             ];
@@ -91,6 +92,23 @@ function handle_media_uploads($files, $contentImageDir, $contentVideoDir) {
     }
 
     return [$newItems, $uploadedFiles, $uploadErrors];
+}
+
+function ensure_media_ids($gallery) {
+    $gallery = normalize_gallery($gallery);
+    $normalized = [];
+    foreach ($gallery as $item) {
+        if ($item instanceof Traversable) {
+            $item = iterator_to_array($item);
+        } elseif (!is_array($item)) {
+            $item = (array)$item;
+        }
+        if (empty($item['media_id'])) {
+            $item['media_id'] = new ObjectId();
+        }
+        $normalized[] = $item;
+    }
+    return $normalized;
 }
 
 function render_media_manager($draftProject, $createActionUrl, $message, $showMessage = false) {
@@ -213,6 +231,7 @@ if ($draftObjectId && isset($_POST['delete_media']) && isset($_POST['media_index
         }
         unset($gallery[$index]);
         $gallery = array_values($gallery);
+        $gallery = ensure_media_ids($gallery);
 
         $update = [
             '$set' => [
@@ -248,6 +267,7 @@ if ($draftObjectId && isset($_POST['reorder_media']) && isset($_POST['order']) &
         }
     }
     if (count($reordered) === count($gallery)) {
+        $reordered = ensure_media_ids($reordered);
         $update = [
             '$set' => [
                 'gallery' => $reordered,
@@ -295,6 +315,7 @@ if (isset($_POST['upload_media_draft']) && isset($_FILES['draft_gallery_files'])
     if (!empty($newItems)) {
         $gallery = normalize_gallery($draftProject['gallery'] ?? []);
         $gallery = array_merge($gallery, $newItems);
+        $gallery = ensure_media_ids($gallery);
         $update = [
             '$set' => [
                 'gallery' => $gallery,
@@ -369,6 +390,7 @@ if (isset($_POST['create_project'])) {
         } else {
             $gallery = $existingGallery;
         }
+        $gallery = ensure_media_ids($gallery);
         $thumb = !empty($gallery) && !empty($gallery[0]['url']) ? $gallery[0]['url'] : null;
         $thumbType = !empty($gallery) && !empty($gallery[0]['type']) ? $gallery[0]['type'] : null;
 

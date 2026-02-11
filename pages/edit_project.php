@@ -102,6 +102,18 @@ function normalize_gallery_items($gallery) {
     return $normalized;
 }
 
+function ensure_media_ids($gallery) {
+    $gallery = normalize_gallery_items($gallery);
+    $normalized = [];
+    foreach ($gallery as $item) {
+        if (empty($item['media_id'])) {
+            $item['media_id'] = new ObjectId();
+        }
+        $normalized[] = $item;
+    }
+    return $normalized;
+}
+
 function normalize_tags($tags) {
     if (is_array($tags)) {
         return $tags;
@@ -165,11 +177,11 @@ function render_media_manager($workingGallery, $editActionUrl, $message, $showMe
 $sessionGalleryKey = 'edit_gallery_' . (string)$projectObjectId;
 $sessionOriginalKey = 'edit_gallery_original_' . (string)$projectObjectId;
 if (!isset($_SESSION[$sessionGalleryKey])) {
-    $_SESSION[$sessionGalleryKey] = normalize_gallery_items($project['gallery'] ?? []);
-    $_SESSION[$sessionOriginalKey] = normalize_gallery_items($project['gallery'] ?? []);
+    $_SESSION[$sessionGalleryKey] = ensure_media_ids($project['gallery'] ?? []);
+    $_SESSION[$sessionOriginalKey] = ensure_media_ids($project['gallery'] ?? []);
 }
 
-$workingGallery = normalize_gallery_items($_SESSION[$sessionGalleryKey] ?? []);
+$workingGallery = ensure_media_ids($_SESSION[$sessionGalleryKey] ?? []);
 $_SESSION[$sessionGalleryKey] = $workingGallery;
 
 // --- LOGIK: MEDIA LÖSCHEN ---
@@ -187,6 +199,7 @@ if (isset($_POST['delete_media']) && isset($_POST['media_index'])) {
         }
         unset($gallery[$index]);
         $gallery = array_values($gallery);
+        $gallery = ensure_media_ids($gallery);
 
         $_SESSION[$sessionGalleryKey] = $gallery;
         $workingGallery = $gallery;
@@ -204,6 +217,7 @@ if (isset($_POST['reorder_media']) && isset($_POST['order']) && is_array($_POST[
         }
     }
     if (count($reordered) === count($gallery)) {
+        $reordered = ensure_media_ids($reordered);
         $_SESSION[$sessionGalleryKey] = $reordered;
         $workingGallery = $reordered;
         $message = "✅ Reihenfolge aktualisiert.";
@@ -251,6 +265,7 @@ if (isset($_POST['upload_media']) && isset($_FILES['gallery_files'])) {
         if (move_uploaded_file($tmpPath, $targetFile)) {
             $publicPath = build_temp_url($type, $_SESSION['user_id'], (string)$projectObjectId, $filename);
             $newItems[] = [
+                'media_id' => new ObjectId(),
                 'type' => $type,
                 'url' => $publicPath,
                 'is_temp' => true,
@@ -265,6 +280,7 @@ if (isset($_POST['upload_media']) && isset($_FILES['gallery_files'])) {
     if (!empty($newItems)) {
         $gallery = $workingGallery;
         $gallery = array_merge($gallery, $newItems);
+        $gallery = ensure_media_ids($gallery);
         $_SESSION[$sessionGalleryKey] = $gallery;
         $workingGallery = $gallery;
         $message = "✅ Medien hochgeladen. Änderungen sind noch nicht gespeichert.";
@@ -303,11 +319,12 @@ if (isset($_POST['update_project'])) {
 
     if (!$hasError && !empty($updateData['title'])) {
         $finalGallery = [];
-        $workingGallery = normalize_gallery_items($_SESSION[$sessionGalleryKey] ?? ($project['gallery'] ?? []));
+        $workingGallery = ensure_media_ids($_SESSION[$sessionGalleryKey] ?? ($project['gallery'] ?? []));
         foreach ($workingGallery as $item) {
             if (empty($item['type']) || empty($item['url'])) {
                 continue;
             }
+            $mediaId = $item['media_id'] ?? new ObjectId();
             if (!empty($item['is_temp']) && !empty($item['tmp_path'])) {
                 $type = $item['type'];
                 $ext = pathinfo($item['tmp_path'], PATHINFO_EXTENSION);
@@ -321,6 +338,7 @@ if (isset($_POST['update_project'])) {
                 if (rename($item['tmp_path'], $targetFile)) {
                     $publicPath = 'content/' . ($type === 'video' ? 'videos' : 'images') . '/' . $filename;
                     $finalGallery[] = [
+                        'media_id' => $mediaId,
                         'type' => $type,
                         'url' => $publicPath
                     ];
@@ -331,6 +349,7 @@ if (isset($_POST['update_project'])) {
                 }
             } else {
                 $finalGallery[] = [
+                    'media_id' => $mediaId,
                     'type' => $item['type'],
                     'url' => $item['url']
                 ];
@@ -345,15 +364,23 @@ if (isset($_POST['update_project'])) {
             }
             $originalGallery = normalize_gallery_items($_SESSION[$sessionOriginalKey] ?? ($project['gallery'] ?? []));
             $originalUrls = [];
+            $originalMediaIds = [];
             foreach ($originalGallery as $item) {
                 if (!empty($item['url'])) {
                     $originalUrls[] = $item['url'];
                 }
+                if (!empty($item['media_id'])) {
+                    $originalMediaIds[(string)$item['media_id']] = true;
+                }
             }
             $finalUrls = [];
+            $finalMediaIds = [];
             foreach ($finalGallery as $item) {
                 if (!empty($item['url'])) {
                     $finalUrls[] = $item['url'];
+                }
+                if (!empty($item['media_id'])) {
+                    $finalMediaIds[(string)$item['media_id']] = true;
                 }
             }
             $removed = array_diff($originalUrls, $finalUrls);
@@ -363,6 +390,21 @@ if (isset($_POST['update_project'])) {
                     if (is_file($path)) {
                         unlink($path);
                     }
+                }
+            }
+            $removedMediaIds = array_diff(array_keys($originalMediaIds), array_keys($finalMediaIds));
+            if (!empty($removedMediaIds)) {
+                $objectIds = [];
+                foreach ($removedMediaIds as $id) {
+                    try {
+                        $objectIds[] = new ObjectId($id);
+                    } catch (Exception $e) {
+                        continue;
+                    }
+                }
+                if (!empty($objectIds)) {
+                    $db->likes->deleteMany(['project_id' => $projectObjectId, 'media_id' => ['$in' => $objectIds]]);
+                    $db->comments->deleteMany(['project_id' => $projectObjectId, 'media_id' => ['$in' => $objectIds]]);
                 }
             }
         }
@@ -379,8 +421,8 @@ if (isset($_POST['update_project'])) {
                 $db->projects->updateOne(['_id' => $projectObjectId], $update);
 
                 $project = $db->projects->findOne(['_id' => $projectObjectId]);
-                $_SESSION[$sessionGalleryKey] = normalize_gallery_items($project['gallery'] ?? []);
-                $_SESSION[$sessionOriginalKey] = normalize_gallery_items($project['gallery'] ?? []);
+                $_SESSION[$sessionGalleryKey] = ensure_media_ids($project['gallery'] ?? []);
+                $_SESSION[$sessionOriginalKey] = ensure_media_ids($project['gallery'] ?? []);
                 $workingGallery = $_SESSION[$sessionGalleryKey];
                 header('Location: ' . $returnTo);
                 exit;
