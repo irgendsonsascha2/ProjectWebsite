@@ -1034,6 +1034,9 @@ if ($canViewComments && !empty($mediaIds)) {
     const dislikeCountEl = lightboxPanel ? lightboxPanel.querySelector('.dislike-count') : null;
     const lightboxInteractionForm = lightbox.querySelector('.lightbox-interaction-form');
     const lightboxCommentForm = lightbox.querySelector('.lightbox-comment-form');
+    const body = document.body;
+    let bodyOverflow = '';
+    let bodyPaddingRight = '';
     let activeMediaId = null;
 
     async function submitAjaxForm(form, submitter) {
@@ -1300,19 +1303,41 @@ if ($canViewComments && !empty($mediaIds)) {
         if (!container) return;
         const comments = Array.from(container.querySelectorAll('.hover-comment'));
         if (comments.length === 0) return;
-        comments.forEach((item) => item.classList.remove('is-active'));
+        comments.forEach((item) => {
+            item.classList.remove('is-active');
+            item.classList.remove('is-leaving');
+        });
         comments[0].classList.add('is-active');
         container.dataset.hoverIndex = '0';
     }
 
     function rotateHoverComment(container) {
         const comments = Array.from(container.querySelectorAll('.hover-comment'));
-        if (comments.length <= 1) return;
+        if (comments.length <= 1) return false;
         const currentIndex = parseInt(container.dataset.hoverIndex || '0', 10) || 0;
-        const nextIndex = (currentIndex + 1) % comments.length;
-        comments[currentIndex].classList.remove('is-active');
-        comments[nextIndex].classList.add('is-active');
+        const nextIndex = currentIndex + 1;
+        const current = comments[currentIndex];
+        if (!current) return false;
+        if (nextIndex >= comments.length) {
+            current.classList.remove('is-active');
+            current.classList.add('is-leaving');
+            window.setTimeout(() => {
+                current.classList.remove('is-leaving');
+            }, 260);
+            container.dataset.hoverIndex = '-1';
+            return false;
+        }
+        const next = comments[nextIndex];
+        if (!next || current === next) return true;
+        current.classList.remove('is-active');
+        current.classList.add('is-leaving');
+        next.classList.remove('is-leaving');
+        next.classList.add('is-active');
+        window.setTimeout(() => {
+            current.classList.remove('is-leaving');
+        }, 260);
         container.dataset.hoverIndex = String(nextIndex);
+        return true;
     }
 
     document.querySelectorAll('.media-hover-comments').forEach((container) => {
@@ -1323,7 +1348,14 @@ if ($canViewComments && !empty($mediaIds)) {
         card.addEventListener('pointerenter', (event) => {
             if (event.pointerType === 'touch') return;
             if (intervalId) return;
-            intervalId = window.setInterval(() => rotateHoverComment(container), 2500);
+            setupHoverRotationFor(container);
+            intervalId = window.setInterval(() => {
+                const keepGoing = rotateHoverComment(container);
+                if (!keepGoing && intervalId) {
+                    window.clearInterval(intervalId);
+                    intervalId = null;
+                }
+            }, 2500);
         });
         card.addEventListener('pointerleave', (event) => {
             if (event.pointerType === 'touch') return;
@@ -1331,7 +1363,12 @@ if ($canViewComments && !empty($mediaIds)) {
                 window.clearInterval(intervalId);
                 intervalId = null;
             }
-            setupHoverRotationFor(container);
+            const comments = Array.from(container.querySelectorAll('.hover-comment'));
+            comments.forEach((item) => {
+                item.classList.remove('is-active');
+                item.classList.remove('is-leaving');
+            });
+            container.dataset.hoverIndex = '-1';
         });
     });
 
@@ -1366,6 +1403,25 @@ if ($canViewComments && !empty($mediaIds)) {
         if (dislikeBtn) dislikeBtn.classList.remove('is-active');
     }
 
+    function lockBodyScroll() {
+        if (body.dataset.scrollLock === '1') return;
+        bodyOverflow = body.style.overflow;
+        bodyPaddingRight = body.style.paddingRight;
+        const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
+        body.style.overflow = 'hidden';
+        if (scrollBarWidth > 0) {
+            body.style.paddingRight = `${scrollBarWidth}px`;
+        }
+        body.dataset.scrollLock = '1';
+    }
+
+    function unlockBodyScroll() {
+        if (body.dataset.scrollLock !== '1') return;
+        body.style.overflow = bodyOverflow;
+        body.style.paddingRight = bodyPaddingRight;
+        delete body.dataset.scrollLock;
+    }
+
     function openLightbox(type, src, mediaId) {
         lightboxMedia.innerHTML = '';
         if (type === 'video') {
@@ -1385,6 +1441,7 @@ if ($canViewComments && !empty($mediaIds)) {
         resetLightboxState();
         lightbox.classList.add('is-open');
         lightbox.setAttribute('aria-hidden', 'false');
+        lockBodyScroll();
         if (mediaId) {
             loadMediaData(mediaId).catch(() => {});
         }
@@ -1396,6 +1453,7 @@ if ($canViewComments && !empty($mediaIds)) {
         lightboxMedia.innerHTML = '';
         setActiveMediaId('');
         resetLightboxState();
+        unlockBodyScroll();
     }
 
     document.querySelectorAll('.media-item[data-src]').forEach((item) => {
@@ -1447,6 +1505,36 @@ if ($canViewComments && !empty($mediaIds)) {
         });
     });
 
+    function getLightboxItems() {
+        return Array.from(document.querySelectorAll('.media-item[data-src]'));
+    }
+
+    function getActiveIndex(items) {
+        if (!items.length) return -1;
+        if (activeMediaId) {
+            const idIndex = items.findIndex((el) => (el.dataset.mediaId || '') === activeMediaId);
+            if (idIndex >= 0) return idIndex;
+        }
+        const current = lightboxMedia.querySelector('img, video');
+        if (current) {
+            const src = current.getAttribute('src') || '';
+            const srcIndex = items.findIndex((el) => (el.dataset.src || '') === src);
+            if (srcIndex >= 0) return srcIndex;
+        }
+        return -1;
+    }
+
+    function navigateLightbox(delta) {
+        const items = getLightboxItems();
+        if (!items.length) return;
+        const currentIndex = getActiveIndex(items);
+        if (currentIndex < 0) return;
+        const nextIndex = currentIndex + delta;
+        if (nextIndex < 0 || nextIndex >= items.length) return;
+        const item = items[nextIndex];
+        openLightbox(item.dataset.type, item.dataset.src, item.dataset.mediaId || '');
+    }
+
     closeBtn.addEventListener('click', closeLightbox);
     lightboxMedia.addEventListener('click', (e) => {
         if (e.target && (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO')) {
@@ -1460,11 +1548,26 @@ if ($canViewComments && !empty($mediaIds)) {
     });
 
     document.addEventListener('keydown', (e) => {
+        const isDesktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+        const target = e.target;
+        const isFormField = target instanceof Element
+            && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable);
         if (e.key === 'Escape') {
             if (lightbox.classList.contains('is-open')) {
                 closeLightbox();
             } else {
                 window.location.href = 'index.php?page=project_grid';
+            }
+            return;
+        }
+        if (!isDesktop || isFormField) return;
+        if (lightbox.classList.contains('is-open')) {
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                navigateLightbox(-1);
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                navigateLightbox(1);
             }
         }
     });
