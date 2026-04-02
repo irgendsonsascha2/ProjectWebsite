@@ -1,0 +1,349 @@
+# ProjectWebsite
+
+Kleines privates Social-Media-/Portfolio-Projekt auf Basis von PHP und MongoDB. Die Anwendung bietet ein invite-basiertes Account-System, rollenbasierte Berechtigungen, Projekt-Posts mit Bild-/Video-Galerie sowie Interaktionen wie Likes, Dislikes und Kommentare.
+
+## Überblick
+
+Die Website ist als einfache PHP-Anwendung ohne Framework aufgebaut. `index.php` dient als zentraler Router und lädt Seiten aus dem Verzeichnis `pages/`. Gemeinsame Initialisierung wie Session-Start, MongoDB-Verbindung, Rollen-/Rechteauflösung und Hilfsfunktionen liegen in `includes/bootstrap.php`.
+
+Hauptfunktionen:
+
+- Invite-basierte Registrierung über Einmal-Codes
+- Login/Logout mit Rollen und Berechtigungen
+- Projektübersicht im Grid
+- Projektdetails mit Mediengalerie
+- Erstellung und Bearbeitung von Projekten
+- Entwurfslogik für neue Projekte
+- Likes/Dislikes pro Medium
+- Kommentare und Antworten pro Medium
+- Admin-Bereich für Datenbankskripte, Rollen und Berechtigungen
+
+## Technik
+
+- PHP
+- Composer
+- MongoDB
+- Paket: `mongodb/mongodb`
+- Frontend mit serverseitig gerenderten PHP-Seiten, CSS und etwas Vanilla JavaScript
+
+`composer.json` enthält aktuell nur die MongoDB-PHP-Bibliothek als Abhängigkeit.
+
+## Projektstruktur
+
+```text
+.
+├── index.php                 # Einstiegspunkt und einfacher Router
+├── AGENTS.md                 # Arbeitsregeln und Kontext für KI-Agenten
+├── docs/                     # Planungen und technische Zusatzdokumentation
+├── includes/
+│   └── bootstrap.php         # Session, DB-Verbindung, Rechte, Upload-Helfer
+├── pages/
+│   ├── account.php           # Login, Registrierung, Invite-Codes
+│   ├── project_grid.php      # Projektübersicht
+│   ├── project_detail.php    # Detailseite, Likes, Dislikes, Kommentare
+│   ├── create_project.php    # Projekt anlegen, Entwürfe, Uploads
+│   ├── edit_project.php      # Projekt bearbeiten
+│   └── admin/                # Admin-Dashboard, Rollen, Berechtigungen
+├── dbScripts/                # Initialisierung und Reset von Collections
+├── content/
+│   ├── images/               # Hochgeladene Bilder
+│   └── videos/               # Hochgeladene Videos
+├── style/                    # CSS-Dateien
+├── img/                      # Statische Bilder
+└── logs/                     # PHP-Fehlerlog bei Debug-Modus
+```
+
+## Voraussetzungen
+
+- PHP mit MongoDB-Erweiterung
+- MongoDB mit konfigurierbaren Verbindungen für App- und Admin-Kontext
+- Composer
+- Schreibrechte für:
+  - `content/images`
+  - `content/videos`
+  - `logs`
+
+## Installation und Start
+
+1. Abhängigkeiten installieren:
+
+```bash
+composer install
+```
+
+2. Sicherstellen, dass MongoDB lokal läuft:
+
+```text
+mongodb://localhost:27017
+```
+
+Optional konfigurierbare Umgebungsvariablen:
+
+```text
+APP_DB_URI=mongodb://viewer:0@localhost:27017/portfolio_db?authSource=portfolio_db
+ADMIN_DB_URI=mongodb://admin:0@localhost:27017/portfolio_db?authSource=portfolio_db
+APP_DB_NAME=portfolio_db
+```
+
+Für die geplante rollenbasierte MongoDB-Absicherung werden später diese Variablen verwendet:
+
+```text
+VIEWER_DB_URI=mongodb://viewer:0@localhost:27017/portfolio_db?authSource=portfolio_db
+COMMUNITY_DB_URI=mongodb://community_member:0@localhost:27017/portfolio_db?authSource=portfolio_db
+CONTENT_MANAGER_DB_URI=mongodb://content_manager:0@localhost:27017/portfolio_db?authSource=portfolio_db
+ADMIN_DB_URI=mongodb://admin:0@localhost:27017/portfolio_db?authSource=portfolio_db
+APP_DB_NAME=portfolio_db
+```
+
+Empfohlene Zielarchitektur:
+
+- `VIEWER_DB_URI` wird für Gäste und `viewer` verwendet.
+- `COMMUNITY_DB_URI` wird für `community_member` verwendet.
+- `CONTENT_MANAGER_DB_URI` wird für `content_manager` verwendet.
+- `ADMIN_DB_URI` wird für `admin` sowie DB-Initialisierung und Wartung verwendet.
+- Wenn keine Env-Variablen gesetzt sind, nutzt das Projekt lokal standardmäßig Passwort `0` für die vier MongoDB-Benutzer `viewer`, `community_member`, `content_manager` und `admin`.
+- Diese Standardwerte sind nur für lokale Entwicklung gedacht.
+
+## MongoDB Authentifizierung
+
+Damit die Trennung der Datenbankrechte tatsächlich wirksam ist, muss MongoDB-Authentifizierung aktiviert sein. Nur das Anlegen von Benutzern in MongoDB reicht nicht aus, wenn der Server weiterhin ohne Auth läuft.
+
+Erforderlich:
+
+- MongoDB-Admin-Benutzer anlegen
+- in der MongoDB-Konfiguration Authentifizierung aktivieren
+- MongoDB-Dienst neu starten
+- danach die Projektbenutzer `viewer`, `community_member`, `content_manager` und `admin` anlegen
+
+Typische MongoDB-Konfiguration:
+
+```yaml
+security:
+  authorization: enabled
+```
+
+Danach müssen sich Compass, `mongosh` und die Website mit gültigen Zugangsdaten verbinden.
+Die Anwendung kann abhängig von der Website-Rolle unterschiedliche MongoDB-Verbindungen verwenden.
+
+## Rollenbasierte MongoDB-Benutzer
+
+Für die geplante granulare Datenbankabsicherung werden getrennte MongoDB-Benutzer pro Website-Rolle empfohlen:
+
+- `viewer`
+- `community_member`
+- `content_manager`
+- `admin`
+
+Die Verbindungs-URIs dafür stehen im Abschnitt zu den Umgebungsvariablen.
+Die rollenbasierte Auswahl ist im Projekt bereits vorbereitet und wird zentral in `includes/db.php` aufgelöst.
+
+## Wichtiger Architekturhinweis
+
+MongoDB-Rollen sind grob und schützen primär auf Datenbank- oder Collection-Ebene.
+
+Das ist sinnvoll für technische Grenzen wie:
+
+- wer grundsätzlich schreiben darf
+- wer administrative DB-Aktionen ausführen darf
+- wer nur lesen darf
+
+Feine fachliche Kontrolle bleibt trotzdem Aufgabe der Anwendung, zum Beispiel:
+
+- wer Kommentare schreiben darf
+- wer Projekte erstellen darf
+- wer nur eigene Projekte ändern darf
+- wer Uploads ausführen darf
+
+Diese Regeln müssen zusätzlich serverseitig im Code erzwungen werden und dürfen nicht nur in der UI verborgen sein.
+
+3. Datenbank initialisieren:
+
+- im Browser über `dbScripts/db_init_master.php`
+- oder aus dem Admin-Bereich über `pages/admin/index.php`
+
+Die Initialisierung erstellt Collections, Rollen, Berechtigungen, Invite-Codestruktur und einen Admin-User.
+
+## Standardzugang nach Initialisierung
+
+Das Script `dbScripts/00_db_init_accounts.php` legt standardmäßig folgenden Admin an:
+
+- E-Mail, Username und Passwort werden beim Ausführen des Scripts im Admin-Panel abgefragt.
+- Beim Ausführen von `dbScripts/db_init_master.php` werden diese Eingaben ebenfalls im Dialog abgefragt.
+
+Wichtig: Harte Seed-Credentials sollen nicht mehr im Code hinterlegt werden.
+
+## Routing
+
+Die Anwendung nutzt Query-Parameter-basiertes Routing:
+
+- `index.php?page=project_grid`
+- `index.php?page=project_detail&id=<project_id>`
+- `index.php?page=create_project`
+- `index.php?page=edit_project&id=<project_id>`
+- `index.php?page=account`
+
+Für unbekannte Seiten wird `pages/404.php` geladen.
+
+Zusätzlich unterstützt `index.php` einfache AJAX-Requests, indem Zielseiten direkt aus `pages/<name>.php` geladen werden.
+
+## Rollen und Berechtigungen
+
+Die Rollen werden in `roles_config`, die Berechtigungen in `permissions_config` gespeichert.
+
+Standardrollen:
+
+- `viewer`
+  - Darf Projekte, Kommentare und Likes ansehen
+- `community_member`
+  - Zusätzlich Kommentare schreiben und Likes/Dislikes setzen
+  - Hat standardmäßig ein Kommentar-Limit von 10
+- `content_manager`
+  - Darf eigene Projekte erstellen/bearbeiten
+  - Darf kommentieren, liken/disliken und bestimmte Kommentare löschen
+- `admin`
+  - Vollzugriff auf Inhalte, Löschfunktionen, Invite-Codes, Rollen/Berechtigungen und Initialisierungsskripte
+
+Wichtige Standard-Berechtigungen:
+
+- `view_projects`
+- `view_comments`
+- `view_likes`
+- `create_project`
+- `edit_all`
+- `edit_own`
+- `delete_all`
+- `delete_comments`
+- `comment_limit`
+- `manage_users`
+- `generate_codes`
+- `comment`
+- `like_dislike`
+
+Die Funktion `can($permission)` in `includes/bootstrap.php` dient als zentrale Rechteprüfung.
+
+## Account- und Invite-System
+
+`pages/account.php` enthält:
+
+- Login per E-Mail oder Username
+- Registrierung per Einmal-Code
+- Rollenzuweisung anhand des verwendeten Registrierungscodes
+- Generierung neuer Einladungscodes für berechtigte Nutzer
+
+Invite-Codes werden in `registration_codes` gespeichert. Ein Code kann nur einmal verwendet werden.
+
+## Projekte und Medien
+
+Projekte werden in der Collection `projects` gespeichert. Ein Projekt kann enthalten:
+
+- Titel
+- Beschreibung
+- Tags
+- Galerie mit Bild- und/oder Videodateien
+- optionales Thumbnail
+- `author_id`
+- `is_draft`
+- Zeitstempel für Erstellung und Aktualisierung
+
+Uploads werden lokal gespeichert:
+
+- Bilder unter `content/images`
+- Videos unter `content/videos`
+
+Upload-Regeln in `includes/bootstrap.php`:
+
+- maximal 50 Dateien pro Upload-Vorgang
+- Bilder bis 10 MB
+- Videos bis 50 MB
+
+`pages/create_project.php` unterstützt Entwürfe. Bereits hochgeladene Medien können also zwischengespeichert, sortiert und einzeln gelöscht werden, bevor das Projekt final gespeichert wird.
+
+## Interaktionen
+
+`pages/project_detail.php` implementiert:
+
+- Likes/Dislikes pro Medium innerhalb eines Projekts
+- Kommentare pro Medium
+- Antworten auf Kommentare
+- Löschlogik für Kommentare abhängig von Rolle und Besitz
+- AJAX-Antworten für Interaktionen
+
+Datenhaltung:
+
+- `likes`: speichert Reaktion eines Nutzers pro `project_id` + `media_id`
+- `comments`: speichert Kommentare inklusive optionaler `parent_comment_id` für Antworten
+
+## Admin-Bereich
+
+Der Admin-Bereich liegt unter `pages/admin/` und umfasst:
+
+- `index.php`
+  - Ausführung und Einsicht der Datenbankskripte aus `dbScripts/`
+- `roles.php`
+  - Rollen anlegen, bearbeiten und löschen
+- `permissions.php`
+  - Berechtigungen anlegen, bearbeiten und löschen
+
+Zugriff ist ausschließlich für eingeloggte Nutzer mit Rolle `admin` vorgesehen.
+
+## Datenbankskripte
+
+Die wichtigsten Initialisierungsskripte:
+
+- `dbScripts/00_db_init_accounts.php`
+  - Accounts, Rollen, Berechtigungen, Registrierungscodes, Admin-Benutzer
+- `dbScripts/01_db_init_content.php`
+  - Projects-Collection und Beispielprojekt
+- `dbScripts/02_db_init_interactions.php`
+  - Comments- und Likes-Collections
+- `dbScripts/03_db_init_mongo_roles.php`
+  - MongoDB-Custom-Roles und MongoDB-Benutzer für `viewer`, `community_member`, `content_manager` und `admin`
+- `dbScripts/db_init_master.php`
+  - Führt die nummerierten Skripte gesammelt aus
+
+Hinweis: Die Skripte droppen Collections und setzen Daten neu auf. Sie sind daher destruktiv.
+Direkter Browserzugriff auf `dbScripts/` ist gesperrt. Die Ausführung soll nur über den Admin-Bereich erfolgen.
+Normale Seiten verwenden die App-Datenbankverbindung, DB-Initialisierung und Wartung verwenden eine getrennte Admin-Verbindung.
+Alle nummerierten Dateien in `dbScripts/` werden von `dbScripts/db_init_master.php` automatisch mit ausgeführt.
+
+Für `dbScripts/03_db_init_mongo_roles.php` werden diese Env-Variablen für die MongoDB-Passwörter erwartet:
+
+```text
+MONGO_VIEWER_DB_PASSWORD=...
+MONGO_COMMUNITY_DB_PASSWORD=...
+MONGO_CONTENT_MANAGER_DB_PASSWORD=...
+MONGO_ADMIN_DB_PASSWORD=...
+```
+
+Wenn diese fehlen, kann das Script die MongoDB-Benutzer nicht vollständig initialisieren.
+Im Admin-Panel können diese Passwörter alternativ direkt beim Ausführen eingegeben werden. Die Eingabefelder sind verpflichtend.
+Beim Ausführen von `dbScripts/db_init_master.php` werden die relevanten Felder ebenfalls gesammelt im Master-Dialog abgefragt.
+
+## Debugging
+
+Mit `?debug=1` werden erweiterte PHP-Fehler aktiviert. `includes/bootstrap.php` schreibt Fehler dann zusätzlich nach:
+
+- `logs/php_errors.log`
+
+Beispiel:
+
+```text
+index.php?page=project_grid&debug=1
+```
+
+## Bekannte Eigenschaften des aktuellen Stands
+
+- Die Anwendung ist stark auf lokale Entwicklung mit einer lokalen MongoDB-Instanz ausgelegt.
+- Konfiguration wie Datenbank-URI oder Admin-Seed ist derzeit im Code fest hinterlegt.
+- Es gibt aktuell keine getrennte Produktionskonfiguration oder `.env`-Struktur.
+- Die Anwendung nutzt kein Framework und keine API-Schicht; Rendering und Logik liegen direkt in den PHP-Seiten.
+
+## Empfohlene nächste Dokumente
+
+Falls das Projekt weiter wächst, wären diese Ergänzungen sinnvoll:
+
+- `docs/architecture.md` für Seitenfluss und Rechtekonzept
+- `docs/database.md` für Collections und Felder
+- `docs/deployment.md` für Server-Setup
+- `docs/security.md` für Invite-System, Uploads und Härtung
+- `docs/current_status.md` für aktuelle Blocker und den letzten technischen Zwischenstand

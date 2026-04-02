@@ -21,13 +21,10 @@ if (isset($_GET['debug']) && $_GET['debug'] === '1') {
     });
 }
 
-if (!class_exists('MongoDB\Client')) {
-    require __DIR__ . '/../vendor/autoload.php';
-}
+require_once __DIR__ . '/db.php';
 
 if (!isset($db)) {
-    $client = new \MongoDB\Client("mongodb://localhost:27017");
-    $db = $client->portfolio_db;
+    [$client, $db] = get_request_mongo_connection($_SESSION['role'] ?? 'viewer');
 }
 
 if (isset($_SESSION['user_id']) && (
@@ -49,6 +46,7 @@ if (isset($_SESSION['user_id']) && (
                     $_SESSION['permissions'] = iterator_to_array($roleData['permissions']);
                 }
             }
+            [$client, $db] = get_request_mongo_connection($_SESSION['role']);
         } else {
             $_SESSION = [];
         }
@@ -69,6 +67,7 @@ if (!isset($_SESSION['user_id'])) {
             $_SESSION['permissions'] = [];
         }
     }
+    [$client, $db] = get_request_mongo_connection($_SESSION['role']);
 }
 
 if (!function_exists('can')) {

@@ -4,17 +4,17 @@
  * Scans for scripts starting with 00, 01, 02... and runs them.
  */
 
-require __DIR__ . '/../vendor/autoload.php';
-
-use MongoDB\Client;
+require __DIR__ . '/_guard.php';
+require_once __DIR__ . '/../includes/db.php';
 
 echo "<h1>🚀 MongoDB Master-Initialisierung</h1>";
 echo "<div style='font-family: monospace; background: #222; color: #0f0; padding: 20px; border-radius: 5px;'>";
 
 try {
     // Zentraler Verbindungsaufbau: Diese Variablen werden von den Unter-Scripten genutzt
-    $client = new Client("mongodb://localhost:27017");
-    $db = $client->portfolio_db;
+    if (!isset($db) || !isset($client)) {
+        [$client, $db] = get_admin_mongo_connection();
+    }
 
     // 1. Alle .php Dateien im aktuellen Verzeichnis finden, die mit 00, 01 etc. beginnen
     $scripts = glob(__DIR__ . "/[0-9][0-9]*.php");

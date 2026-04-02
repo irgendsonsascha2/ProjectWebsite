@@ -45,6 +45,7 @@ if (isset($_POST['register'])) {
     $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
     $username = strtolower(trim($_POST['username']));
     $password = $_POST['password'];
+    [, $adminDb] = get_admin_mongo_connection();
 
     $validCode = $db->registration_codes->findOne(['code' => $code, 'is_used' => false]);
 
@@ -58,7 +59,7 @@ if (isset($_POST['register'])) {
         } elseif ($db->users->findOne(['username' => $username])) {
             $message = "❌ Fehler: Dieser Username wird bereits verwendet.";
         } else {
-            $db->users->insertOne([
+            $adminDb->users->insertOne([
                 'email' => $email,
                 'username' => $username,
                 'password' => password_hash($password, PASSWORD_DEFAULT),
@@ -66,7 +67,7 @@ if (isset($_POST['register'])) {
                 'created_at' => new UTCDateTime()
             ]);
 
-            $db->registration_codes->updateOne(
+            $adminDb->registration_codes->updateOne(
                 ['_id' => $validCode['_id']],
                 ['$set' => ['is_used' => true]]
             );

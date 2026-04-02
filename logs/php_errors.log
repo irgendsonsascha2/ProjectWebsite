@@ -34,3 +34,21 @@ Stack trace:
 #1 C:\Users\Sascha\Sascha Projekte\ProjectWebsite\index.php(45): include('...')
 #2 {main}
   thrown in C:\Users\Sascha\Sascha Projekte\ProjectWebsite\includes\bootstrap.php:93
+[01-Apr-2026 11:42:31 UTC] PHP Fatal error:  Uncaught MongoDB\Driver\Exception\CommandException: Command find requires authentication in C:\Users\Sascha\Sascha Projekte\ProjectWebsite\vendor\mongodb\mongodb\src\Operation\Find.php:263
+Stack trace:
+#0 C:\Users\Sascha\Sascha Projekte\ProjectWebsite\vendor\mongodb\mongodb\src\Operation\Find.php(263): MongoDB\Driver\Server->executeQuery()
+#1 C:\Users\Sascha\Sascha Projekte\ProjectWebsite\vendor\mongodb\mongodb\src\Operation\FindOne.php(114): MongoDB\Operation\Find->execute()
+#2 C:\Users\Sascha\Sascha Projekte\ProjectWebsite\vendor\mongodb\mongodb\src\Collection.php(676): MongoDB\Operation\FindOne->execute()
+#3 C:\Users\Sascha\Sascha Projekte\ProjectWebsite\includes\bootstrap.php(63): MongoDB\Collection->findOne()
+#4 C:\Users\Sascha\Sascha Projekte\ProjectWebsite\index.php(8): require('...')
+#5 {main}
+  thrown in C:\Users\Sascha\Sascha Projekte\ProjectWebsite\vendor\mongodb\mongodb\src\Operation\Find.php on line 263
+[01-Apr-2026 11:42:31 UTC] FATAL: Uncaught MongoDB\Driver\Exception\CommandException: Command find requires authentication in C:\Users\Sascha\Sascha Projekte\ProjectWebsite\vendor\mongodb\mongodb\src\Operation\Find.php:263
+Stack trace:
+#0 C:\Users\Sascha\Sascha Projekte\ProjectWebsite\vendor\mongodb\mongodb\src\Operation\Find.php(263): MongoDB\Driver\Server->executeQuery()
+#1 C:\Users\Sascha\Sascha Projekte\ProjectWebsite\vendor\mongodb\mongodb\src\Operation\FindOne.php(114): MongoDB\Operation\Find->execute()
+#2 C:\Users\Sascha\Sascha Projekte\ProjectWebsite\vendor\mongodb\mongodb\src\Collection.php(676): MongoDB\Operation\FindOne->execute()
+#3 C:\Users\Sascha\Sascha Projekte\ProjectWebsite\includes\bootstrap.php(63): MongoDB\Collection->findOne()
+#4 C:\Users\Sascha\Sascha Projekte\ProjectWebsite\index.php(8): require('...')
+#5 {main}
+  thrown in C:\Users\Sascha\Sascha Projekte\ProjectWebsite\vendor\mongodb\mongodb\src\Operation\Find.php:263

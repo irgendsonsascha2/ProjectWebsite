@@ -1,16 +1,11 @@
 <?php
-// Nur Autoload laden, wenn Klassen nicht bereits durch Master geladen wurden
-if (!class_exists('MongoDB\Client')) {
-    require __DIR__ . '/../vendor/autoload.php';
-}
-
-use MongoDB\Client;
+require __DIR__ . '/_guard.php';
+require_once __DIR__ . '/../includes/db.php';
 
 try {
     // HYBRIDE VERBINDUNG: Prüfen ob Master bereits $db bereitgestellt hat
     if (!isset($db)) {
-        $client = new Client("mongodb://localhost:27017");
-        $db = $client->portfolio_db;
+        [$client, $db] = get_admin_mongo_connection();
         echo "<i>(Eigenständiger Modus: Neue Verbindung aufgebaut)</i><br>";
     } else {
         echo "<i>(Master-Modus: Bestehende Verbindung wird genutzt)</i><br>";

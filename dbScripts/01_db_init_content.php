@@ -1,14 +1,16 @@
 <?php
-if (!class_exists('MongoDB\Client')) {
-    require __DIR__ . '/../vendor/autoload.php';
-}
+require __DIR__ . '/_guard.php';
+require_once __DIR__ . '/../includes/db.php';
 
 use MongoDB\BSON\UTCDateTime;
-use MongoDB\Client;
 
 try {
-    $client = new Client("mongodb://localhost:27017");
-    $db = $client->portfolio_db;
+    if (!isset($db)) {
+        [$client, $db] = get_admin_mongo_connection();
+        echo "<i>(Eigenständiger Modus: Neue Verbindung aufgebaut)</i><br>";
+    } else {
+        echo "<i>(Master-Modus: Bestehende Verbindung wird genutzt)</i><br>";
+    }
 
     echo "<h1>Initialisierung: Content & Projekte</h1>";
 

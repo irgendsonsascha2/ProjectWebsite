@@ -1,17 +1,23 @@
 <?php
-// Nur Autoload laden, wenn Klassen nicht bereits durch Master geladen wurden
-if (!class_exists('MongoDB\Client')) {
-    require __DIR__ . '/../vendor/autoload.php';
-}
+require __DIR__ . '/_guard.php';
+require_once __DIR__ . '/../includes/db.php';
 
 use MongoDB\BSON\UTCDateTime;
-use MongoDB\Client;
+
+function db_script_input_value($key, $default = '') {
+    $inputs = $GLOBALS['dbScriptInput'] ?? [];
+    if (!isset($inputs[$key]) || !is_string($inputs[$key])) {
+        return $default;
+    }
+
+    $value = trim($inputs[$key]);
+    return $value !== '' ? $value : $default;
+}
 
 try {
     // HYBRIDE VERBINDUNG: Prüfen ob Master bereits $db bereitgestellt hat
     if (!isset($db)) {
-        $client = new Client("mongodb://localhost:27017");
-        $db = $client->portfolio_db;
+        [$client, $db] = get_admin_mongo_connection();
         echo "<i>(Eigenständiger Modus: Neue Verbindung aufgebaut)</i><br>";
     } else {
         echo "<i>(Master-Modus: Bestehende Verbindung wird genutzt)</i><br>";
@@ -114,11 +120,19 @@ try {
     $db->users->createIndex(['email' => 1], ['unique' => true]);
     $db->users->createIndex(['username' => 1], ['unique' => true]);
 
+    $seedAdminEmail = db_script_input_value('seed_admin_email');
+    $seedAdminUsername = db_script_input_value('seed_admin_username');
+    $seedAdminPassword = db_script_input_value('seed_admin_password');
+
+    if ($seedAdminEmail === '' || $seedAdminUsername === '' || $seedAdminPassword === '') {
+        throw new RuntimeException('Seed-Admin-E-Mail, Username und Passwort müssen beim Ausführen angegeben werden.');
+    }
+
     // Initialen Admin anlegen
     $db->users->insertOne([
-        'email' => 'admin@test.de',
-        'username' => 'admin',
-        'password' => password_hash('admin123', PASSWORD_DEFAULT),
+        'email' => $seedAdminEmail,
+        'username' => $seedAdminUsername,
+        'password' => password_hash($seedAdminPassword, PASSWORD_DEFAULT),
         'role' => 'admin',
         'created_at' => new UTCDateTime()
     ]);
