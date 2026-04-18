@@ -1,16 +1,7 @@
 <?php
 require __DIR__ . '/_guard.php';
 require_once __DIR__ . '/../includes/db.php';
-
-function db_script_input_value($key, $default = '') {
-    $inputs = $GLOBALS['dbScriptInput'] ?? [];
-    if (!isset($inputs[$key]) || !is_string($inputs[$key])) {
-        return $default;
-    }
-
-    $value = trim($inputs[$key]);
-    return $value !== '' ? $value : $default;
-}
+require_once __DIR__ . '/_script_input_helpers.php';
 
 function mongo_role_exists($db, $roleName) {
     $result = $db->command([

@@ -7,13 +7,19 @@ if (isset($_GET['debug']) && $_GET['debug'] === '1') {
 
 require __DIR__ . '/includes/bootstrap.php';
 
-// Welchen Inhalt sollen wir zeigen? Standard ist 'grid'
-$page = $_GET['page'] ?? 'project_grid';
+// Welchen Inhalt sollen wir zeigen? Standard ist die Startseite (home)
+$page = isset($_GET['page']) ? (string) $_GET['page'] : 'home';
+if ($page === '') {
+    $page = 'home';
+}
+$safe_page = preg_replace('/[^a-zA-Z0-9_-]/', '', $page);
+if ($safe_page === '') {
+    $safe_page = 'home';
+}
 $isAjax = (isset($_POST['ajax']) && $_POST['ajax'] === '1')
     || (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && in_array(strtolower($_SERVER['HTTP_X_REQUESTED_WITH']), ['xmlhttprequest', 'fetch'], true));
 
 if ($isAjax) {
-    $safe_page = preg_replace('/[^a-zA-Z0-9_-]/', '', $page);
     $file_path = "pages/" . $safe_page . ".php";
     if (file_exists($file_path)) {
         include $file_path;
@@ -33,30 +39,24 @@ if ($isAjax) {
     <link rel="stylesheet" href="style/style.css">
 </head>
 
-<body>
+<body class="<?php echo $safe_page === 'home' ? 'page-is-home' : ''; ?>">
 
     <nav>
-        <a href="index.php?page=project_grid">Home</a>
+        <a href="index.php">Start</a>
+        <a href="index.php?page=project_grid">Projekte</a>
         <a href="index.php?page=account">Account</a>
         <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
             <a href="pages/admin/index.php" style="color: red;">Admin</a>
         <?php endif; ?>
     </nav>
 
-    <main class="main-content page-<?php echo htmlspecialchars($page); ?>">
+    <main class="main-content page-<?php echo htmlspecialchars($safe_page, ENT_QUOTES, 'UTF-8'); ?>">
         <?php
-        // 1. Sicherheits-Check: Nur Buchstaben und Zahlen erlauben
-        // Verhindert, dass jemand Pfade wie ../../etc/passwd eingibt
-        $safe_page = preg_replace('/[^a-zA-Z0-9_-]/', '', $page);
-
-        // 2. Pfad zur Datei zusammenbauen
         $file_path = "pages/" . $safe_page . ".php";
 
-        // 3. Prüfen, ob die Datei existiert und den Inhalt laden
-       if (file_exists($file_path)) {
+        if (file_exists($file_path)) {
             include $file_path;
         } else {
-            // 4. Fallback zur 404 Seite
             include 'pages/404.php';
         }
         ?>

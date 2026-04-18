@@ -6,6 +6,8 @@ Kleines privates Social-Media-/Portfolio-Projekt auf Basis von PHP und MongoDB. 
 
 Die Website ist als einfache PHP-Anwendung ohne Framework aufgebaut. `index.php` dient als zentraler Router und lädt Seiten aus dem Verzeichnis `pages/`. Gemeinsame Initialisierung wie Session-Start, MongoDB-Verbindung, Rollen-/Rechteauflösung und Hilfsfunktionen liegen in `includes/bootstrap.php`.
 
+Ohne Parameter `page` wird die Startseite (`pages/home.php`) mit Kurzvorstellung geladen; die Projektübersicht (`project_grid`) ist weiterhin unter `index.php?page=project_grid` erreichbar und in der Navigation als **Projekte** verlinkt. Das Profilfoto liegt unter `img/` als `portrait.jpg`, `portrait.png` oder `portrait.webp` (es wird die erste vorhandene Datei genutzt; ohne Datei siehe `img/placeholder.svg`). Der angezeigte Name unter dem Foto wird in `pages/home.php` über die Variable `$displayName` gesetzt.
+
 Hauptfunktionen:
 
 - Invite-basierte Registrierung über Einmal-Codes
@@ -38,6 +40,7 @@ Hauptfunktionen:
 ├── includes/
 │   └── bootstrap.php         # Session, DB-Verbindung, Rechte, Upload-Helfer
 ├── pages/
+│   ├── home.php              # Startseite / Kurzvorstellung
 │   ├── account.php           # Login, Registrierung, Invite-Codes
 │   ├── project_grid.php      # Projektübersicht
 │   ├── project_detail.php    # Detailseite, Likes, Dislikes, Kommentare
@@ -104,6 +107,27 @@ Empfohlene Zielarchitektur:
 - Wenn keine Env-Variablen gesetzt sind, nutzt das Projekt lokal standardmäßig Passwort `0` für die vier MongoDB-Benutzer `viewer`, `community_member`, `content_manager` und `admin`.
 - Diese Standardwerte sind nur für lokale Entwicklung gedacht.
 
+### Erste Initialisierung, wenn MongoDB noch keine Projektbenutzer hat
+
+Die Standard-URIs (ohne gesetzte Umgebungsvariablen) verbinden sich als `viewer:0`, `admin:0` usw. Diese MongoDB-Benutzer werden erst durch `dbScripts/03_db_init_mongo_roles.php` angelegt. **Vor dem ersten erfolgreichen Lauf der Initialisierung** führt das zu `Authentication failed`, wenn die Umgebungsvariablen nicht angepasst werden.
+
+**Vorgehen:** Vor dem ersten Ausführen von `dbScripts/db_init_master.php` (CLI oder PHP Built-in Server) alle relevanten URIs auf eine Verbindung **ohne** Datenbankbenutzer setzen (typisch: gleiche URI für alle Rollen):
+
+```bash
+export APP_DB_URI='mongodb://localhost:27017/portfolio_db'
+export VIEWER_DB_URI='mongodb://localhost:27017/portfolio_db'
+export COMMUNITY_DB_URI='mongodb://localhost:27017/portfolio_db'
+export CONTENT_MANAGER_DB_URI='mongodb://localhost:27017/portfolio_db'
+export ADMIN_DB_URI='mongodb://localhost:27017/portfolio_db'
+export APP_DB_NAME='portfolio_db'
+```
+
+Erst danach können die Skripte die Collections anlegen und in Schritt `03_*` die MongoDB-Benutzer mit den gewählten Passwörtern erstellen. **Anschließend** kannst du die Shell-Variablen entfernen und die Standard-URIs aus `includes/db.php` nutzen (Passwort `0`), oder die Variablen auf die authentifizierten URIs aus dem Abschnitt „Optional konfigurierbare Umgebungsvariablen“ setzen.
+
+**Erster Lauf ohne Admin-Account:** Das Admin-Dashboard (`pages/admin/index.php`) ist nur für eingeloggte Admins erreichbar. Für die allererste Initialisierung eignet sich die Ausführung per PHP-CLI: `ALLOW_DB_SCRIPT_EXECUTION` auf `true` setzen, `$GLOBALS['dbScriptInput']` mit Seed-Admin und Mongo-Passwörtern füllen und `dbScripts/db_init_master.php` einbinden (analog zum Admin-Dialog).
+
+Direkter Browserzugriff auf Dateien unter `dbScripts/` ist durch `dbScripts/_guard.php` blockiert; die Initialisierung aus dem Admin-Panel setzt dieselbe Freigabe intern.
+
 ## MongoDB Authentifizierung
 
 Damit die Trennung der Datenbankrechte tatsächlich wirksam ist, muss MongoDB-Authentifizierung aktiviert sein. Nur das Anlegen von Benutzern in MongoDB reicht nicht aus, wenn der Server weiterhin ohne Auth läuft.
@@ -158,8 +182,8 @@ Diese Regeln müssen zusätzlich serverseitig im Code erzwungen werden und dürf
 
 3. Datenbank initialisieren:
 
-- im Browser über `dbScripts/db_init_master.php`
-- oder aus dem Admin-Bereich über `pages/admin/index.php`
+- **Erster Lauf (noch kein Admin):** per PHP-CLI mit gesetzten Umgebungsvariablen ohne Mongo-Benutzer (siehe Abschnitt „Erste Initialisierung …“ oben).
+- **Später:** aus dem Admin-Bereich über `pages/admin/index.php` (eingeloggter Admin).
 
 Die Initialisierung erstellt Collections, Rollen, Berechtigungen, Invite-Codestruktur und einen Admin-User.
 

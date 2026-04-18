@@ -13,8 +13,8 @@
         </p>
 
         <div class="action-area">
-            <a href="index.php?page=project_grid" class="btn-back">
-                Zurück zur Übersicht
+            <a href="index.php" class="btn-back">
+                Zur Startseite
             </a>
         </div>
 

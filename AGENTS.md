@@ -34,11 +34,13 @@ Wichtige Kernfunktionen des Projekts:
 ## Wichtige Dateien
 
 - `index.php`
-  - einfacher Router über `?page=...`
+  - einfacher Router über `?page=...` (Standardseite: `home`)
 - `includes/bootstrap.php`
   - Session, MongoDB-Verbindung, Rollen/Rechte, Upload-Helfer
 - `pages/account.php`
   - Login, Registrierung, Invite-Codes
+- `pages/home.php`
+  - öffentliche Startseite mit Kurzprofil
 - `pages/project_grid.php`
   - Projektübersicht
 - `pages/project_detail.php`

@@ -1,0 +1,97 @@
+/* Startseite: Bild und Name oben mittig, Text darunter */
+
+.home-landing {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 38rem;
+    margin-inline: auto;
+    gap: clamp(1rem, 3vw, 1.75rem);
+}
+
+.home-intro {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+    gap: 0.45rem;
+}
+
+.home-visual {
+    width: 100%;
+    max-width: min(9.5rem, 40vw);
+    flex-shrink: 0;
+}
+
+.home-portrait {
+    margin: 0 auto;
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #95a8b8;
+    box-shadow: var(--shadow);
+}
+
+.home-portrait img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 20%;
+}
+
+.home-name {
+    font-size: clamp(1.5rem, 4.2vw, 2rem);
+    font-weight: 700;
+    line-height: 1.15;
+    margin: 0;
+    color: var(--text-main);
+}
+
+.home-kicker {
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--secondary-color);
+}
+
+.home-copy {
+    width: 100%;
+    text-align: center;
+}
+
+.home-lead,
+.home-body {
+    font-size: clamp(0.85rem, 1.6vw, 0.95rem);
+    color: var(--text-main);
+    margin-bottom: 0.65rem;
+    line-height: 1.5;
+}
+
+.home-body:last-of-type {
+    margin-bottom: 0;
+}
+
+.home-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1rem;
+    padding: 0.45rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #fff;
+    background: var(--primary-color);
+    border-radius: var(--border-radius);
+    text-decoration: none;
+    transition: var(--transition);
+    box-shadow: var(--shadow);
+}
+
+.home-cta:hover {
+    filter: brightness(1.06);
+    background-color: #1d4ed8;
+}
