@@ -1,0 +1,130 @@
+  body {
+      font-family: sans-serif;
+      line-height: 1.6;
+      padding: 1.25rem;
+      background: #f9f9f9;
+      font-size: 1rem;
+  }
+
+  .container {
+      max-width: 50rem;
+      margin: 2rem auto;
+      background: white;
+      padding: 1.25rem;
+      border-radius: 0.625rem;
+      box-shadow: 0 0.125rem 0.625rem rgba(0, 0, 0, 0.1);
+  }
+
+  .alert {
+      padding: 0.625rem;
+      background: #e3f2fd;
+      border-left: 0.3125rem solid #2196f3;
+      margin-bottom: 1.25rem;
+  }
+
+  .auth-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2.5rem;
+  }
+
+  input,
+  select,
+  button {
+      width: 100%;
+      padding: 0.625rem;
+      margin: 0.3125rem 0;
+      box-sizing: border-box;
+      font-size: 1rem;
+  }
+
+  .field-hint {
+      color: #64748b;
+      display: block;
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+  }
+
+  .account-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+  }
+
+  .account-divider {
+      border: 0;
+      border-top: 0.0625rem solid #eee;
+      margin: 1.25rem 0;
+  }
+
+  .code-form {
+      display: flex;
+      gap: 0.625rem;
+      flex-wrap: wrap;
+  }
+
+  .code-select {
+      flex: 2;
+      min-width: 12.5rem;
+  }
+
+  .code-button {
+      flex: 1;
+      min-width: 9.375rem;
+  }
+
+  .table-wrap {
+      overflow-x: auto;
+  }
+
+  .code-link-input {
+      font-size: 0.8rem;
+  }
+
+  button {
+      background: #333;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+  }
+
+  button:hover {
+      background: #555;
+  }
+
+  .admin-panel {
+      background: #fff3e0;
+      padding: 0.9375rem;
+      border-radius: 0.3125rem;
+      margin-top: 1.25rem;
+  }
+
+  table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.625rem;
+  }
+
+  th,
+  td {
+      text-align: left;
+      padding: 0.5rem;
+      border-bottom: 0.0625rem solid #ddd;
+      font-size: 0.875rem;
+  }
+
+  code {
+      background: #eee;
+      padding: 0.125rem 0.25rem;
+      border-radius: 0.1875rem;
+  }
+
+  /* Responsive Anpassung für schmale Bildschirme */
+  @media (max-width: 40rem) {
+      .auth-grid {
+          grid-template-columns: 1fr;
+          gap: 1.25rem;
+      }
+  }

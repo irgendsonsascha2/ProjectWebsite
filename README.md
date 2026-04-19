@@ -6,7 +6,9 @@ Kleines privates Social-Media-/Portfolio-Projekt auf Basis von PHP und MongoDB. 
 
 Die Website ist als einfache PHP-Anwendung ohne Framework aufgebaut. `index.php` dient als zentraler Router und lädt Seiten aus dem Verzeichnis `pages/`. Gemeinsame Initialisierung wie Session-Start, MongoDB-Verbindung, Rollen-/Rechteauflösung und Hilfsfunktionen liegen in `includes/bootstrap.php`.
 
-Ohne Parameter `page` wird die Startseite (`pages/home.php`) mit Kurzvorstellung geladen; die Projektübersicht (`project_grid`) ist weiterhin unter `index.php?page=project_grid` erreichbar und in der Navigation als **Projekte** verlinkt. Das Profilfoto liegt unter `img/` als `portrait.jpg`, `portrait.png` oder `portrait.webp` (es wird die erste vorhandene Datei genutzt; ohne Datei siehe `img/placeholder.svg`). Der angezeigte Name unter dem Foto wird in `pages/home.php` über die Variable `$displayName` gesetzt.
+Ohne Parameter `page` wird die Startseite (`pages/home.php`) mit Kurzvorstellung geladen; die Projektübersicht (`project_grid`) ist weiterhin unter `index.php?page=project_grid` erreichbar und in der Navigation als **Projekte** verlinkt. Beim Auffrischen unvollständiger Sessions lädt `includes/bootstrap.php` Nutzerdaten per **Admin-Mongo-Verbindung** aus `users`, damit eingeloggte Nutzer nicht fälschlich wie „abgemeldet“ wirken, wenn die rollenbasierte DB keine Leserechte auf `users` hat.
+
+Test-Aufrufe für geschützte Bereiche (z. B. Admin-URLs) immer unter **derselben Basis-URL** wie beim Login nutzen (**`127.0.0.1` und `localhost` sind verschiedene Origins** — eigene Cookies). **Hybrid-Laravel-Auth** (Brücken, Handoff, Dateien im Projektroot) ist für Agenten und Kurzüberblick in **`AGENTS.md`** beschrieben. Das Profilfoto liegt unter `img/` als `portrait.jpg`, `portrait.png` oder `portrait.webp` (es wird die erste vorhandene Datei genutzt; ohne Datei siehe `img/placeholder.svg`). Der angezeigte Name unter dem Foto wird in `pages/home.php` über die Variable `$displayName` gesetzt.
 
 Hauptfunktionen:
 
@@ -29,6 +31,65 @@ Hauptfunktionen:
 - Frontend mit serverseitig gerenderten PHP-Seiten, CSS und etwas Vanilla JavaScript
 
 `composer.json` enthält aktuell nur die MongoDB-PHP-Bibliothek als Abhängigkeit.
+
+### Laravel (`laravel/`)
+
+Parallel zur klassischen PHP-App liegt eine **Laravel-13-Anwendung** mit **MongoDB** (`mongodb/laravel-mongodb`), **Laravel Breeze** (Blade-Auth) und der gleichen Nutzerlogik wie `pages/account.php`: Login mit **E-Mail oder Username**, Registrierung nur mit **Einmal-Code** aus der Collection `registration_codes`.
+
+**Testprojekt — Kurzablauf (du):**
+
+1. **MongoDB starten** und in `laravel/.env` **`MONGODB_URI`** / **`MONGODB_DATABASE`** setzen (Zugriff wie die alte App; für Registrierung Schreibrechte auf `users` und `registration_codes`).
+2. **`APP_URL=http://127.0.0.1:8000`** (oder dein Port), zu `artisan serve` passend.
+3. **Frontend einmal bauen:** `cd laravel && npm install && npm run build`
+4. **Server:** `cd laravel && ./serve-test.sh` **oder** `composer serve-app`
+
+**Im Repo bereits vorbereitet:** Auth-Flow (Login/Register/Profil), `resources/js/bootstrap.js`, `axios`, Migrationen mit Schon-vorhanden-Collections, PHPUnit-Anpassungen, `serve-test.sh`, Composer-Script **`serve-app`**.
+
+**Login direkt auf der klassischen Website:** Das Formular auf **`pages/account.php`** sendet an **`bridge_auth.php`** (Projektroot). Dort wird das Passwort wie in Laravel geprüft; bei Erfolg folgt derselbe Sprung wie nach Laravel-Login über **`laravel_handoff.php`**. Du bleibst optisch auf deiner bestehenden Seite.
+
+**Registrierung dort ebenfalls:** Das Register-Formular sendet an **`bridge_register.php`** (Projektroot). Dort läuft dieselbe Logik wie **`POST /register`** in Laravel (**`RegisterInvitedUser`** Service): Invite-Code, Validierung, Nutzer anlegen, danach wie beim Login der Handoff über **`laravel_handoff.php`** (automatisch eingeloggt auf der klassischen Site).
+
+**Keine zweite Login-Maske auf Port 8000:** Ist **`LEGACY_SITE_URL`** in `laravel/.env` gesetzt (Basis-URL der PHP-App), leiten **`GET /login`** und **`GET /register`** in Laravel nur noch auf **`index.php?page=account`** um (Register mit Anker **`#register-section`**). Die Breeze-Blade-Seiten erscheinen dann nur noch, wenn **`LEGACY_SITE_URL` leer** bleibt (reines Laravel ohne Anbindung an die alte Site).
+
+**Nach Laravel-Login zur klassischen Website:** Im Projektroot liegt **`laravel_handoff.php`**. Laravel leitet nach erfolgreichem Login/Register mit einem kurzlebigen HMAC-Link dorthin um; das Skript setzt dieselbe `$_SESSION` wie nach Login in `pages/account.php` und leitet auf **`index.php?page=…`** weiter (Standard: `home`, über `LEGACY_AFTER_LOGIN_PAGE` in `laravel/.env`). Dafür müssen **`HANDOFF_SECRET`** und **`LEGACY_SITE_URL`** in **`laravel/.env`** gesetzt sein (Secret ist nur in dieser Datei nötig).
+
+**Passwort vergessen / neues Passwort (Laravel):** Auf der Account-Seite verweist der Link **Passwort vergessen** auf **`{APP_URL}/forgot-password`** (typ. `http://127.0.0.1:8000`, Wert aus `laravel/.env`). Der Link in der E-Mail setzt das Passwort in Laravel; **nach erfolgreichem Speichern** folgt derselbe **Handoff** wie nach Login, sofern `HANDOFF_SECRET` / `LEGACY_SITE_URL` gesetzt sind. Dafür muss die Collection/ Tabelle für Reset-Tokens existieren: einmal **`cd laravel && php artisan migrate`** (u. a. `password_reset_tokens` — auf Mongo legt das die nötigen Strukturen an, sofern die Verbindung steht). **E-Mail:** in `laravel/.env` z. B. `MAIL_MAILER=log` (lokal) oder echten Mailer setzen, sonst kommt kein Link an.
+
+**Brücken (Rate-Limiting):** **`bridge_auth.php`** und **`bridge_register.php`** drosseln zu viele Anfragen pro IP (Laravel `RateLimiter`, **~10/60s** Login, **~5/60s** Registrierung) und leiten mit `?err=throttle` zur Account-Seite um.
+
+**E-Mail-Bestätigung (Laravel):** Nutzer implementieren die Laravel-**E-Mail-Verifizierung**; nach Registrierung wird (wenn `MAIL_*` passt) ein Bestätigungslink gesendet. **Klassische Site** prüft die Verifizierung nicht — **Laravel**-Routen **Dashboard** und **Profil** (`/dashboard`, `/profile`) sind mit `verified` geschützt, bis die E-Mail bestätigt ist. Dafür existieren schlanke Blades unter `laravel/resources/views/` (ohne Vite-Pflicht).
+
+**Wichtig beim Testen:** Laravel (`php artisan serve`, z. B. Port **8000**) und die **alte Website** sind zwei URLs. `LEGACY_SITE_URL` muss **genau** die Basis-URL sein, unter der `index.php` und `laravel_handoff.php` erreichbar sind (inkl. Port, z. B. `http://127.0.0.1:8080`, wenn die alte App mit `php -S 127.0.0.1:8080 -t .` im Projektroot läuft). Ohne laufenden Webserver auf dieser URL schlägt der Sprung nach dem Login fehl.
+
+**Lokal starten (nach Installation der Frontend-Assets, siehe unten):**
+
+```bash
+cd laravel
+./serve-test.sh
+# oder: composer serve-app
+# oder: php artisan serve
+```
+
+**Umgebung:** In `laravel/.env` müssen `MONGODB_URI` und `MONGODB_DATABASE` zur Datenbank passen. Nach **dbScripts**-Init heißt die DB in der Regel **`portfolio_db`** (wie `APP_DB_NAME` in `includes/db.php`). Für **Registrierung** und Brücken braucht Laravel **Schreibrecht** auf `users` und `registration_codes` — dafür ist typisch die **Admin-**URI (siehe `laravel/.env.example`); der reine **Viewer-**User reicht dafür oft nicht. Für Tests nutzt `laravel/phpunit.xml` die eigene DB `portfolio_db_test` — bei Bedarf anpassen.
+
+**Frontend bauen (einmalig bzw. nach Änderungen an JS/CSS):**
+
+```bash
+cd laravel
+npm install
+npm run build
+```
+
+Ohne `npm run build` schlägt `@vite` in den Blade-Layouts fehl (HTTP 500). Für PHPUnit wird `withoutVite()` im Test-Fallback gesetzt.
+
+**Automatische Tests:**
+
+```bash
+cd laravel
+php artisan test
+```
+
+MongoDB ohne Replica Set unterstützt keine DB-Transaktionen wie Laravels `RefreshDatabase`; im Basis-`TestCase` sind daher **`$connectionsToTransact = []`** gesetzt (Tests teilen sich eine migrierte Test-DB ohne Rollback zwischen den Fällen — bei neuen Tests auf eindeutige Usernames/E-Mails achten).
 
 ## Projektstruktur
 
@@ -322,6 +383,8 @@ Die wichtigsten Initialisierungsskripte:
   - Comments- und Likes-Collections
 - `dbScripts/03_db_init_mongo_roles.php`
   - MongoDB-Custom-Roles und MongoDB-Benutzer für `viewer`, `community_member`, `content_manager` und `admin`
+- `dbScripts/04_db_users_validator_allow_laravel.php`
+  - **Nicht destruktiv:** passt nur den MongoDB-Validator der Collection `users` an (`additionalProperties: true`), damit Laravel zusätzliche Felder (`remember_token` usw.) speichern kann. Einmal ausführen, wenn die Registrierung mit „Document failed validation“ fehlschlägt (bestehende DB nach älterem `00_db_init_accounts`).
 - `dbScripts/db_init_master.php`
   - Führt die nummerierten Skripte gesammelt aus
 
