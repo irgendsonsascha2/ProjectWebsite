@@ -22,6 +22,7 @@ if (isset($_GET['debug']) && $_GET['debug'] === '1') {
 }
 
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/svg_icons.php';
 
 if (!isset($db)) {
     [$client, $db] = get_request_mongo_connection($_SESSION['role'] ?? 'viewer');
