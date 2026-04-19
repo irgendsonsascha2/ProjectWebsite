@@ -2,6 +2,10 @@
 
 use MongoDB\BSON\UTCDateTime;
 
+require_once __DIR__.'/../includes/laravel_app_url.php';
+
+// Registrierung läuft über bridge_register.php + Laravel (RegisterInvitedUser).
+
 // --- LOGOUT ---
 if (isset($_GET['logout'])) {
     $_SESSION = [];
@@ -14,66 +18,21 @@ if (isset($_GET['logout'])) {
     exit();
 }
 
-// --- LOGIK: LOGIN ---
-if (isset($_POST['login'])) {
-    $identifier = trim($_POST['login_id']);
-    $user = $db->users->findOne([
-        '$or' => [
-            ['email' => $identifier],
-            ['username' => strtolower($identifier)]
-        ]
-    ]);
+// Login läuft über bridge_auth.php + Laravel (Passwort-Hash / Mongo wie die Laravel-App).
 
-    if ($user && password_verify($_POST['password'], $user['password'])) {
-        $_SESSION['user_id'] = (string)$user['_id'];
-        $_SESSION['email'] = $user['email'];
-        $_SESSION['username'] = $user['username'] ?? '';
-        $_SESSION['role'] = $user['role'];
+$message = '';
 
-        $roleData = $db->roles_config->findOne(['role' => $user['role']]);
-        $_SESSION['permissions'] = iterator_to_array($roleData['permissions']);
-
-        $message = "✅ Erfolgreich angemeldet!";
-    } else {
-        $message = "❌ Fehler: E-Mail oder Passwort falsch.";
-    }
-}
-
-// --- LOGIK: REGISTRIERUNG MIT EINMAL-CODE ---
-if (isset($_POST['register'])) {
-    $code = trim($_POST['reg_code']);
-    $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
-    $username = strtolower(trim($_POST['username']));
-    $password = $_POST['password'];
-    [, $adminDb] = get_admin_mongo_connection();
-
-    $validCode = $db->registration_codes->findOne(['code' => $code, 'is_used' => false]);
-
-    if (!$validCode) {
-        $message = "❌ Fehler: Der Code ist ungültig oder bereits verbraucht.";
-    } else {
-        if (!preg_match('/^[a-z0-9._-]{3,20}$/', $username)) {
-            $message = "❌ Fehler: Username ungültig (3-20 Zeichen: a-z, 0-9, . _ -).";
-        } elseif ($db->users->findOne(['email' => $email])) {
-            $message = "❌ Fehler: Diese E-Mail wird bereits verwendet.";
-        } elseif ($db->users->findOne(['username' => $username])) {
-            $message = "❌ Fehler: Dieser Username wird bereits verwendet.";
-        } else {
-            $adminDb->users->insertOne([
-                'email' => $email,
-                'username' => $username,
-                'password' => password_hash($password, PASSWORD_DEFAULT),
-                'role' => $validCode['role'],
-                'created_at' => new UTCDateTime()
-            ]);
-
-            $adminDb->registration_codes->updateOne(
-                ['_id' => $validCode['_id']],
-                ['$set' => ['is_used' => true]]
-            );
-
-            $message = "✅ Konto erstellt! Du kannst dich jetzt einloggen.";
+if (! empty($_SESSION['register_validation_errors'])) {
+    $errs = $_SESSION['register_validation_errors'];
+    unset($_SESSION['register_validation_errors']);
+    $parts = [];
+    foreach ($errs as $msgs) {
+        foreach ((array) $msgs as $m) {
+            $parts[] = $m;
         }
+    }
+    if ($parts !== []) {
+        $message = '❌ '.implode(' ', $parts);
     }
 }
 
@@ -92,6 +51,44 @@ if (isset($_POST['generate_code']) && can('generate_codes')) {
 }
 
 $prefilledCode = isset($_GET['reg_token']) ? htmlspecialchars($_GET['reg_token']) : '';
+
+// CSRF für bridge_auth.php (Login über Laravel-Backend)
+if (! isset($_SESSION['user_id'])) {
+    if (empty($_SESSION['csrf_bridge'])) {
+        $_SESSION['csrf_bridge'] = bin2hex(random_bytes(32));
+    }
+}
+
+// Rückmeldungen vom Login-Bridge
+if (isset($_GET['login_err'])) {
+    $message = "❌ Fehler: E-Mail oder Passwort falsch.";
+}
+if (isset($_GET['err']) && $_GET['err'] === 'csrf') {
+    $message = "❌ Formular ungültig oder Sitzung abgelaufen — bitte erneut versuchen.";
+}
+if (isset($_GET['err']) && $_GET['err'] === 'handoff') {
+    $message = "❌ Anmeldung nicht möglich: In laravel/.env fehlen HANDOFF_SECRET oder LEGACY_SITE_URL passt nicht zur Website-URL.";
+}
+if (isset($_GET['err']) && $_GET['err'] === 'throttle') {
+    $w = isset($_GET['wait']) ? (int) $_GET['wait'] : 0;
+    $message = $w > 0
+        ? "❌ Zu viele Versuche — bitte {$w} Sekunden warten und erneut versuchen."
+        : '❌ Zu viele Versuche — bitte kurz warten und erneut versuchen.';
+}
+if (isset($_GET['handoff_err'])) {
+    $h = (string) $_GET['handoff_err'];
+    if ($h === 'config') {
+        $message = '❌ Handoff: HANDOFF_SECRET fehlt in laravel/.env (oder .env nicht lesbar).';
+    } elseif ($h === 'expired') {
+        $message = '❌ Anmelde-Link abgelaufen — bitte erneut anmelden.';
+    } elseif ($h === 'sig') {
+        $message = '❌ Anmelde-Link ungültig (Signatur) — bitte erneut anmelden.';
+    } elseif ($h === 'user') {
+        $message = '❌ Benutzer in der Datenbank nicht gefunden.';
+    } else {
+        $message = '❌ Anmeldung (Handoff) fehlgeschlagen.';
+    }
+}
 
 $roleOptions = [];
 try {
@@ -131,16 +128,20 @@ if (!empty($roleOptions)) {
         <div class="auth-grid">
             <section>
                 <h2>Anmelden</h2>
-                <form method="POST" id="login-form">
+                <p class="field-hint" style="margin-bottom:1rem;">Hier meldest du dich mit Nutzerdaten und Passwort aus der Datenbank an (technisch dieselbe Prüfung wie bei der geschützten Login-Routine).</p>
+                <p class="field-hint" style="margin-bottom:1rem;"><a href="<?php echo htmlspecialchars(laravel_app_url().'/forgot-password', ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener">Passwort vergessen</a> (Laravel unter <?php echo htmlspecialchars(laravel_app_url(), ENT_QUOTES, 'UTF-8'); ?>)</p>
+                <form method="POST" id="login-form" action="bridge_auth.php">
+                    <input type="hidden" name="_token" value="<?php echo htmlspecialchars($_SESSION['csrf_bridge'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                     <input type="text" id="login_id" name="login_id" placeholder="E-Mail oder Username" autocomplete="username" required>
                     <input type="password" id="login_password" name="password" placeholder="Passwort" autocomplete="current-password" required>
-                    <button type="submit" name="login">Login</button>
+                    <button type="submit">Login</button>
                 </form>
             </section>
 
-            <section>
+            <section id="register-section">
                 <h2>Registrieren</h2>
-                <form method="POST" id="register-form">
+                <form method="POST" id="register-form" action="bridge_register.php">
+                    <input type="hidden" name="_token" value="<?php echo htmlspecialchars($_SESSION['csrf_bridge'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                     <input type="text" id="reg_code" name="reg_code" placeholder="Einmal-Code" value="<?php echo $prefilledCode; ?>" autocomplete="one-time-code" required>
                     <input type="text" id="reg_username" name="username" placeholder="Username" autocomplete="new-username" required>
                     <small class="field-hint">3–20 Zeichen: a–z, 0–9, . _ -</small>
