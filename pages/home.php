@@ -11,19 +11,25 @@ foreach (['portrait.jpg', 'portrait.png', 'portrait.webp'] as $f) {
     }
 }
 ?>
-<head>
-    <link rel="stylesheet" href="style/home.css">
-</head>
 
 <section class="home-landing" aria-label="Kurzvorstellung">
     <header class="home-intro">
         <div class="home-visual">
-            <figure class="home-portrait">
+            <figure class="home-portrait skeleton-host" data-skeleton-media>
+                <span class="skeleton-panel skeleton-panel--circle" aria-hidden="true"></span>
                 <img src="<?php echo htmlspecialchars($portraitSrc); ?>" alt="Profilfoto" width="280" height="280" loading="lazy" decoding="async">
             </figure>
         </div>
-        <h1 class="home-name"><?php echo htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8'); ?></h1>
-        <p class="home-kicker">Softwareentwicklung mit C# und .NET</p>
+        <div class="home-heading-wrap">
+            <div class="skeleton-text-block skeleton-text-block--center home-heading-skel" aria-hidden="true">
+                <span class="skeleton-line skeleton-line--lg"></span>
+                <span class="skeleton-line skeleton-line--short"></span>
+            </div>
+            <div class="home-heading-real">
+                <h1 class="home-name"><?php echo htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8'); ?></h1>
+                <p class="home-kicker">Softwareentwicklung mit C# / .NET</p>
+            </div>
+        </div>
     </header>
 
     <div class="home-copy">

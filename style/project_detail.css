@@ -1,8 +1,7 @@
 .interaction-section {
     margin-top: 1.875rem;
-    background: #f9f9f9;
-    padding: 1.25rem;
-    border-radius: 0.5rem;
+    padding: 0;
+    background: transparent;
 }
 
 .interaction-status {
@@ -32,12 +31,12 @@
     border: none;
     background: transparent;
     border-radius: 0;
-    color: #111;
+    color: var(--text-main);
 }
 
 .interaction-buttons button.is-active {
-    color: #111;
-    background: #dbeafe;
+    color: var(--text-main);
+    background: var(--surface-hover);
     border-radius: 999rem;
 }
 
@@ -47,70 +46,136 @@
 }
 
 .lightbox-panel .interaction-buttons button {
-    color: #f8fafc;
+    color: var(--text-main);
 }
 
 .lightbox-panel .interaction-buttons button.is-active {
-    background: #1e293b;
-    color: #fff;
+    background: var(--surface-hover);
+    color: var(--text-main);
 }
 
-.comment-form textarea {
+/* Eingabezeile: Text + runder Sende-Button, wächst mit Inhalt; Fokus um den ganzen Block */
+.comment-form-row {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 0.45rem;
     width: 100%;
-    min-height: 5rem;
-    padding: 0.625rem;
-    border-radius: 0.3125rem;
-    border: 0.0625rem solid #ccc;
-    margin-bottom: 0.625rem;
+    padding: 0.4rem 0.5rem;
+    border: 0.0625rem solid var(--border-subtle);
+    border-radius: var(--border-radius);
+    background: var(--card-bg);
+    box-sizing: border-box;
+    margin-bottom: 0.5rem;
+}
+
+/* inset-Ring statt outline: bei overflow:auto (z. B. .lightbox-panel) wird äußerer Outline links/rechts abgeschnitten */
+.comment-form-row:focus-within {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--primary-color);
+}
+
+.comment-form-row textarea {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 2.5rem;
+    max-height: 14rem;
+    padding: 0.4rem 0.3rem;
+    margin: 0;
+    border: none;
+    border-radius: 0;
     resize: none;
+    overflow-y: auto;
+    background: transparent;
+    color: var(--text-main);
+    font: inherit;
+    line-height: 1.5;
     overflow: hidden;
 }
 
-.comment-form textarea:disabled {
-    background: #f1f1f1;
+.comment-form-row textarea::placeholder {
+    color: var(--secondary-color);
+    opacity: 0.9;
+}
+
+.comment-form-row textarea:focus {
+    outline: none;
+}
+
+.comment-form-row button[type="submit"] {
+    width: 2.375rem;
+    height: 2.375rem;
+    min-width: 2.375rem;
+    min-height: 2.375rem;
+    padding: 0;
+    margin: 0;
+    flex-shrink: 0;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-color);
+    color: var(--text-on-primary);
+    align-self: flex-end;
+}
+
+.comment-form-row button[type="submit"]:hover {
+    background: var(--primary-hover);
+}
+
+.comment-form-row button[type="submit"]:focus,
+.comment-form-row button[type="submit"]:focus-visible {
+    outline: none;
+}
+
+.comment-form-row textarea:disabled {
+    background: transparent;
     cursor: not-allowed;
+    opacity: 0.7;
 }
 
-.comment-form button {
-    background: #333;
-    color: white;
-    padding: 0.625rem 0.9375rem;
-    border-radius: 0.25rem;
-}
-
-.lightbox-panel .comment-form textarea {
-    background: #0f172a;
-    color: #e2e8f0;
-    border-color: #263244;
-}
-
-.lightbox-panel .comment-form button {
-    background: #e2e8f0;
-    color: #111;
-}
-
-.comment-form button:disabled {
+.comment-form-row button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+}
+
+.lightbox-panel .comment-form-row {
+    background: var(--card-bg);
+    border-color: var(--border-subtle);
+}
+
+.comment-form.lightbox-comment-form {
+    margin-bottom: 0.75rem;
 }
 
 .comment-list {
     margin-top: 1.25rem;
 }
 
-.comment {
-    background: #fff;
-    padding: 0.9375rem;
-    border: 0.0625rem solid #eee;
-    border-radius: 0.3125rem;
-    margin-bottom: 0.625rem;
+/* Nur oberste Kommentar-Threads trennen — keine „Karten“ */
+.comment-items > .comment {
+    background: transparent;
+    padding: 0.85rem 0;
+    border: none;
+    border-bottom: 0.0625rem solid var(--border-subtle);
+    border-radius: 0;
+    margin-bottom: 0;
+}
+
+.comment-items > .comment:last-child {
+    border-bottom: none;
+}
+
+.comment-replies .comment.comment-reply {
+    padding: 0.5rem 0 0;
+    border: none;
 }
 
 .reply-toggle {
     margin-top: 0.5rem;
     background: transparent;
     border: none;
-    color: #1d4ed8;
+    color: var(--primary-color);
     cursor: pointer;
     padding: 0;
 }
@@ -127,11 +192,11 @@
 .comment-replies {
     margin-top: 0.75rem;
     padding-left: 1rem;
-    border-left: 0.125rem solid #e5e7eb;
+    border-left: 0.125rem solid var(--border-subtle);
 }
 
 .comment-reply {
-    background: #fafafa;
+    background: transparent;
 }
 
 .comment-delete-form {
@@ -148,7 +213,7 @@
 
 .comment-limit-note {
     margin: 0.5rem 0 0.75rem;
-    color: #b45309;
+    color: var(--accent-color);
     font-size: 0.9rem;
 }
 
@@ -158,12 +223,12 @@
 
 .comment .author {
     font-weight: bold;
-    color: #333;
+    color: var(--text-main);
 }
 
 .comment .date {
     font-size: 0.8em;
-    color: #888;
+    color: var(--secondary-color);
 }
 
 /* 7. Floating Action Button (FAB) */
@@ -174,26 +239,31 @@
     width: 3.5rem;
     height: 3.5rem;
     background-color: var(--primary-color);
-    color: white;
+    color: var(--text-on-primary);
     border-radius: 50%;
     display: flex;
     justify-content: center;
     align-items: center;
     font-size: 1.5rem;
     text-decoration: none;
-    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.2);
     transition: transform 0.2s ease, background-color 0.2s ease;
     z-index: 1001;
 }
 
 .fab:hover {
-    background-color: #1d4ed8;
+    background-color: var(--primary-hover);
     transform: scale(1.05);
 }
 
 .fab.fab-edit {
     bottom: 2rem;
-    background-color: #0f172a;
+    background-color: var(--card-bg);
+    color: var(--primary-color);
+}
+
+.fab.fab-edit:hover {
+    background-color: var(--surface-hover);
+    color: var(--primary-hover);
 }
 
 .fab.fab-upload {
@@ -206,7 +276,11 @@
     background: linear-gradient(135deg, #ef4444, #b91c1c);
     border: none;
     padding: 0;
-    box-shadow: 0 0.35rem 1rem rgba(185, 28, 28, 0.35);
+}
+
+.fab.fab-delete:hover {
+    background: linear-gradient(135deg, #f97316, #dc2626);
+    transform: scale(1.05);
 }
 
 .fab.fab-delete button {
@@ -215,9 +289,16 @@
     border: none;
     background: transparent;
     color: inherit;
-    font: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: 0;
     cursor: pointer;
     border-radius: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
 }
 
 .gallery-section {
@@ -240,7 +321,7 @@
 .media-item {
     border: none;
     padding: 0;
-    background: #fff;
+    background: var(--card-bg);
     cursor: pointer;
     display: flex;
     flex-direction: column;
@@ -253,6 +334,11 @@
     transform: translateY(var(--lift, 0)) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
     transition: transform 0.2s ease, box-shadow 0.3s ease;
     will-change: transform;
+}
+
+/* Globale Button-Pill nicht auf Galerie-Kacheln (weiterhin Karten-Ecken) */
+button.media-item {
+    border-radius: 0.75rem;
 }
 
 .media-metrics {
@@ -364,7 +450,7 @@
 .placeholder-tile {
     cursor: default;
     box-shadow: none;
-    border: 0.0625rem dashed #cbd5e1;
+    border: 0.0625rem dashed var(--border-subtle);
 }
 
 .placeholder-text {
@@ -422,21 +508,21 @@
     display: inline-block;
     margin-top: 1rem;
     padding: 0.5rem 0.9rem;
-    background: #111827;
-    color: #fff;
-    border-radius: 0.5rem;
+    background: var(--text-main);
+    color: var(--bg-color);
+    border-radius: var(--radius-pill);
     text-decoration: none;
 }
 
 .empty-state {
-    color: #666;
+    color: var(--secondary-color);
     font-size: 0.95rem;
 }
 
 .lightbox {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.7);
+    background: var(--lightbox-overlay);
     backdrop-filter: blur(0.75rem) saturate(90%);
     -webkit-backdrop-filter: blur(0.75rem) saturate(90%);
     display: none;
@@ -454,10 +540,11 @@
     position: relative;
     max-width: 90vw;
     max-height: 90vh;
-    background: #111;
+    background: var(--card-bg);
     padding: 1rem;
     border-radius: 0.75rem;
-    color: #fff;
+    color: var(--text-main);
+    border: none;
 }
 
 .lightbox-body {
@@ -471,6 +558,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    background: var(--lightbox-media-well);
+    border-radius: 0.5rem;
 }
 
 .lightbox-media img,
@@ -482,14 +571,26 @@
 }
 
 .lightbox-panel {
-    background: #0b0d12;
-    border-radius: 0.75rem;
-    padding: 1rem;
+    background: transparent;
+    border-radius: 0;
+    padding: 0;
     min-width: 16rem;
+    color: var(--text-main);
+    border: none;
 }
 
 .lightbox-panel .comment-list {
     margin-top: 1rem;
+}
+
+.lightbox-panel .comment-list h3 {
+    color: var(--text-main);
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.lightbox-panel .interaction-status {
+    color: var(--secondary-color);
 }
 
 @media (min-width: 64rem) {
@@ -523,7 +624,27 @@
     right: 0.75rem;
     background: transparent;
     border: none;
-    color: #fff;
+    color: var(--text-main);
     font-size: 2rem;
     cursor: pointer;
+    border-radius: var(--radius-pill);
+    line-height: 1;
+    padding: 0.15rem 0.45rem;
+}
+
+.lightbox-close:hover {
+    color: var(--primary-color);
+    background: var(--surface-hover);
+}
+
+.project-detail .back-link {
+    display: inline-block;
+    margin-bottom: 0.75rem;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.project-detail .back-link:hover {
+    color: var(--primary-hover);
 }

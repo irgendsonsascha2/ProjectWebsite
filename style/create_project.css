@@ -1,10 +1,11 @@
     .container {
         max-width: 43.75rem;
         margin: 0 auto;
-        background: #fff;
+        background: var(--card-bg);
+        color: var(--text-main);
         padding: 1.5625rem;
         border-radius: 0.5rem;
-        box-shadow: 0 0.125rem 0.625rem rgba(0, 0, 0, 0.1);
+        box-shadow: var(--shadow);
     }
 
     .page-header {
@@ -22,25 +23,25 @@
         margin: 0.5rem 0;
         box-sizing: border-box;
         font-size: 1rem;
+    }
+
+    input,
+    textarea {
         border: 0.0625rem solid #ccc;
         border-radius: 0.25rem;
     }
 
-    textarea {
-        min-height: 9.375rem;
-        resize: vertical;
-    }
-
     button {
-        background: #333;
-        color: white;
+        background: var(--primary-color);
+        color: var(--text-on-primary);
         border: none;
         cursor: pointer;
         transition: background 0.2s;
+        border-radius: 9999px;
     }
 
     button:hover {
-        background: #555;
+        background: var(--primary-hover);
     }
 
     .alert {

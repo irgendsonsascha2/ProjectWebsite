@@ -66,7 +66,7 @@
     background-color: var(--error-primary);
     color: #ffffff;
     text-decoration: none;
-    border-radius: var(--error-radius);
+    border-radius: 9999px;
     font-weight: 600;
     transition: all 0.3s ease;
 }
@@ -74,7 +74,6 @@
 .btn-back:hover {
     background-color: var(--error-primary-hover);
     transform: translateY(-0.15rem);
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
 }
 
 /* System Info Box */

@@ -1,18 +1,14 @@
-  body {
-      font-family: sans-serif;
-      line-height: 1.6;
-      padding: 1.25rem;
-      background: #f9f9f9;
-      font-size: 1rem;
-  }
+  /* Kein body { padding } — sonst sitzt die Navigation wie auf anderen Seiten nicht bündig.
+     Layout/Farben kommen von style/style.css; nur Account-Inhalt hier. */
 
   .container {
       max-width: 50rem;
-      margin: 2rem auto;
-      background: white;
+      margin: 0 auto;
+      background: var(--card-bg);
+      color: var(--text-main);
       padding: 1.25rem;
       border-radius: 0.625rem;
-      box-shadow: 0 0.125rem 0.625rem rgba(0, 0, 0, 0.1);
+      box-shadow: var(--shadow);
   }
 
   .alert {
@@ -39,7 +35,7 @@
   }
 
   .field-hint {
-      color: #64748b;
+      color: var(--secondary-color);
       display: block;
       margin-bottom: 0.5rem;
       font-size: 0.875rem;
@@ -54,7 +50,7 @@
 
   .account-divider {
       border: 0;
-      border-top: 0.0625rem solid #eee;
+      border-top: 0.0625rem solid var(--border-subtle);
       margin: 1.25rem 0;
   }
 
@@ -83,19 +79,20 @@
   }
 
   button {
-      background: #333;
-      color: white;
+      background: var(--primary-color);
+      color: var(--text-on-primary);
       border: none;
       cursor: pointer;
       transition: background 0.2s;
+      border-radius: var(--radius-pill);
   }
 
   button:hover {
-      background: #555;
+      background: var(--primary-hover);
   }
 
   .admin-panel {
-      background: #fff3e0;
+      background: var(--surface-warning-muted);
       padding: 0.9375rem;
       border-radius: 0.3125rem;
       margin-top: 1.25rem;
@@ -111,12 +108,12 @@
   td {
       text-align: left;
       padding: 0.5rem;
-      border-bottom: 0.0625rem solid #ddd;
+      border-bottom: 0.0625rem solid var(--border-subtle);
       font-size: 0.875rem;
   }
 
   code {
-      background: #eee;
+      background: var(--surface-muted);
       padding: 0.125rem 0.25rem;
       border-radius: 0.1875rem;
   }

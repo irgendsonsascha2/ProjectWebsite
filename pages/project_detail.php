@@ -161,13 +161,15 @@ function render_comment_items($comments, $commentLimitReached, $commentLimit, $a
                     <input type="hidden" name="ajax" value="1">
                     <input type="hidden" name="media_id" value="<?php echo htmlspecialchars($mediaIdStr); ?>">
                     <input type="hidden" name="parent_comment_id" value="<?php echo htmlspecialchars($commentId); ?>">
-                    <textarea name="comment_text" placeholder="Antwort schreiben..." maxlength="400" data-maxlength="400" <?php echo $commentLimitReached ? 'disabled' : ''; ?>></textarea>
-                    <input type="hidden" name="submit_comment" value="1">
-                    <button type="submit" name="submit_comment" aria-label="Antworten" <?php echo $commentLimitReached ? 'disabled' : ''; ?>>
-                        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-                            <path d="M2 21l21-9L2 3v7l15 2-15 2z" fill="currentColor"/>
-                        </svg>
-                    </button>
+                    <div class="comment-form-row">
+                        <textarea name="comment_text" placeholder="Antwort schreiben..." maxlength="400" data-maxlength="400" <?php echo $commentLimitReached ? 'disabled' : ''; ?> rows="1"></textarea>
+                        <input type="hidden" name="submit_comment" value="1">
+                        <button type="submit" name="submit_comment" aria-label="Antworten" <?php echo $commentLimitReached ? 'disabled' : ''; ?>>
+                            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                                <path d="M2 21l21-9L2 3v7l15 2-15 2z" fill="currentColor"/>
+                            </svg>
+                        </button>
+                    </div>
                 </form>
             <?php endif; ?>
             <?php
@@ -849,7 +851,8 @@ if ($canViewComments && !empty($mediaIds)) {
                     ?>
                     <?php if ($url): ?>
                         <div class="media-card">
-                            <button class="media-item" data-type="<?php echo htmlspecialchars($type); ?>" data-src="<?php echo htmlspecialchars($url); ?>" data-media-id="<?php echo htmlspecialchars($mediaIdStr); ?>">
+                            <button class="media-item skeleton-host" data-skeleton-media data-type="<?php echo htmlspecialchars($type); ?>" data-src="<?php echo htmlspecialchars($url); ?>" data-media-id="<?php echo htmlspecialchars($mediaIdStr); ?>">
+                                <span class="skeleton-panel skeleton-panel--tile" aria-hidden="true"></span>
                                 <?php if ($type === 'video'): ?>
                                     <video src="<?php echo htmlspecialchars($url); ?>" preload="metadata" muted playsinline></video>
                                     <span class="media-badge">Video</span>
@@ -914,16 +917,13 @@ if ($canViewComments && !empty($mediaIds)) {
 </article>
 
 <?php if ($canEdit): ?>
-<a href="index.php?page=edit_project&id=<?php echo (string)$projectObjectId; ?>" class="fab fab-edit" title="Projekt bearbeiten">✎</a>
+<a href="index.php?page=edit_project&id=<?php echo (string)$projectObjectId; ?>" class="fab fab-edit" title="Projekt bearbeiten"><?php echo svg_icon_pencil(22); ?></a>
 <?php endif; ?>
 
 <?php if ($canDeleteProjects): ?>
 <form method="POST" action="index.php?page=project_detail&id=<?php echo (string)$projectObjectId; ?>" class="fab fab-delete" id="delete-project-form">
     <button type="submit" name="delete_project" value="1" title="Projekt löschen" aria-label="Projekt löschen">
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
-            <path d="M9 4h6l1 2h4v2H4V6h4l1-2zm1 6h2v9h-2V10zm4 0h2v9h-2V10zM7 10h2v9H7V10z" fill="currentColor"/>
-            <path d="M6 8h12l-1 12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 8z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-        </svg>
+        <?php echo svg_icon_trash(22); ?>
     </button>
 </form>
 <?php endif; ?>
@@ -973,13 +973,15 @@ if ($canViewComments && !empty($mediaIds)) {
                     <form method="POST" class="comment-form lightbox-comment-form" data-ajax="true" data-ajax-action="<?php echo htmlspecialchars($ajaxActionUrl); ?>">
                         <input type="hidden" name="ajax" value="1">
                         <input type="hidden" name="media_id" value="">
-                        <textarea name="comment_text" placeholder="Schreibe einen Kommentar..." maxlength="400" data-maxlength="400"></textarea>
-                        <input type="hidden" name="submit_comment" value="1">
-                        <button type="submit" name="submit_comment" aria-label="Kommentieren">
-                            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-                                <path d="M2 21l21-9L2 3v7l15 2-15 2z" fill="currentColor"/>
-                            </svg>
-                        </button>
+                        <div class="comment-form-row">
+                            <textarea name="comment_text" placeholder="Schreibe einen Kommentar..." maxlength="400" data-maxlength="400" rows="1"></textarea>
+                            <input type="hidden" name="submit_comment" value="1">
+                            <button type="submit" name="submit_comment" aria-label="Kommentieren">
+                                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                                    <path d="M2 21l21-9L2 3v7l15 2-15 2z" fill="currentColor"/>
+                                </svg>
+                            </button>
+                        </div>
                     </form>
                 <?php endif; ?>
 
@@ -1260,7 +1262,12 @@ if ($canViewComments && !empty($mediaIds)) {
 
     function autoGrowTextarea(textarea) {
         textarea.style.height = 'auto';
-        textarea.style.height = `${textarea.scrollHeight}px`;
+        const cs = getComputedStyle(textarea);
+        const minH = parseFloat(cs.minHeight) || 0;
+        const maxHPx = parseFloat(cs.maxHeight);
+        const cap = Number.isFinite(maxHPx) && maxHPx > 0 ? maxHPx : Number.POSITIVE_INFINITY;
+        const next = Math.min(Math.max(textarea.scrollHeight, minH), cap);
+        textarea.style.height = `${next}px`;
     }
 
     function setupTextareas(root) {

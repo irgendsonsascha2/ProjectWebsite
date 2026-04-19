@@ -83,15 +83,13 @@
     padding: 0.45rem 1rem;
     font-size: 0.9rem;
     font-weight: 600;
-    color: #fff;
+    color: var(--text-on-primary);
     background: var(--primary-color);
-    border-radius: var(--border-radius);
+    border-radius: var(--radius-pill);
     text-decoration: none;
     transition: var(--transition);
-    box-shadow: var(--shadow);
 }
 
 .home-cta:hover {
-    filter: brightness(1.06);
-    background-color: #1d4ed8;
+    background-color: var(--primary-hover);
 }

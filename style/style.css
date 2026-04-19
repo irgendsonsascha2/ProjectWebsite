@@ -1,24 +1,58 @@
-/* 1. Variablen-Definitionen */
+/* 1. Variablen-Definitionen (Hellmodus — zentral für alle Seiten, die diese Tokens nutzen) */
 :root {
-    /* Farbpalette */
-    --primary-color: #2563eb;       /* Ein modernes Blau */
-    --secondary-color: #64748b;     /* Schiefergrau für Texte */
-    --bg-color: #f8fafc;            /* Sehr helles Grau/Weiß für den Hintergrund */
+    color-scheme: light;
+
+    --primary-color: #2563eb;
+    --primary-hover: #1d4ed8;
+    --secondary-color: #64748b;
+    --bg-color: #f8fafc;
     --card-bg: #ffffff;
-    --text-main: #1e293b;           /* Fast Schwarz für gute Lesbarkeit */
-    --accent-color: #f59e0b;        /* Bernstein für Akzente */
-    
+    --text-main: #1e293b;
+    --text-on-primary: #ffffff;
+    --accent-color: #f59e0b;
+
+    /* Flächen / Rahmen */
+    --surface-hover: #eff6ff;
+    --surface-muted: #f1f5f9;
+    --border-subtle: #e2e8f0;
+    --surface-warning-muted: #fff3e0;
+
+    /* Lightbox / bildnahe Ansicht — Kontrastfeld für Medien */
+    --lightbox-overlay: rgb(15 23 42 / 0.78);
+    --lightbox-media-well: #101218;
+
     /* Abstände und Radien */
     --spacing-sm: 0.5rem;
     --spacing-md: 1rem;
     --spacing-lg: 2rem;
     --border-radius: 0.5rem;
-    
-    /* Schatten */
+    --radius-pill: 9999px;
+
     --shadow: 0 0.25rem 0.375rem -0.0625rem rgb(0 0 0 / 0.1), 0 0.125rem 0.25rem -0.125rem rgb(0 0 0 / 0.1);
-    
-    /* Übergänge */
     --transition: all 0.3s ease;
+}
+
+html[data-theme="dark"] {
+    color-scheme: dark;
+
+    --primary-color: #60a5fa;
+    --primary-hover: #3b82f6;
+    --secondary-color: #94a3b8;
+    --bg-color: #0f172a;
+    --card-bg: #1e293b;
+    --text-main: #f1f5f9;
+    --text-on-primary: #ffffff;
+    --accent-color: #fbbf24;
+
+    --surface-hover: rgba(96, 165, 250, 0.18);
+    --surface-muted: #334155;
+    --border-subtle: #475569;
+    --surface-warning-muted: rgba(251, 191, 36, 0.12);
+
+    --lightbox-overlay: rgb(0 0 0 / 0.82);
+    --lightbox-media-well: color-mix(in srgb, var(--bg-color) 94%, black 6%);
+
+    --shadow: 0 0.25rem 0.75rem rgb(0 0 0 / 0.45), 0 0.125rem 0.35rem rgb(0 0 0 / 0.35);
 }
 
 /* 2. Grund-Setup */
@@ -36,54 +70,185 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* 3. Navigation */
 nav {
     background-color: var(--card-bg);
-    padding: var(--spacing-md) 5%;
-    display: flex;
-    justify-content: center;
-    gap: var(--spacing-lg);
-    box-shadow: var(--shadow);
+    transition: background-color 0.2s ease;
+    padding: 0.45rem 4%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--spacing-sm);
     position: sticky;
     top: 0;
     z-index: 1000;
+    font-size: 0.875rem;
 }
 
-nav a {
+.nav-spacer {
+    min-width: 0;
+}
+
+.nav-main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    min-width: 0;
+    justify-self: center;
+}
+
+nav a:not(.nav-account) {
     text-decoration: none;
     color: var(--secondary-color);
     font-weight: 600;
     transition: var(--transition);
-    padding: var(--spacing-sm) var(--spacing-md);
-    border-radius: var(--border-radius);
+    padding: 0.35rem 0.55rem;
+    border-radius: var(--radius-pill); /* Pill: links/rechts maximal abgerundet */
 }
 
-nav a:hover {
+nav a:not(.nav-account):hover {
     color: var(--primary-color);
-    background-color: #eff6ff;
+    background-color: var(--surface-hover);
+}
+
+.nav-actions {
+    justify-self: end;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+}
+
+.nav-theme {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--secondary-color);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: var(--transition);
+    line-height: 0;
+}
+
+.nav-theme svg {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.nav-theme:hover {
+    color: var(--primary-color);
+    background-color: var(--surface-hover);
+}
+
+.nav-theme .nav-theme-icon--moon {
+    display: block;
+}
+
+.nav-theme .nav-theme-icon--sun {
+    display: none;
+}
+
+html[data-theme="dark"] .nav-theme .nav-theme-icon--moon {
+    display: none;
+}
+
+html[data-theme="dark"] .nav-theme .nav-theme-icon--sun {
+    display: block;
+}
+
+.nav-account {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    color: var(--secondary-color);
+    border-radius: 50%;
+    transition: var(--transition);
+    line-height: 0;
+}
+
+.nav-account svg {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.nav-account:hover {
+    color: var(--primary-color);
+    background-color: var(--surface-hover);
+}
+
+button,
+input[type="submit"],
+input[type="button"],
+input[type="reset"] {
+    border: none;
+    border-radius: var(--radius-pill);
+    box-shadow: none;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+.fab svg {
+    display: block;
+    flex-shrink: 0;
+}
+
+/* FAB-Stift / -Mülleimer: Kontrast & Theme — stroke folgt gesetzter Iconfarbe */
+.fab.fab-edit svg {
+    color: var(--primary-color);
+}
+
+.fab.fab-delete,
+form.fab.fab-delete {
+    color: #ffffff;
+}
+
+.fab svg path {
+    fill: none;
+    stroke: currentColor;
+}
+
+.fab.fab-delete button,
+form.fab.fab-delete button,
+button.fab.fab-delete {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+    padding: 0;
+}
+
+/* Outline-Mülleimer wirkt im Kreis oft leicht nach oben versetzt */
+.fab.fab-delete .fab-svg-trash,
+button.fab.fab-delete .fab-svg-trash {
+    transform: translateY(0.0625rem);
+}
+
+.fab.fab-edit {
+    line-height: 0;
 }
 
 /* 4. Hauptinhalt */
 .main-content {
-    flex: 1; /* Schiebt den Footer nach unten */
+    flex: 1;
     width: 90%;
     margin: var(--spacing-lg) auto;
     padding: var(--spacing-md);
 }
 
-/* 5. Footer */
-footer {
-    text-align: center;
-    padding: var(--spacing-lg);
-    background-color: var(--card-bg);
-    color: var(--secondary-color);
-    border-top: 0.0625rem solid #e2e8f0;
-    margin-top: auto;
-}
-
-/* 6. Hilfsklassen für deine Seiten-Inhalte */
+/* 5. Hilfsklassen für deine Seiten-Inhalte */
 h1, h2, h3 {
     margin-bottom: var(--spacing-md);
     color: var(--text-main);

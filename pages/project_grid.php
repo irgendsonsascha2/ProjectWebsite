@@ -88,7 +88,7 @@ if ($canViewProjects) {
                 }
                 $canEditProject = can_edit_project($project);
             ?>
-            <article class="project-card">
+            <article class="project-card" data-skeleton-card>
                 <?php if ($canDeleteProjects): ?>
                     <label class="project-select">
                         <input type="checkbox" name="project_ids[]" value="<?php echo (string)$project['_id']; ?>">
@@ -96,7 +96,8 @@ if ($canViewProjects) {
                     </label>
                 <?php endif; ?>
                 <a href="<?php echo htmlspecialchars($detailUrl); ?>" class="project-card-link">
-                    <div class="thumb-wrap">
+                    <div class="thumb-wrap skeleton-host" data-skeleton-media>
+                        <span class="skeleton-panel" aria-hidden="true"></span>
                         <?php if ($thumbType === 'video'): ?>
                             <video class="thumbnail" src="<?php echo htmlspecialchars($thumb); ?>" muted playsinline preload="metadata"></video>
                             <span class="thumb-play">▶</span>
@@ -104,22 +105,30 @@ if ($canViewProjects) {
                             <img src="<?php echo htmlspecialchars($thumb); ?>" alt="Vorschau" class="thumbnail" loading="lazy">
                         <?php endif; ?>
                     </div>
-                    <div class="content">
-                        <h3><?php echo htmlspecialchars($project['title']); ?></h3>
-                        <p><?php echo htmlspecialchars(substr($project['description'], 0, 100)) . '...'; ?></p>
-                        <span class="date">
-                            <?php 
-                                if ($project['created_at'] instanceof \MongoDB\BSON\UTCDateTime) {
-                                    echo $project['created_at']->toDateTime()->format('d.m.Y');
-                                } else {
-                                    echo "Datum unbekannt";
-                                }
-                            ?>
-                        </span>
+                    <div class="content project-card-copy">
+                        <div class="skeleton-text-block" aria-hidden="true">
+                            <span class="skeleton-line skeleton-line--title"></span>
+                            <span class="skeleton-line skeleton-line--md"></span>
+                            <span class="skeleton-line skeleton-line--short"></span>
+                            <span class="skeleton-line skeleton-line--date"></span>
+                        </div>
+                        <div class="project-card-copy-inner">
+                            <h3><?php echo htmlspecialchars($project['title']); ?></h3>
+                            <p><?php echo htmlspecialchars(substr($project['description'], 0, 100)) . '...'; ?></p>
+                            <span class="date">
+                                <?php 
+                                    if ($project['created_at'] instanceof \MongoDB\BSON\UTCDateTime) {
+                                        echo $project['created_at']->toDateTime()->format('d.m.Y');
+                                    } else {
+                                        echo "Datum unbekannt";
+                                    }
+                                ?>
+                            </span>
+                        </div>
                     </div>
                 </a>
                 <?php if ($canEditProject): ?>
-                    <a href="index.php?page=edit_project&id=<?php echo (string)$project['_id']; ?>" class="project-edit" title="Projekt bearbeiten">✎</a>
+                    <a href="index.php?page=edit_project&id=<?php echo (string)$project['_id']; ?>" class="project-edit" title="Projekt bearbeiten"><?php echo svg_icon_pencil(18); ?></a>
                 <?php endif; ?>
             </article>
         <?php endforeach; ?>
@@ -133,10 +142,7 @@ if ($canViewProjects) {
 
 <?php if ($canDeleteProjects): ?>
 <button type="submit" form="grid-delete-form" name="delete_projects" value="1" class="fab fab-delete" title="Markierte Projekte löschen" aria-label="Markierte Projekte löschen">
-    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
-        <path d="M9 4h6l1 2h4v2H4V6h4l1-2zm1 6h2v9h-2V10zm4 0h2v9h-2V10zM7 10h2v9H7V10z" fill="currentColor"/>
-        <path d="M6 8h12l-1 12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 8z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-    </svg>
+    <?php echo svg_icon_trash(22); ?>
 </button>
 <?php endif; ?>
 
