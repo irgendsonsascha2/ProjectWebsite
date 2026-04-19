@@ -35,18 +35,21 @@ if (isset($_SESSION['user_id']) && (
 )) {
     try {
         $userId = new \MongoDB\BSON\ObjectId($_SESSION['user_id']);
-        $user = $db->users->findOne(['_id' => $userId]);
+        // Nutzer anhand der ID laden: nicht die rollenbeschränkte $db-Connection nutzen —
+        // sonst schlägt findOne fehl, Session wird geleert, wirken wie „abgemeldet“ (z. B. Admin-URL).
+        [, $dbForUserRead] = get_admin_mongo_connection();
+        $user = $dbForUserRead->users->findOne(['_id' => $userId]);
         if ($user) {
             $_SESSION['email'] = $user['email'] ?? '';
             $_SESSION['username'] = $user['username'] ?? '';
             $_SESSION['role'] = $user['role'] ?? '';
+            [$client, $db] = get_request_mongo_connection($_SESSION['role']);
             if ($_SESSION['role']) {
                 $roleData = $db->roles_config->findOne(['role' => $_SESSION['role']]);
                 if ($roleData && isset($roleData['permissions'])) {
                     $_SESSION['permissions'] = iterator_to_array($roleData['permissions']);
                 }
             }
-            [$client, $db] = get_request_mongo_connection($_SESSION['role']);
         } else {
             $_SESSION = [];
         }

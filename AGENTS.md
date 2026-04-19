@@ -30,6 +30,16 @@ Wichtige Kernfunktionen des Projekts:
 - Admin-Funktionen in `pages/admin/`
 - MongoDB als Datenbank
 - Medien lokal unter `content/images` und `content/videos`
+- **parallel:** Verzeichnis **`laravel/`** — Laravel (MongoDB über `mongodb/laravel-mongodb`) übernimmt **Auth-Logik** (Login/Register/Passwort/Verifizierung); die klassische Website bleibt Router + Seiten + `$_SESSION` nach **Handoff**.
+
+## Hybrid-Authentifizierung (Laravel)
+
+- **`bridge_auth.php`** / **`bridge_register.php`** (Projektroot): laden Laravel, prüfen Credentials bzw. **`RegisterInvitedUser`**, danach Redirect über **`LegacySiteHandoff`** zu **`laravel_handoff.php`** (HMAC), dort wird dieselbe PHP-Session wie früher gesetzt.
+- **`laravel_handoff.php`**: setzt `user_id`, Rolle, `permissions` aus Mongo; Konfiguration in **`laravel/.env`** (`HANDOFF_SECRET`, `LEGACY_SITE_URL`, optional `LEGACY_AFTER_LOGIN_PAGE`). Basis-URL der klassischen Site **inkl. Port**.
+- **`includes/laravel_app_url.php`**: liest **`APP_URL`** aus `laravel/.env` für Links (z. B. Passwort vergessen auf Port 8000).
+- **`includes/bootstrap.php`**: bei unvollständiger Session wird der Nutzer zur Reparatur mit **Admin-Mongo** aus `users` geladen (nicht nur rollenbeschränkte Connection), damit keine fälschliche Abmeldung entsteht.
+- **`dbScripts/04_db_users_validator_allow_laravel.php`**: einmal auf bestehenden DBs ausführen, wenn Mongo „Document failed validation“ bei Laravel-Inserts meldet (`users`-Validator mit `additionalProperties`).
+- Details, Setup und Tests: **`README.md`** Abschnitt zu Laravel und Brücken.
 
 ## Wichtige Dateien
 
@@ -59,6 +69,10 @@ Wichtige Kernfunktionen des Projekts:
   - destruktive Initialisierung und Reset von Collections
 - `README.md`
   - zentrale Projektdokumentation für Menschen
+- `laravel/`
+  - Laravel-App (Auth); Konfiguration nur über **`laravel/.env`** (nicht ins Repo committen); **`laravel/.env.example`** als Vorlage
+- `bridge_auth.php`, `bridge_register.php`, `laravel_handoff.php`
+  - Verbindung klassische PHP-Session ↔ Laravel-Auth
 
 ## Arbeitsregeln für Agenten
 

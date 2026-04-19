@@ -103,10 +103,12 @@ try {
                     'username' => ['bsonType' => 'string'],
                     'password' => ['bsonType' => 'string'],
                     'role' => ['bsonType' => 'string'],
-                    'created_at' => ['bsonType' => 'date']
-                ]
-            ]
-        ]
+                    'created_at' => ['bsonType' => 'date'],
+                ],
+                /* Laravel (mongodb/laravel): remember_token, email_verified_at u. a. — ohne dies schlägt Insert fehl. */
+                'additionalProperties' => true,
+            ],
+        ],
     ]);
     $db->users->createIndex(['email' => 1], ['unique' => true]);
     $db->users->createIndex(['username' => 1], ['unique' => true]);
