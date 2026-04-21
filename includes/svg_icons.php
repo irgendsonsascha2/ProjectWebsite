@@ -26,3 +26,12 @@ if (!function_exists('svg_icon_trash')) {
             . '</svg>';
     }
 }
+
+if (!function_exists('svg_icon_check')) {
+    function svg_icon_check(int $size = 20): string {
+        $w = htmlspecialchars((string) $size, ENT_QUOTES, 'UTF-8');
+        return '<svg class="fab-svg fab-svg-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="' . $w . '" height="' . $w . '" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'
+            . '<path d="M20 6 9 17l-5-5"/>'
+            . '</svg>';
+    }
+}

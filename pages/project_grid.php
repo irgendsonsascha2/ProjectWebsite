@@ -91,8 +91,8 @@ if ($canViewProjects) {
             <article class="project-card" data-skeleton-card>
                 <?php if ($canDeleteProjects): ?>
                     <label class="project-select">
-                        <input type="checkbox" name="project_ids[]" value="<?php echo (string)$project['_id']; ?>">
-                        <span class="project-check" aria-hidden="true">✓</span>
+                        <input type="checkbox" name="project_ids[]" value="<?php echo (string)$project['_id']; ?>" aria-label="Projekt zum Löschen markieren">
+                        <span class="project-check" aria-hidden="true"><?php echo svg_icon_check(18); ?></span>
                     </label>
                 <?php endif; ?>
                 <a href="<?php echo htmlspecialchars($detailUrl); ?>" class="project-card-link">
@@ -141,7 +141,7 @@ if ($canViewProjects) {
 <?php endif; ?>
 
 <?php if ($canDeleteProjects): ?>
-<button type="submit" form="grid-delete-form" name="delete_projects" value="1" class="fab fab-delete" title="Markierte Projekte löschen" aria-label="Markierte Projekte löschen">
+<button type="submit" form="grid-delete-form" name="delete_projects" value="1" class="fab fab-delete" title="Markierte Projekte löschen" aria-label="Markierte Projekte löschen" disabled>
     <?php echo svg_icon_trash(22); ?>
 </button>
 <?php endif; ?>
@@ -160,6 +160,7 @@ if ($canViewProjects) {
         function updateDeleteButton() {
             const anyChecked = checkboxes.some((cb) => cb.checked);
             deleteButton.classList.toggle('is-active', anyChecked);
+            deleteButton.disabled = !anyChecked;
             if (grid) {
                 grid.classList.toggle('has-selection', anyChecked);
             }
