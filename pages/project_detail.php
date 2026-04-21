@@ -864,17 +864,31 @@ if ($canViewComments && !empty($mediaIds)) {
                                     <div class="media-metrics" data-media-id="<?php echo htmlspecialchars($mediaIdStr); ?>">
                                         <?php if ($canViewLikes): ?>
                                             <span class="metric" title="Likes">
-                                                <span class="metric-icon" aria-hidden="true">🔥</span>
+                                                <span class="metric-icon" aria-hidden="true">
+                                                    <svg class="ui-icon ui-icon--outline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path d="M20 8h-5.612l1.123-3.367c.202-.608.1-1.282-.275-1.802S14.253 2 13.612 2H12c-.297 0-.578.132-.769.36L6.531 8H4c-1.103 0-2 .897-2 2v9c0 1.103.897 2 2 2h13.307a2.01 2.01 0 0 0 1.873-1.298l2.757-7.351A1 1 0 0 0 22 12v-2c0-1.103-.897-2-2-2zM4 10h2v9H4v-9zm16 1.819L17.307 19H8V9.362L12.468 4h1.146l-1.562 4.683A.998.998 0 0 0 13 10h7v1.819z"/>
+                                                    </svg>
+                                                </span>
                                                 <span class="metric-count" data-kind="like"><?php echo (int)$likeCount; ?></span>
                                             </span>
                                             <span class="metric" title="Dislikes">
-                                                <span class="metric-icon" aria-hidden="true">💩</span>
+                                                <span class="metric-icon" aria-hidden="true">
+                                                    <svg class="ui-icon ui-icon--outline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                                                        <g transform="translate(0 24) scale(1 -1)">
+                                                            <path d="M20 8h-5.612l1.123-3.367c.202-.608.1-1.282-.275-1.802S14.253 2 13.612 2H12c-.297 0-.578.132-.769.36L6.531 8H4c-1.103 0-2 .897-2 2v9c0 1.103.897 2 2 2h13.307a2.01 2.01 0 0 0 1.873-1.298l2.757-7.351A1 1 0 0 0 22 12v-2c0-1.103-.897-2-2-2zM4 10h2v9H4v-9zm16 1.819L17.307 19H8V9.362L12.468 4h1.146l-1.562 4.683A.998.998 0 0 0 13 10h7v1.819z"/>
+                                                        </g>
+                                                    </svg>
+                                                </span>
                                                 <span class="metric-count" data-kind="dislike"><?php echo (int)$dislikeCount; ?></span>
                                             </span>
                                         <?php endif; ?>
                                         <?php if ($canViewComments): ?>
                                             <span class="metric" title="Kommentare">
-                                                <span class="metric-icon" aria-hidden="true">💬</span>
+                                                <span class="metric-icon" aria-hidden="true">
+                                                    <svg class="ui-icon ui-icon--stroke" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2Z" />
+                                                    </svg>
+                                                </span>
                                                 <span class="metric-count" data-kind="comment"><?php echo (int)$commentCount; ?></span>
                                             </span>
                                         <?php endif; ?>
@@ -941,13 +955,35 @@ if ($canViewComments && !empty($mediaIds)) {
                         <input type="hidden" name="ajax" value="1">
                         <input type="hidden" name="media_id" value="">
                         <button type="submit" name="interaction" value="like" aria-pressed="false">
-                            <span class="interaction-emoji" aria-hidden="true">🔥</span>
+                            <span class="interaction-emoji" aria-hidden="true">
+                                <span class="ui-icon-swap">
+                                    <svg class="ui-icon ui-icon--outline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M20 8h-5.612l1.123-3.367c.202-.608.1-1.282-.275-1.802S14.253 2 13.612 2H12c-.297 0-.578.132-.769.36L6.531 8H4c-1.103 0-2 .897-2 2v9c0 1.103.897 2 2 2h13.307a2.01 2.01 0 0 0 1.873-1.298l2.757-7.351A1 1 0 0 0 22 12v-2c0-1.103-.897-2-2-2zM4 10h2v9H4v-9zm16 1.819L17.307 19H8V9.362L12.468 4h1.146l-1.562 4.683A.998.998 0 0 0 13 10h7v1.819z"/>
+                                    </svg>
+                                    <svg class="ui-icon ui-icon--filled" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M1 21h4V9H1v12zM23 10c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/>
+                                    </svg>
+                                </span>
+                            </span>
                             <?php if ($canViewLikes): ?>
                                 <span class="like-count">0</span>
                             <?php endif; ?>
                         </button>
                         <button type="submit" name="interaction" value="dislike" aria-pressed="false">
-                            <span class="interaction-emoji" aria-hidden="true">💩</span>
+                            <span class="interaction-emoji" aria-hidden="true">
+                                <span class="ui-icon-swap">
+                                    <svg class="ui-icon ui-icon--outline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                                        <g transform="translate(0 24) scale(1 -1)">
+                                            <path d="M20 8h-5.612l1.123-3.367c.202-.608.1-1.282-.275-1.802S14.253 2 13.612 2H12c-.297 0-.578.132-.769.36L6.531 8H4c-1.103 0-2 .897-2 2v9c0 1.103.897 2 2 2h13.307a2.01 2.01 0 0 0 1.873-1.298l2.757-7.351A1 1 0 0 0 22 12v-2c0-1.103-.897-2-2-2zM4 10h2v9H4v-9zm16 1.819L17.307 19H8V9.362L12.468 4h1.146l-1.562 4.683A.998.998 0 0 0 13 10h7v1.819z"/>
+                                        </g>
+                                    </svg>
+                                    <svg class="ui-icon ui-icon--filled" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                                        <g transform="translate(0 24) scale(1 -1)">
+                                            <path d="M1 21h4V9H1v12zM23 10c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/>
+                                        </g>
+                                    </svg>
+                                </span>
+                            </span>
                             <?php if ($canViewLikes): ?>
                                 <span class="dislike-count">0</span>
                             <?php endif; ?>
@@ -957,11 +993,21 @@ if ($canViewComments && !empty($mediaIds)) {
                     <?php if ($canViewLikes): ?>
                         <div class="interaction-buttons lightbox-interaction-display" aria-hidden="true">
                             <div>
-                                <span class="interaction-emoji" aria-hidden="true">🔥</span>
+                                <span class="interaction-emoji" aria-hidden="true">
+                                    <svg class="ui-icon ui-icon--outline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M20 8h-5.612l1.123-3.367c.202-.608.1-1.282-.275-1.802S14.253 2 13.612 2H12c-.297 0-.578.132-.769.36L6.531 8H4c-1.103 0-2 .897-2 2v9c0 1.103.897 2 2 2h13.307a2.01 2.01 0 0 0 1.873-1.298l2.757-7.351A1 1 0 0 0 22 12v-2c0-1.103-.897-2-2-2zM4 10h2v9H4v-9zm16 1.819L17.307 19H8V9.362L12.468 4h1.146l-1.562 4.683A.998.998 0 0 0 13 10h7v1.819z"/>
+                                    </svg>
+                                </span>
                                 <span class="like-count">0</span>
                             </div>
                             <div>
-                                <span class="interaction-emoji" aria-hidden="true">💩</span>
+                                <span class="interaction-emoji" aria-hidden="true">
+                                    <svg class="ui-icon ui-icon--outline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                                        <g transform="translate(0 24) scale(1 -1)">
+                                            <path d="M20 8h-5.612l1.123-3.367c.202-.608.1-1.282-.275-1.802S14.253 2 13.612 2H12c-.297 0-.578.132-.769.36L6.531 8H4c-1.103 0-2 .897-2 2v9c0 1.103.897 2 2 2h13.307a2.01 2.01 0 0 0 1.873-1.298l2.757-7.351A1 1 0 0 0 22 12v-2c0-1.103-.897-2-2-2zM4 10h2v9H4v-9zm16 1.819L17.307 19H8V9.362L12.468 4h1.146l-1.562 4.683A.998.998 0 0 0 13 10h7v1.819z"/>
+                                        </g>
+                                    </svg>
+                                </span>
                                 <span class="dislike-count">0</span>
                             </div>
                         </div>
@@ -1322,18 +1368,9 @@ if ($canViewComments && !empty($mediaIds)) {
         const comments = Array.from(container.querySelectorAll('.hover-comment'));
         if (comments.length <= 1) return false;
         const currentIndex = parseInt(container.dataset.hoverIndex || '0', 10) || 0;
-        const nextIndex = currentIndex + 1;
+        const nextIndex = (currentIndex + 1) % comments.length;
         const current = comments[currentIndex];
         if (!current) return false;
-        if (nextIndex >= comments.length) {
-            current.classList.remove('is-active');
-            current.classList.add('is-leaving');
-            window.setTimeout(() => {
-                current.classList.remove('is-leaving');
-            }, 260);
-            container.dataset.hoverIndex = '-1';
-            return false;
-        }
         const next = comments[nextIndex];
         if (!next || current === next) return true;
         current.classList.remove('is-active');

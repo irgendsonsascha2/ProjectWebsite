@@ -103,6 +103,7 @@ MongoDB ohne Replica Set unterstützt keine DB-Transaktionen wie Laravels `Refre
 ├── pages/
 │   ├── home.php              # Startseite / Kurzvorstellung
 │   ├── account.php           # Login, Registrierung, Invite-Codes
+│   ├── impressum.php         # Impressum (Platzhalter zum Ausfüllen)
 │   ├── project_grid.php      # Projektübersicht
 │   ├── project_detail.php    # Detailseite, Likes, Dislikes, Kommentare
 │   ├── create_project.php    # Projekt anlegen, Entwürfe, Uploads

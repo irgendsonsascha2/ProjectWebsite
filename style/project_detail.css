@@ -36,13 +36,70 @@
 
 .interaction-buttons button.is-active {
     color: var(--text-main);
+}
+
+.interaction-buttons button:hover,
+.interaction-buttons button:focus-visible {
     background: var(--surface-hover);
     border-radius: 999rem;
 }
 
 .interaction-buttons .interaction-emoji {
-    font-size: 1.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.35rem;
+    height: 1.35rem;
     line-height: 1;
+}
+
+.ui-icon-swap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.35rem;
+    height: 1.35rem;
+}
+
+.ui-icon {
+    width: 100%;
+    height: 100%;
+    display: block;
+    flex-shrink: 0;
+}
+
+.ui-icon--outline {
+    fill: currentColor;
+}
+
+.ui-icon--filled {
+    fill: currentColor;
+}
+
+.ui-icon--stroke {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.ui-icon--filled {
+    display: none;
+}
+
+.interaction-buttons button.is-active .ui-icon--outline {
+    display: none;
+}
+
+.interaction-buttons button.is-active .ui-icon--filled {
+    display: block;
+}
+
+.interaction-buttons .interaction-emoji > svg {
+    width: 100%;
+    height: 100%;
+    display: block;
 }
 
 .lightbox-panel .interaction-buttons button {
@@ -50,7 +107,6 @@
 }
 
 .lightbox-panel .interaction-buttons button.is-active {
-    background: var(--surface-hover);
     color: var(--text-main);
 }
 
@@ -363,7 +419,18 @@ button.media-item {
 }
 
 .media-metrics .metric-icon {
-    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* exakt auf Textgröße -> Pill-Höhe passt zur Kommentar-Preview */
+    width: 0.7rem;
+    height: 0.7rem;
+}
+
+.media-metrics .metric-icon svg {
+    width: 100%;
+    height: 100%;
+    display: block;
 }
 
 .media-metrics .metric-count {
@@ -373,13 +440,19 @@ button.media-item {
 .media-hover-comments {
     position: absolute;
     left: 0.5rem;
-    right: auto;
-    bottom: 2.2rem;
+    right: 0.5rem;
+    /* auf gleicher Höhe wie die Interaktions-Pill */
+    bottom: 0.5rem;
+    z-index: 3;
     display: inline-grid;
     gap: 0.35rem;
+    /* rechts Platz lassen für .media-metrics (Pill unten rechts) */
+    box-sizing: border-box;
     max-width: calc(100% - 1rem);
+    /* Sicherheitsreserve: auch bei größeren Zahlen in den Metrics */
+    padding-right: 8.25rem;
     color: #fff;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     text-align: left;
     opacity: 0;
     transform: translateY(0.4rem);
@@ -392,14 +465,17 @@ button.media-item {
 .media-hover-comments .hover-comment {
     display: flex;
     grid-area: 1 / 1;
-    gap: 0.35rem;
-    align-items: baseline;
+    gap: 0.2rem;
+    align-items: center;
+    width: 100%;
+    max-width: 100%;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    padding: 0.3rem 0.5rem;
+    line-height: 1;
+    padding: 0.3rem 0.45rem;
     background: rgba(12, 14, 18, 0.65);
-    border-radius: 0.6rem;
+    border-radius: 999rem;
     opacity: 0;
     transform: translateY(0.6rem);
     transition: opacity 0.25s ease, transform 0.25s ease;
@@ -418,9 +494,12 @@ button.media-item {
 
 .media-hover-comments .hover-author {
     font-weight: 600;
+    flex: 0 0 auto;
 }
 
 .media-hover-comments .hover-text {
+    flex: 1 1 auto;
+    min-width: 0;
     opacity: 0.85;
     overflow: hidden;
     text-overflow: ellipsis;
