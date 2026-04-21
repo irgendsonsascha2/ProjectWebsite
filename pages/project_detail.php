@@ -146,7 +146,7 @@ function render_comment_items($comments, $commentLimitReached, $commentLimit, $a
         <div class="comment" data-comment-id="<?php echo htmlspecialchars($commentId); ?>">
             <p class="author"><?php echo htmlspecialchars($comment['user_info']['username'] ?? $comment['user_info']['email']); ?></p>
             <p class="date"><?php echo $comment['created_at']->toDateTime()->format('d.m.Y H:i'); ?></p>
-            <p><?php echo nl2br(htmlspecialchars($comment['text'])); ?></p>
+            <p class="comment-text"><?php echo nl2br(htmlspecialchars($comment['text'])); ?></p>
             <?php if ($canDelete): ?>
                 <form method="POST" class="comment-delete-form" data-ajax="true" data-ajax-action="<?php echo htmlspecialchars($ajaxActionUrl); ?>">
                     <input type="hidden" name="ajax" value="1">
@@ -186,7 +186,7 @@ function render_comment_items($comments, $commentLimitReached, $commentLimit, $a
                     <div class="comment comment-reply" data-comment-id="<?php echo htmlspecialchars($replyId); ?>">
                         <p class="author"><?php echo htmlspecialchars($reply['user_info']['username'] ?? $reply['user_info']['email']); ?></p>
                         <p class="date"><?php echo $reply['created_at']->toDateTime()->format('d.m.Y H:i'); ?></p>
-                        <p><?php echo nl2br(htmlspecialchars($reply['text'])); ?></p>
+                        <p class="comment-text"><?php echo nl2br(htmlspecialchars($reply['text'])); ?></p>
                         <?php if ($replyCanDelete): ?>
                             <form method="POST" class="comment-delete-form" data-ajax="true" data-ajax-action="<?php echo htmlspecialchars($ajaxActionUrl); ?>">
                                 <input type="hidden" name="ajax" value="1">
@@ -1167,6 +1167,7 @@ if ($canViewComments && !empty($mediaIds)) {
         if (commentItems && typeof data.commentsHtml === 'string') {
             commentItems.innerHTML = data.commentsHtml;
             setupTextareas(commentItems);
+            setupCommentExpanders(commentItems);
         }
         if (typeof data.commentLimit === 'number') {
             const note = lightboxPanel ? lightboxPanel.querySelector('.comment-limit-note') : null;
@@ -1250,6 +1251,7 @@ if ($canViewComments && !empty($mediaIds)) {
                 if (commentItems && typeof data.commentsHtml === 'string') {
                     commentItems.innerHTML = data.commentsHtml;
                     setupTextareas(commentItems);
+                    setupCommentExpanders(commentItems);
                 }
                 if (typeof data.commentLimit === 'number') {
                     const note = lightboxPanel ? lightboxPanel.querySelector('.comment-limit-note') : null;
@@ -1350,7 +1352,41 @@ if ($canViewComments && !empty($mediaIds)) {
         });
     }
 
+    function setupCommentExpanders(root) {
+        const texts = root.querySelectorAll('.comment-text');
+        texts.forEach((textEl) => {
+            if (textEl.dataset.clampReady === '1') return;
+            textEl.dataset.clampReady = '1';
+
+            textEl.classList.add('is-collapsed');
+
+            const needsClamp = textEl.scrollHeight > textEl.clientHeight + 1;
+            if (!needsClamp) {
+                textEl.classList.remove('is-collapsed');
+                return;
+            }
+
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'comment-expand';
+            btn.textContent = 'Mehr anzeigen';
+            btn.addEventListener('click', () => {
+                const isCollapsed = textEl.classList.contains('is-collapsed');
+                if (isCollapsed) {
+                    textEl.classList.remove('is-collapsed');
+                    btn.textContent = 'Weniger';
+                } else {
+                    textEl.classList.add('is-collapsed');
+                    btn.textContent = 'Mehr anzeigen';
+                }
+            });
+
+            textEl.insertAdjacentElement('afterend', btn);
+        });
+    }
+
     setupTextareas(document);
+    setupCommentExpanders(document);
 
     function setupHoverRotationFor(container) {
         if (!container) return;

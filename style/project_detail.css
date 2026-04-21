@@ -216,6 +216,7 @@
     border-bottom: 0.0625rem solid var(--border-subtle);
     border-radius: 0;
     margin-bottom: 0;
+    min-width: 0;
 }
 
 .comment-items > .comment:last-child {
@@ -275,6 +276,37 @@
 
 .comment p {
     margin: 0;
+}
+
+/* Lightbox: kein horizontaler Scroll, sauberer Umbruch */
+.lightbox-panel,
+.comment-items {
+    overflow-x: hidden;
+}
+
+.comment-text {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    hyphens: auto;
+    line-height: 1.4;
+}
+
+.comment-text.is-collapsed {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+    max-height: calc(1.4em * 3);
+}
+
+.comment-expand {
+    margin-top: 0.25rem;
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: var(--primary-color);
+    cursor: pointer;
+    font: inherit;
 }
 
 .comment .author {
@@ -656,6 +688,7 @@ button.media-item {
     min-width: 16rem;
     color: var(--text-main);
     border: none;
+    box-sizing: border-box;
 }
 
 .lightbox-panel .comment-list {
@@ -687,6 +720,10 @@ button.media-item {
         width: min(24rem, 30vw);
         max-height: 80vh;
         overflow: auto;
+        /* Inhalt nicht unter die Scrollbar laufen lassen */
+        scrollbar-gutter: stable;
+        padding-right: 0.6rem;
+        padding-left: 0.1rem;
     }
 
     .lightbox-media img,
@@ -698,22 +735,34 @@ button.media-item {
 
 
 .lightbox-close {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.75rem;
+    position: fixed;
+    top: 1.25rem;
+    right: 1.25rem;
     background: transparent;
     border: none;
     color: var(--text-main);
     font-size: 2rem;
     cursor: pointer;
-    border-radius: var(--radius-pill);
+    border-radius: 999rem;
     line-height: 1;
-    padding: 0.15rem 0.45rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
 }
 
 .lightbox-close:hover {
     color: var(--primary-color);
     background: var(--surface-hover);
+}
+
+.lightbox-close:focus,
+.lightbox-close:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 0.125rem var(--primary-color);
 }
 
 .project-detail .back-link {
