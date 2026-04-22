@@ -315,6 +315,9 @@ Die Funktion `can($permission)` in `includes/bootstrap.php` dient als zentrale R
 - Registrierung per Einmal-Code
 - Rollenzuweisung anhand des verwendeten Registrierungscodes
 - Generierung neuer Einladungscodes für berechtigte Nutzer
+- **Einladungs-Direktlinks** in der Tabelle: `index.php?page=account&reg_token=<CODE>#register-section` (führt zur Account-Seite und füllt den Code in das Feld **Einmal-Code** vor; der Link muss in HTML-Attribute als Text ausgegeben werden, damit `&reg_token` nicht als HTML-Entity `&reg;` in `®_token` verfälscht wird)
+- In der Tabelle stehen neben **Code** und **Direkt-Link** **Kopier-Buttons** (Clipboard), damit man Werte schnell teilen kann
+- Meldungen/Alerts (z. B. „Neuer Code generiert …“) nutzen in `style/account.css` **themefähige** Farben, damit sie im **Darkmode** lesbar bleiben
 
 Invite-Codes werden in `registration_codes` gespeichert. Ein Code kann nur einmal verwendet werden.
 

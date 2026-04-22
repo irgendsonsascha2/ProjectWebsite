@@ -21,6 +21,7 @@ if (isset($_GET['logout'])) {
 // Login läuft über bridge_auth.php + Laravel (Passwort-Hash / Mongo wie die Laravel-App).
 
 $message = '';
+$messageClass = 'alert';
 
 if (! empty($_SESSION['register_validation_errors'])) {
     $errs = $_SESSION['register_validation_errors'];
@@ -48,6 +49,7 @@ if (isset($_POST['generate_code']) && can('generate_codes')) {
         'created_at' => new UTCDateTime()
     ]);
     $message = "✅ Neuer Code generiert: <b>$newCode</b>";
+    $messageClass = 'alert alert--success';
 }
 
 $prefilledCode = isset($_GET['reg_token']) ? htmlspecialchars($_GET['reg_token']) : '';
@@ -62,18 +64,22 @@ if (! isset($_SESSION['user_id'])) {
 // Rückmeldungen vom Login-Bridge
 if (isset($_GET['login_err'])) {
     $message = "❌ Fehler: E-Mail oder Passwort falsch.";
+    $messageClass = 'alert alert--error';
 }
 if (isset($_GET['err']) && $_GET['err'] === 'csrf') {
     $message = "❌ Formular ungültig oder Sitzung abgelaufen — bitte erneut versuchen.";
+    $messageClass = 'alert alert--error';
 }
 if (isset($_GET['err']) && $_GET['err'] === 'handoff') {
     $message = "❌ Anmeldung nicht möglich: In laravel/.env fehlen HANDOFF_SECRET oder LEGACY_SITE_URL passt nicht zur Website-URL.";
+    $messageClass = 'alert alert--error';
 }
 if (isset($_GET['err']) && $_GET['err'] === 'throttle') {
     $w = isset($_GET['wait']) ? (int) $_GET['wait'] : 0;
     $message = $w > 0
         ? "❌ Zu viele Versuche — bitte {$w} Sekunden warten und erneut versuchen."
         : '❌ Zu viele Versuche — bitte kurz warten und erneut versuchen.';
+    $messageClass = 'alert alert--error';
 }
 if (isset($_GET['handoff_err'])) {
     $h = (string) $_GET['handoff_err'];
@@ -88,6 +94,7 @@ if (isset($_GET['handoff_err'])) {
     } else {
         $message = '❌ Anmeldung (Handoff) fehlgeschlagen.';
     }
+    $messageClass = 'alert alert--error';
 }
 
 $roleOptions = [];
@@ -114,7 +121,7 @@ if (!empty($roleOptions)) {
     <h1>Account System</h1>
 
     <?php if ($message): ?>
-        <div class="alert"><?php echo $message; ?></div>
+        <div class="<?php echo htmlspecialchars($messageClass, ENT_QUOTES, 'UTF-8'); ?>"><?php echo $message; ?></div>
     <?php endif; ?>
 
     <?php if (!isset($_SESSION['user_id'])): ?>
@@ -182,12 +189,32 @@ if (!empty($roleOptions)) {
                         <?php
                         $activeCodes = $db->registration_codes->find(['is_used' => false]);
                         foreach ($activeCodes as $c):
-                            $link = "http://" . $_SERVER['HTTP_HOST'] . explode('?', $_SERVER['REQUEST_URI'])[0] . "?reg_token=" . $c['code'];
+                            $scheme = (! empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+                            $basePath = explode('?', $_SERVER['REQUEST_URI'])[0];
+                            $link = $scheme . "://" . $_SERVER['HTTP_HOST'] . $basePath . "?page=account&reg_token=" . $c['code'] . "#register-section";
                         ?>
                             <tr>
                                 <td><?php echo $c['role']; ?></td>
-                                <td><code><?php echo $c['code']; ?></code></td>
-                                <td><input type="text" value="<?php echo $link; ?>" readonly onclick="this.select();" class="code-link-input"></td>
+                                <td>
+                                    <div class="copy-row">
+                                        <code id="code-<?php echo htmlspecialchars((string) $c['_id'], ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars((string) $c['code'], ENT_QUOTES, 'UTF-8'); ?></code>
+                                        <button type="button" class="copy-btn" data-copy-text="<?php echo htmlspecialchars((string) $c['code'], ENT_QUOTES, 'UTF-8'); ?>" aria-label="Code kopieren" title="Code kopieren">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                                <path d="M9 9h10v10H9V9zm-4 6H4V4h11v1H5v10z"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="copy-row">
+                                        <input type="text" value="<?php echo htmlspecialchars($link, ENT_QUOTES, 'UTF-8'); ?>" readonly onclick="this.select();" class="code-link-input">
+                                        <button type="button" class="copy-btn" data-copy-text="<?php echo htmlspecialchars($link, ENT_QUOTES, 'UTF-8'); ?>" aria-label="Link kopieren" title="Link kopieren">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                                <path d="M9 9h10v10H9V9zm-4 6H4V4h11v1H5v10z"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     </table>
@@ -239,6 +266,46 @@ if (!empty($roleOptions)) {
             if (input.id === 'reg_username') input.setAttribute('autocomplete', 'new-username');
             if (input.id === 'reg_email') input.setAttribute('autocomplete', 'email');
             if (input.id === 'reg_password') input.setAttribute('autocomplete', 'new-password');
+        });
+    });
+})();
+</script>
+
+<script>
+(() => {
+    const buttons = document.querySelectorAll('.copy-btn[data-copy-text]');
+    if (!buttons.length) return;
+
+    function fallbackCopy(text) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+            document.execCommand('copy');
+        } finally {
+            document.body.removeChild(ta);
+        }
+    }
+
+    buttons.forEach((btn) => {
+        btn.addEventListener('click', async () => {
+            const text = btn.getAttribute('data-copy-text') || '';
+            if (!text) return;
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(text);
+                } else {
+                    fallbackCopy(text);
+                }
+                btn.classList.add('copy-btn--done');
+                window.setTimeout(() => btn.classList.remove('copy-btn--done'), 800);
+            } catch (e) {
+                fallbackCopy(text);
+            }
         });
     });
 })();
