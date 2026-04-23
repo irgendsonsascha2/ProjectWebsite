@@ -309,13 +309,21 @@ Die Funktion `can($permission)` in `includes/bootstrap.php` dient als zentrale R
 
 ## Account- und Invite-System
 
-`pages/account.php` enthält:
+Die klassischen Auth-Seiten sind aufgeteilt:
+
+- **Login**: `index.php?page=login` (Formular → `bridge_auth.php`)
+- **Registrierung**: `index.php?page=register` (Formular → `bridge_register.php`, Invite-/Einmal-Code via `reg_token`)
+- **Account-Dashboard (eingeloggt)**: `index.php?page=account` (Logout + Admin: Einladungscodes/Links)
+
+Einladungscodes werden weiterhin in `registration_codes` gespeichert (Einmalverwendung).
+
+Die Auth-/Invite-Funktionen umfassen:
 
 - Login per E-Mail oder Username
 - Registrierung per Einmal-Code
 - Rollenzuweisung anhand des verwendeten Registrierungscodes
 - Generierung neuer Einladungscodes für berechtigte Nutzer
-- **Einladungs-Direktlinks** in der Tabelle: `index.php?page=account&reg_token=<CODE>#register-section` (führt zur Account-Seite und füllt den Code in das Feld **Einmal-Code** vor; der Link muss in HTML-Attribute als Text ausgegeben werden, damit `&reg_token` nicht als HTML-Entity `&reg;` in `®_token` verfälscht wird)
+- **Einladungs-Direktlinks** in der Tabelle: `index.php?page=register&reg_token=<CODE>#register-section` (führt zur Registrierungsseite und füllt den Code in das Feld **Einmal-Code** vor; der Link muss in HTML-Attribute als Text ausgegeben werden, damit `&reg_token` nicht als HTML-Entity `&reg;` in `®_token` verfälscht wird). **Legacy:** alte Links auf `page=account&reg_token=...` werden serverseitig auf `page=register` umgeleitet.
 - In der Tabelle stehen neben **Code** und **Direkt-Link** **Kopier-Buttons** (Clipboard), damit man Werte schnell teilen kann
 - Meldungen/Alerts (z. B. „Neuer Code generiert …“) nutzen in `style/account.css` **themefähige** Farben, damit sie im **Darkmode** lesbar bleiben
 

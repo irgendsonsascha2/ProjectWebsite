@@ -247,33 +247,21 @@
 
 .fab.fab-delete {
     right: 6.5rem;
-    background: color-mix(in srgb, #ef4444 12%, var(--card-bg));
-    border: 0.0625rem solid color-mix(in srgb, #ef4444 25%, var(--border-subtle));
-    color: #b91c1c;
-    opacity: 0.8;
-    filter: none;
-    transform: none;
+    opacity: 1;
 }
 
 .fab.fab-delete:hover {
-    transform: none;
+    transform: scale(1.05);
 }
 
 .fab.fab-delete:disabled {
-    cursor: not-allowed;
-}
-
-html[data-theme="dark"] .fab.fab-delete {
-    background: color-mix(in srgb, #ef4444 14%, var(--card-bg));
-    border-color: color-mix(in srgb, #ef4444 26%, var(--border-subtle));
-    color: #fca5a5;
-    opacity: 0.75;
+    transform: none;
 }
 
 .fab.fab-delete.is-active {
-    background: linear-gradient(135deg, #f97316, #dc2626);
-    border: none;
-    color: #ffffff;
     opacity: 1;
-    filter: none;
+}
+
+.fab .fab-svg {
+    display: block;
 }

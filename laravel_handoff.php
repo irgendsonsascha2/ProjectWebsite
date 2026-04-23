@@ -26,7 +26,7 @@ $laravelLogin = rtrim((string) ($_ENV['APP_URL'] ?? 'http://127.0.0.1:8000'), '/
  */
 $redirectHandoffFailure = static function (string $reason) use ($legacyBase, $laravelLogin): void {
     if ($legacyBase !== '') {
-        header('Location: '.$legacyBase.'/index.php?page=account&handoff_err='.rawurlencode($reason));
+        header('Location: '.$legacyBase.'/index.php?page=login&handoff_err='.rawurlencode($reason));
         exit;
     }
     header('Location: '.$laravelLogin.'?handoff='.rawurlencode($reason));

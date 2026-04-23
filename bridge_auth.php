@@ -8,7 +8,7 @@
 declare(strict_types=1);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: index.php?page=account');
+    header('Location: index.php?page=login');
     exit;
 }
 
@@ -27,7 +27,7 @@ App\Services\BridgeRateLimiter::enforceOrRedirect('login');
 $sessionToken = $_SESSION['csrf_bridge'] ?? '';
 $postToken = (string) ($_POST['_token'] ?? '');
 if ($sessionToken === '' || ! hash_equals($sessionToken, $postToken)) {
-    header('Location: index.php?page=account&err=csrf');
+    header('Location: index.php?page=login&err=csrf');
     exit;
 }
 
@@ -42,14 +42,14 @@ $user = App\Models\User::query()
     ->first();
 
 if ($user === null || ! Illuminate\Support\Facades\Hash::check($password, $user->password)) {
-    header('Location: index.php?page=account&login_err=1');
+    header('Location: index.php?page=login&login_err=1');
     exit;
 }
 
 $handoff = $app->make(App\Services\LegacySiteHandoff::class);
 
 if (! $handoff->isConfigured()) {
-    header('Location: index.php?page=account&err=handoff');
+    header('Location: index.php?page=login&err=handoff');
     exit;
 }
 

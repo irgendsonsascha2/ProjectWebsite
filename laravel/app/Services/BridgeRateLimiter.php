@@ -21,7 +21,8 @@ class BridgeRateLimiter
 
         if (RateLimiter::tooManyAttempts($key, $max)) {
             $wait = RateLimiter::availableIn($key);
-            header('Location: index.php?page=account&err=throttle&wait='.(int) $wait);
+            $page = $kind === 'register' ? 'register' : 'login';
+            header('Location: index.php?page='.$page.'&err=throttle&wait='.(int) $wait);
             exit;
         }
 

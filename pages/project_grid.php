@@ -52,9 +52,12 @@ if ($canViewProjects) {
 }
 ?>
 
-<head>
-    <link rel="stylesheet" href="style/project_grid.css">
-</head>
+<?php
+    $gridCss = 'style/project_grid.css';
+    $v = @filemtime(__DIR__ . '/../' . $gridCss);
+    $v = $v ? (string) $v : (string) time();
+?>
+<link rel="stylesheet" href="<?php echo htmlspecialchars($gridCss . '?v=' . $v, ENT_QUOTES, 'UTF-8'); ?>">
 
 <form method="POST" action="index.php?page=project_grid" id="grid-delete-form">
 <div class="project-grid">
@@ -137,7 +140,7 @@ if ($canViewProjects) {
 </form>
 
 <?php if (can('create_project')): ?>
-<a href="index.php?page=create_project" class="fab" title="Neues Projekt erstellen">+</a>
+<button type="button" class="fab" title="Neues Projekt erstellen" aria-label="Neues Projekt erstellen" onclick="window.location.href='index.php?page=create_project'">+</button>
 <?php endif; ?>
 
 <?php if ($canDeleteProjects): ?>

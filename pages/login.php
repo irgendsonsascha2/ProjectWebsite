@@ -1,0 +1,79 @@
+<?php
+
+require_once __DIR__ . '/../includes/laravel_app_url.php';
+
+$message = '';
+$messageClass = 'alert';
+
+// CSRF für bridge_auth.php
+if (! isset($_SESSION['user_id'])) {
+    if (empty($_SESSION['csrf_bridge'])) {
+        $_SESSION['csrf_bridge'] = bin2hex(random_bytes(32));
+    }
+}
+
+// Rückmeldungen vom Login-Bridge
+if (isset($_GET['login_err'])) {
+    $message = '❌ Fehler: E-Mail oder Passwort falsch.';
+    $messageClass = 'alert alert--error';
+}
+if (isset($_GET['err']) && $_GET['err'] === 'csrf') {
+    $message = '❌ Formular ungültig oder Sitzung abgelaufen — bitte erneut versuchen.';
+    $messageClass = 'alert alert--error';
+}
+if (isset($_GET['err']) && $_GET['err'] === 'handoff') {
+    $message = '❌ Anmeldung nicht möglich: In laravel/.env fehlen HANDOFF_SECRET oder LEGACY_SITE_URL passt nicht zur Website-URL.';
+    $messageClass = 'alert alert--error';
+}
+if (isset($_GET['err']) && $_GET['err'] === 'throttle') {
+    $w = isset($_GET['wait']) ? (int) $_GET['wait'] : 0;
+    $message = $w > 0
+        ? "❌ Zu viele Versuche — bitte {$w} Sekunden warten und erneut versuchen."
+        : '❌ Zu viele Versuche — bitte kurz warten und erneut versuchen.';
+    $messageClass = 'alert alert--error';
+}
+if (isset($_GET['handoff_err'])) {
+    $h = (string) $_GET['handoff_err'];
+    if ($h === 'config') {
+        $message = '❌ Handoff: HANDOFF_SECRET fehlt in laravel/.env (oder .env nicht lesbar).';
+    } elseif ($h === 'expired') {
+        $message = '❌ Anmelde-Link abgelaufen — bitte erneut anmelden.';
+    } elseif ($h === 'sig') {
+        $message = '❌ Anmelde-Link ungültig (Signatur) — bitte erneut anmelden.';
+    } elseif ($h === 'user') {
+        $message = '❌ Benutzer in der Datenbank nicht gefunden.';
+    } else {
+        $message = '❌ Anmeldung (Handoff) fehlgeschlagen.';
+    }
+    $messageClass = 'alert alert--error';
+}
+
+if (isset($_SESSION['user_id'])) {
+    header('Location: index.php?page=account');
+    exit;
+}
+?>
+
+<div class="container">
+    <h1>Anmelden</h1>
+
+    <?php if ($message): ?>
+        <div class="<?php echo htmlspecialchars($messageClass, ENT_QUOTES, 'UTF-8'); ?>"><?php echo $message; ?></div>
+    <?php endif; ?>
+
+    <section>
+        <p class="field-hint" style="margin-bottom:1rem;">Hier meldest du dich mit Nutzerdaten und Passwort aus der Datenbank an (technisch dieselbe Prüfung wie bei der geschützten Login-Routine).</p>
+        <p class="field-hint" style="margin-bottom:1rem;"><a href="<?php echo htmlspecialchars(laravel_app_url().'/forgot-password', ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener">Passwort vergessen</a> (Laravel unter <?php echo htmlspecialchars(laravel_app_url(), ENT_QUOTES, 'UTF-8'); ?>)</p>
+        <form method="POST" id="login-form" action="bridge_auth.php">
+            <input type="hidden" name="_token" value="<?php echo htmlspecialchars($_SESSION['csrf_bridge'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+            <input type="text" id="login_id" name="login_id" placeholder="E-Mail oder Username" autocomplete="username" required>
+            <input type="password" id="login_password" name="password" placeholder="Passwort" autocomplete="current-password" required>
+            <button type="submit">Login</button>
+        </form>
+    </section>
+
+    <hr class="account-divider">
+
+    <p class="field-hint">Noch kein Konto? <a href="index.php?page=register">Registrieren</a></p>
+</div>
+

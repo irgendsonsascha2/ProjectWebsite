@@ -828,7 +828,12 @@ if ($canViewComments && !empty($mediaIds)) {
 }
 ?>
 
-<link rel="stylesheet" href="style/project_detail.css">
+<?php
+    $detailCss = 'style/project_detail.css';
+    $v = @filemtime(__DIR__ . '/../' . $detailCss);
+    $v = $v ? (string) $v : (string) time();
+?>
+<link rel="stylesheet" href="<?php echo htmlspecialchars($detailCss . '?v=' . $v, ENT_QUOTES, 'UTF-8'); ?>">
 
 <article class="project-detail">
     <a href="index.php?page=project_grid" class="back-link">← Zurück zur Übersicht</a>
@@ -935,11 +940,12 @@ if ($canViewComments && !empty($mediaIds)) {
 <?php endif; ?>
 
 <?php if ($canDeleteProjects): ?>
-<form method="POST" action="index.php?page=project_detail&id=<?php echo (string)$projectObjectId; ?>" class="fab fab-delete" id="delete-project-form">
-    <button type="submit" name="delete_project" value="1" title="Projekt löschen" aria-label="Projekt löschen">
-        <?php echo svg_icon_trash(22); ?>
-    </button>
+<form method="POST" action="index.php?page=project_detail&id=<?php echo (string)$projectObjectId; ?>" id="delete-project-form">
+    <input type="hidden" name="delete_project" value="1">
 </form>
+<button type="submit" form="delete-project-form" class="fab fab-delete" title="Projekt löschen" aria-label="Projekt löschen">
+    <?php echo svg_icon_trash(22); ?>
+</button>
 <?php endif; ?>
 
 <div class="lightbox" id="lightbox" aria-hidden="true">
@@ -1046,6 +1052,21 @@ if ($canViewComments && !empty($mediaIds)) {
 
 <script>
 (() => {
+    // ESC muss immer funktionieren (Firefox/Safari-kompatibel), auch wenn später ein JS-Teil scheitert.
+    window.addEventListener('keydown', function (e) {
+        var key = e && (e.key || e.code) ? (e.key || e.code) : '';
+        var isEsc = key === 'Escape' || key === 'Esc' || e.keyCode === 27;
+        if (!isEsc) return;
+        var lb = document.getElementById('lightbox');
+        if (lb && lb.classList.contains('is-open')) {
+            lb.classList.remove('is-open');
+            lb.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+            return;
+        }
+        window.location.href = 'index.php?page=project_grid';
+    }, true);
+
     const deleteForm = document.getElementById('delete-project-form');
     if (deleteForm) {
         deleteForm.addEventListener('submit', function (event) {
@@ -1057,8 +1078,8 @@ if ($canViewComments && !empty($mediaIds)) {
     }
     document.addEventListener('keydown', (event) => {
         const target = event.target;
-        if (!(target instanceof HTMLTextAreaElement)) return;
-        if (!target.closest('.comment-form')) return;
+        if (!target || !target.tagName || target.tagName.toUpperCase() !== 'TEXTAREA') return;
+        if (!target.closest || !target.closest('.comment-form')) return;
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
             const form = target.closest('form');
@@ -1072,16 +1093,16 @@ if ($canViewComments && !empty($mediaIds)) {
     });
 
     const lightbox = document.getElementById('lightbox');
-    const lightboxMedia = lightbox.querySelector('.lightbox-media');
-    const lightboxPanel = lightbox.querySelector('.lightbox-panel');
-    const closeBtn = lightbox.querySelector('.lightbox-close');
+    const lightboxMedia = lightbox ? lightbox.querySelector('.lightbox-media') : null;
+    const lightboxPanel = lightbox ? lightbox.querySelector('.lightbox-panel') : null;
+    const closeBtn = lightbox ? lightbox.querySelector('.lightbox-close') : null;
 
     const statusEl = document.getElementById('interaction-status');
     const commentItems = document.getElementById('lightbox-comment-items');
     const likeCountEl = lightboxPanel ? lightboxPanel.querySelector('.like-count') : null;
     const dislikeCountEl = lightboxPanel ? lightboxPanel.querySelector('.dislike-count') : null;
-    const lightboxInteractionForm = lightbox.querySelector('.lightbox-interaction-form');
-    const lightboxCommentForm = lightbox.querySelector('.lightbox-comment-form');
+    const lightboxInteractionForm = lightbox ? lightbox.querySelector('.lightbox-interaction-form') : null;
+    const lightboxCommentForm = lightbox ? lightbox.querySelector('.lightbox-comment-form') : null;
     const body = document.body;
     let bodyOverflow = '';
     let bodyPaddingRight = '';
@@ -1503,6 +1524,9 @@ if ($canViewComments && !empty($mediaIds)) {
     }
 
     function openLightbox(type, src, mediaId) {
+        if (!lightbox || !lightboxMedia) {
+            return;
+        }
         lightboxMedia.innerHTML = '';
         if (type === 'video') {
             const video = document.createElement('video');
@@ -1528,6 +1552,9 @@ if ($canViewComments && !empty($mediaIds)) {
     }
 
     function closeLightbox() {
+        if (!lightbox || !lightboxMedia) {
+            return;
+        }
         lightbox.classList.remove('is-open');
         lightbox.setAttribute('aria-hidden', 'true');
         lightboxMedia.innerHTML = '';
@@ -1615,33 +1642,39 @@ if ($canViewComments && !empty($mediaIds)) {
         openLightbox(item.dataset.type, item.dataset.src, item.dataset.mediaId || '');
     }
 
-    closeBtn.addEventListener('click', closeLightbox);
-    lightboxMedia.addEventListener('click', (e) => {
-        if (e.target && (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO')) {
-            closeLightbox();
-        }
-    });
-    lightbox.addEventListener('click', (e) => {
-        if (e.target === lightbox) {
-            closeLightbox();
-        }
-    });
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeLightbox);
+    }
+    if (lightboxMedia) {
+        lightboxMedia.addEventListener('click', (e) => {
+            if (e.target && (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO')) {
+                closeLightbox();
+            }
+        });
+    }
+    if (lightbox) {
+        lightbox.addEventListener('click', (e) => {
+            if (e.target === lightbox) {
+                closeLightbox();
+            }
+        });
+    }
 
     document.addEventListener('keydown', (e) => {
-        const isDesktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
         const target = e.target;
         const isFormField = target instanceof Element
             && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable);
         if (e.key === 'Escape') {
-            if (lightbox.classList.contains('is-open')) {
+            if (lightbox && lightbox.classList.contains('is-open')) {
                 closeLightbox();
             } else {
                 window.location.href = 'index.php?page=project_grid';
             }
             return;
         }
+        const isDesktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
         if (!isDesktop || isFormField) return;
-        if (lightbox.classList.contains('is-open')) {
+        if (lightbox && lightbox.classList.contains('is-open')) {
             if (e.key === 'ArrowLeft') {
                 e.preventDefault();
                 navigateLightbox(-1);

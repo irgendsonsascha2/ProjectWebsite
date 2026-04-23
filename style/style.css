@@ -11,6 +11,11 @@
     --text-on-primary: #ffffff;
     --accent-color: #f59e0b;
 
+    /* Danger (z. B. FAB "löschen") */
+    --danger-fab-fg: #ffffff;
+    --danger-fab-bg: linear-gradient(135deg, #ef4444, #b91c1c);
+    --danger-fab-bg-hover: linear-gradient(135deg, #f97316, #dc2626);
+
     /* Flächen / Rahmen */
     --surface-hover: #eff6ff;
     --surface-muted: #f1f5f9;
@@ -43,6 +48,11 @@ html[data-theme="dark"] {
     --text-main: #f1f5f9;
     --text-on-primary: #ffffff;
     --accent-color: #fbbf24;
+
+    /* Danger (z. B. FAB "löschen") – im Darkmode etwas weniger „glühend“ */
+    --danger-fab-fg: #ffffff;
+    --danger-fab-bg: linear-gradient(135deg, #f87171, #dc2626);
+    --danger-fab-bg-hover: linear-gradient(135deg, #fb923c, #ef4444);
 
     --surface-hover: rgba(96, 165, 250, 0.18);
     --surface-muted: #334155;
@@ -212,7 +222,32 @@ input[type="reset"] {
 
 .fab.fab-delete,
 form.fab.fab-delete {
-    color: #ffffff;
+    color: var(--danger-fab-fg);
+}
+
+.fab.fab-delete,
+form.fab.fab-delete,
+button.fab.fab-delete {
+    /* Muss generische .fab-Regeln in Seiten-CSS überstimmen */
+    background-image: var(--danger-fab-bg) !important;
+    background-color: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    color: var(--danger-fab-fg) !important;
+}
+
+.fab.fab-delete:hover,
+form.fab.fab-delete:hover,
+button.fab.fab-delete:hover {
+    background-image: var(--danger-fab-bg-hover) !important;
+    background-color: transparent !important;
+}
+
+.fab.fab-delete:disabled,
+button.fab.fab-delete:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
 }
 
 .fab svg path {

@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../../includes/bootstrap.php';
 
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ../../index.php?page=account');
+    header('Location: ../../index.php?page=login');
     exit();
 }
 

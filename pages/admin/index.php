@@ -5,7 +5,7 @@ require_once __DIR__ . '/../../includes/db.php';
 // --- BERECHTIGUNGS-CHECK ---
 // 1. Ist der User überhaupt eingeloggt?
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ../../index.php?page=account'); // Zum Login umleiten
+    header('Location: ../../index.php?page=login'); // Zum Login umleiten
     exit();
 }
 

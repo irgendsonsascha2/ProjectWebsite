@@ -21,7 +21,7 @@ Route::middleware('guest')->group(function () {
     Route::get('register', function (): RedirectResponse|View {
         $legacy = rtrim((string) config('legacy.site_url', ''), '/');
         if ($legacy !== '') {
-            return redirect()->away($legacy.'/index.php?page=account#register-section');
+            return redirect()->away($legacy.'/index.php?page=register#register-section');
         }
 
         return app(RegisteredUserController::class)->create(request());
@@ -32,7 +32,7 @@ Route::middleware('guest')->group(function () {
     Route::get('login', function (): RedirectResponse|View {
         $legacy = rtrim((string) config('legacy.site_url', ''), '/');
         if ($legacy !== '') {
-            return redirect()->away($legacy.'/index.php?page=account');
+            return redirect()->away($legacy.'/index.php?page=login');
         }
 
         return app(AuthenticatedSessionController::class)->create();
