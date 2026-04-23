@@ -67,6 +67,10 @@ Der genaue Endzustand ist damit:
   - Es fehlt noch ein gezielter Responsive-Pass (Mobile/Tablet/Desktop), insbesondere für Navigation, Tabellen (Account/Admin), Grid/Detail-Ansichten und Lightbox/Modals.
   - Fix geplant: Breakpoints definieren und Seiten nacheinander durchgehen (Layout, Touch Targets, Textgrößen, Overflow).
 
+- React-native Styling: CSS-Struktur aufteilen
+  - Aktuell liegt der Großteil der page-scoped Styles gesammelt in `frontend/src/app.css`.
+  - Fix geplant: Aufteilung in mehrere Dateien (z. B. `styles/tokens.css`, `styles/layout.css`, `styles/pages/*`, `styles/admin.css`) und zentraler Import über `app.css`/`main.tsx`, um Wartbarkeit und Merge-Konflikte zu verbessern.
+
 ## Nächster sinnvoller Einstieg
 
 Beim nächsten Arbeitsstand zuerst prüfen:
