@@ -1,0 +1,18 @@
+## Media uploads (runtime content)
+content/images/*
+content/videos/*
+!content/images/.gitkeep
+!content/videos/.gitkeep
+
+## Local logs / temp
+logs/
+
+## Node/Frontend build artifacts
+frontend/node_modules/
+frontend/.vite/
+
+## OS/editor
+.DS_Store
+.idea/
+.vscode/
+
