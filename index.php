@@ -6,6 +6,7 @@ if (isset($_GET['debug']) && $_GET['debug'] === '1') {
 }
 
 require __DIR__ . '/includes/bootstrap.php';
+require_once __DIR__ . '/includes/vite_assets.php';
 
 // Welchen Inhalt sollen wir zeigen? Standard ist die Startseite (home)
 $page = isset($_GET['page']) ? (string) $_GET['page'] : 'home';
@@ -57,23 +58,16 @@ if ($isAjax) {
             }
         })();
     </script>
-    <link rel="stylesheet" href="<?php echo $asset('style/style.css'); ?>">
-    <link rel="stylesheet" href="<?php echo $asset('style/skeleton.css'); ?>">
-    <?php if ($safe_page === 'home'): ?>
-    <link rel="stylesheet" href="<?php echo $asset('style/home.css'); ?>">
-    <?php endif; ?>
-    <?php if (in_array($safe_page, ['account', 'login', 'register'], true)): ?>
-    <link rel="stylesheet" href="<?php echo $asset('style/account.css'); ?>">
-    <?php endif; ?>
-    <?php if ($safe_page === 'project_grid'): ?>
-    <link rel="stylesheet" href="<?php echo $asset('style/project_grid.css'); ?>">
-    <?php endif; ?>
-    <?php if ($safe_page === 'project_detail'): ?>
-    <link rel="stylesheet" href="<?php echo $asset('style/project_detail.css'); ?>">
-    <?php endif; ?>
 
     <!-- ESC-Back: bewusst früh laden (Firefox/Safari robust) -->
     <script src="<?php echo $asset('js/esc-back.js'); ?>"></script>
+
+    <?php
+        // React/Vite Frontend Assets (liefert das Styling).
+        // Dev: export VITE_DEV_SERVER_URL=http://127.0.0.1:5173
+        // Prod: npm run build (frontend) erzeugt /react-dist
+        vite_react_assets('src/main.tsx');
+    ?>
 </head>
 
 <body class="<?php echo $safe_page === 'home' ? 'page-is-home' : ''; ?>">
@@ -89,15 +83,7 @@ if ($isAjax) {
             <?php endif; ?>
         </div>
         <div class="nav-actions">
-            <button type="button" class="nav-theme" id="theme-toggle" aria-label="Hell- oder Dunkelmodus umschalten" title="Darstellung">
-                <svg class="nav-theme-icon nav-theme-icon--moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                </svg>
-                <svg class="nav-theme-icon nav-theme-icon--sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <circle cx="12" cy="12" r="4" />
-                    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
-                </svg>
-            </button>
+            <div id="react-theme-toggle"></div>
             <a href="index.php?page=<?php echo isset($_SESSION['user_id']) ? 'account' : 'login'; ?>" class="nav-account" aria-label="Account">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -119,8 +105,9 @@ if ($isAjax) {
         ?>
     </main>
 
+    <div id="react-root" data-page="<?php echo htmlspecialchars($safe_page, ENT_QUOTES, 'UTF-8'); ?>"></div>
+
     <script src="<?php echo $asset('js/media-skeleton.js'); ?>" defer></script>
-    <script src="<?php echo $asset('js/theme-toggle.js'); ?>"></script>
 </body>
 
 </html>

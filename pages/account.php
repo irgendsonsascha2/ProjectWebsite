@@ -107,6 +107,23 @@ if (!empty($roleOptions)) {
                 <button type="submit" name="generate_code" class="code-button">Code generieren</button>
             </form>
 
+            <?php
+            $inviteCodesData = [];
+            $activeCodes = $db->registration_codes->find(['is_used' => false]);
+            foreach ($activeCodes as $c) {
+                $scheme = (! empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+                $basePath = explode('?', $_SERVER['REQUEST_URI'])[0];
+                $link = $scheme . "://" . $_SERVER['HTTP_HOST'] . $basePath . "?page=register&reg_token=" . $c['code'] . "#register-section";
+                $inviteCodesData[] = [
+                    'role' => (string) ($c['role'] ?? ''),
+                    'code' => (string) ($c['code'] ?? ''),
+                    'link' => (string) $link,
+                ];
+            }
+            ?>
+
+            <script type="application/json" id="react-invite-codes-data"><?php echo json_encode($inviteCodesData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?></script>
+
             <div class="table-wrap">
                 <table>
                     <tr>
@@ -114,34 +131,24 @@ if (!empty($roleOptions)) {
                         <th>Code</th>
                         <th>Direkt-Link</th>
                     </tr>
-                    <?php
-                    $activeCodes = $db->registration_codes->find(['is_used' => false]);
-                    foreach ($activeCodes as $c):
-                        $scheme = (! empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-                        $basePath = explode('?', $_SERVER['REQUEST_URI'])[0];
-                        $link = $scheme . "://" . $_SERVER['HTTP_HOST'] . $basePath . "?page=register&reg_token=" . $c['code'] . "#register-section";
-                    ?>
+                    <?php foreach ($inviteCodesData as $row): ?>
                         <tr>
-                            <td><?php echo $c['role']; ?></td>
+                            <td><?php echo htmlspecialchars($row['role'], ENT_QUOTES, 'UTF-8'); ?></td>
                             <td>
-                                <div class="copy-row">
-                                    <code id="code-<?php echo htmlspecialchars((string) $c['_id'], ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars((string) $c['code'], ENT_QUOTES, 'UTF-8'); ?></code>
-                                    <button type="button" class="copy-btn" data-copy-text="<?php echo htmlspecialchars((string) $c['code'], ENT_QUOTES, 'UTF-8'); ?>" aria-label="Code kopieren" title="Code kopieren">
-                                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                                            <path d="M9 9h10v10H9V9zm-4 6H4V4h11v1H5v10z"></path>
-                                        </svg>
-                                    </button>
-                                </div>
+                                <div
+                                    data-react-copy-field
+                                    data-copy-kind="code"
+                                    data-copy-value="<?php echo htmlspecialchars($row['code'], ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-copy-label="Code kopieren"
+                                ></div>
                             </td>
                             <td>
-                                <div class="copy-row">
-                                    <input type="text" value="<?php echo htmlspecialchars($link, ENT_QUOTES, 'UTF-8'); ?>" readonly onclick="this.select();" class="code-link-input">
-                                    <button type="button" class="copy-btn" data-copy-text="<?php echo htmlspecialchars($link, ENT_QUOTES, 'UTF-8'); ?>" aria-label="Link kopieren" title="Link kopieren">
-                                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                                            <path d="M9 9h10v10H9V9zm-4 6H4V4h11v1H5v10z"></path>
-                                        </svg>
-                                    </button>
-                                </div>
+                                <div
+                                    data-react-copy-field
+                                    data-copy-kind="link"
+                                    data-copy-value="<?php echo htmlspecialchars($row['link'], ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-copy-label="Link kopieren"
+                                ></div>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -154,45 +161,5 @@ if (!empty($roleOptions)) {
 <script>
 (() => {
     // (bewusst leer) – vormals Autocomplete-Toggle zwischen Login/Register auf derselben Seite
-})();
-</script>
-
-<script>
-(() => {
-    const buttons = document.querySelectorAll('.copy-btn[data-copy-text]');
-    if (!buttons.length) return;
-
-    function fallbackCopy(text) {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        ta.setAttribute('readonly', '');
-        ta.style.position = 'fixed';
-        ta.style.left = '-9999px';
-        document.body.appendChild(ta);
-        ta.select();
-        try {
-            document.execCommand('copy');
-        } finally {
-            document.body.removeChild(ta);
-        }
-    }
-
-    buttons.forEach((btn) => {
-        btn.addEventListener('click', async () => {
-            const text = btn.getAttribute('data-copy-text') || '';
-            if (!text) return;
-            try {
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    await navigator.clipboard.writeText(text);
-                } else {
-                    fallbackCopy(text);
-                }
-                btn.classList.add('copy-btn--done');
-                window.setTimeout(() => btn.classList.remove('copy-btn--done'), 800);
-            } catch (e) {
-                fallbackCopy(text);
-            }
-        });
-    });
 })();
 </script>

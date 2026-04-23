@@ -29,6 +29,7 @@ Hauptfunktionen:
 - MongoDB
 - Paket: `mongodb/mongodb`
 - Frontend mit serverseitig gerenderten PHP-Seiten, CSS und etwas Vanilla JavaScript
+- Zusätzlich: **Vite + React** zum Bündeln/Laden des Stylesheets (Hybrid-Setup, PHP bleibt Router/Renderer)
 
 `composer.json` enthält aktuell nur die MongoDB-PHP-Bibliothek als Abhängigkeit.
 
@@ -135,6 +136,42 @@ MongoDB ohne Replica Set unterstützt keine DB-Transaktionen wie Laravels `Refre
 ```bash
 composer install
 ```
+
+### React/Vite (Styling-Bundling)
+
+Die Website lädt Frontend-Assets aus `react-dist/` über ein Vite-Manifest (`includes/vite_assets.php`).
+Damit kann das Styling schrittweise „über React“ kommen, ohne die PHP-Seiten sofort umzubauen.
+
+**Einmalig installieren & bauen:**
+
+```bash
+cd frontend
+npm install
+npm run build
+```
+
+**Dev-Workflow (optional):**
+
+Terminal 1:
+
+```bash
+cd frontend
+npm run dev -- --host 127.0.0.1 --port 5173
+```
+
+Terminal 2 (PHP-Server im Projektroot, Beispiel):
+
+```bash
+php -S 127.0.0.1:8080 -t .
+```
+
+Dann im selben Terminal wie der PHP-Server:
+
+```bash
+export VITE_DEV_SERVER_URL=http://127.0.0.1:5173
+```
+
+Ohne `VITE_DEV_SERVER_URL` lädt die PHP-Seite automatisch das gebaute `react-dist/`.
 
 2. Sicherstellen, dass MongoDB lokal läuft:
 
@@ -325,7 +362,7 @@ Die Auth-/Invite-Funktionen umfassen:
 - Generierung neuer Einladungscodes für berechtigte Nutzer
 - **Einladungs-Direktlinks** in der Tabelle: `index.php?page=register&reg_token=<CODE>#register-section` (führt zur Registrierungsseite und füllt den Code in das Feld **Einmal-Code** vor; der Link muss in HTML-Attribute als Text ausgegeben werden, damit `&reg_token` nicht als HTML-Entity `&reg;` in `®_token` verfälscht wird). **Legacy:** alte Links auf `page=account&reg_token=...` werden serverseitig auf `page=register` umgeleitet.
 - In der Tabelle stehen neben **Code** und **Direkt-Link** **Kopier-Buttons** (Clipboard), damit man Werte schnell teilen kann
-- Meldungen/Alerts (z. B. „Neuer Code generiert …“) nutzen in `style/account.css` **themefähige** Farben, damit sie im **Darkmode** lesbar bleiben
+- Meldungen/Alerts sind themefähig (Light/Dark über CSS-Variablen), damit sie im **Darkmode** lesbar bleiben
 
 Invite-Codes werden in `registration_codes` gespeichert. Ein Code kann nur einmal verwendet werden.
 

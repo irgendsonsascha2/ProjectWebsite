@@ -465,10 +465,6 @@ if ($isAjax) {
 }
 ?>
 
-<head>
-    <link rel="stylesheet" href="style/create_project.css">
-</head>
-
 <div class="container">
     <div class="page-header">
         <h1>Neues Projekt</h1>

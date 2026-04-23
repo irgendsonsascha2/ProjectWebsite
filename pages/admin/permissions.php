@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../includes/bootstrap.php';
+require_once __DIR__ . '/../../includes/vite_assets.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../../index.php?page=login');
@@ -111,10 +112,24 @@ try {
 <head>
     <meta charset="UTF-8">
     <title>Berechtigungen verwalten</title>
-    <link rel="stylesheet" href="../../style/admin_permissions.css">
+    <script>
+        (function () {
+            try {
+                var KEY = 'portfolio-theme';
+                var t = localStorage.getItem(KEY);
+                if (t !== 'dark' && t !== 'light') {
+                    t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                }
+                document.documentElement.setAttribute('data-theme', t);
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
+    <?php vite_react_assets('src/main.tsx'); ?>
 </head>
 
-<body>
+<body class="admin-page">
     <div class="container">
         <div class="page-header">
             <h1>Berechtigungen verwalten</h1>

@@ -52,13 +52,6 @@ if ($canViewProjects) {
 }
 ?>
 
-<?php
-    $gridCss = 'style/project_grid.css';
-    $v = @filemtime(__DIR__ . '/../' . $gridCss);
-    $v = $v ? (string) $v : (string) time();
-?>
-<link rel="stylesheet" href="<?php echo htmlspecialchars($gridCss . '?v=' . $v, ENT_QUOTES, 'UTF-8'); ?>">
-
 <form method="POST" action="index.php?page=project_grid" id="grid-delete-form">
 <div class="project-grid">
     <?php 

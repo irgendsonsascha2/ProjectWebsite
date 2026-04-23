@@ -447,10 +447,6 @@ if ($isAjax) {
 }
 ?>
 
-<head>
-    <link rel="stylesheet" href="style/edit_project.css">
-</head>
-
 <div class="container">
     <div class="page-header">
         <h1>Projekt bearbeiten</h1>

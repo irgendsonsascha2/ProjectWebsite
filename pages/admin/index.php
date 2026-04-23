@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../includes/bootstrap.php';
 require_once __DIR__ . '/../../includes/db.php';
+require_once __DIR__ . '/../../includes/vite_assets.php';
 
 // --- BERECHTIGUNGS-CHECK ---
 // 1. Ist der User überhaupt eingeloggt?
@@ -202,15 +203,28 @@ if (isset($_POST['run_script'])) {
 <head>
     <meta charset="UTF-8">
     <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="../../style/admin_index.css">
+    <script>
+        (function () {
+            try {
+                var KEY = 'portfolio-theme';
+                var t = localStorage.getItem(KEY);
+                if (t !== 'dark' && t !== 'light') {
+                    t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                }
+                document.documentElement.setAttribute('data-theme', t);
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
+    <?php vite_react_assets('src/main.tsx'); ?>
 </head>
 
-<body>
+<body class="admin-page">
 
     <div class="container">
         <div class="page-header">
             <h1>Admin Dashboard</h1>
-            <a href="../../index.php">Zurück zur Hauptseite</a>
         </div>
 
         <p>Eingeloggt als: <strong><?php echo $_SESSION['email']; ?></strong></p>

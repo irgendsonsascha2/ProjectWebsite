@@ -828,13 +828,6 @@ if ($canViewComments && !empty($mediaIds)) {
 }
 ?>
 
-<?php
-    $detailCss = 'style/project_detail.css';
-    $v = @filemtime(__DIR__ . '/../' . $detailCss);
-    $v = $v ? (string) $v : (string) time();
-?>
-<link rel="stylesheet" href="<?php echo htmlspecialchars($detailCss . '?v=' . $v, ENT_QUOTES, 'UTF-8'); ?>">
-
 <article class="project-detail">
     <a href="index.php?page=project_grid" class="back-link">← Zurück zur Übersicht</a>
 
@@ -1059,9 +1052,18 @@ if ($canViewComments && !empty($mediaIds)) {
         if (!isEsc) return;
         var lb = document.getElementById('lightbox');
         if (lb && lb.classList.contains('is-open')) {
-            lb.classList.remove('is-open');
-            lb.setAttribute('aria-hidden', 'true');
-            document.body.style.overflow = '';
+            // Immer zentrale Close-Routine nutzen, damit Scroll-Lock sauber gelöst wird.
+            if (typeof closeLightbox === 'function') {
+                closeLightbox();
+            } else {
+                lb.classList.remove('is-open');
+                lb.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+                document.body.style.position = '';
+                document.body.style.top = '';
+                document.body.style.width = '';
+                document.body.style.paddingRight = '';
+            }
             return;
         }
         window.location.href = 'index.php?page=project_grid';
@@ -1106,6 +1108,10 @@ if ($canViewComments && !empty($mediaIds)) {
     const body = document.body;
     let bodyOverflow = '';
     let bodyPaddingRight = '';
+    let bodyPosition = '';
+    let bodyTop = '';
+    let bodyWidth = '';
+    let scrollYBeforeLock = 0;
     let activeMediaId = null;
 
     async function submitAjaxForm(form, submitter) {
@@ -1508,7 +1514,15 @@ if ($canViewComments && !empty($mediaIds)) {
         if (body.dataset.scrollLock === '1') return;
         bodyOverflow = body.style.overflow;
         bodyPaddingRight = body.style.paddingRight;
+        bodyPosition = body.style.position;
+        bodyTop = body.style.top;
+        bodyWidth = body.style.width;
+        scrollYBeforeLock = window.scrollY || window.pageYOffset || 0;
         const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
+        // Robust (Mobile Safari): body fixieren statt nur overflow hidden
+        body.style.position = 'fixed';
+        body.style.top = `-${scrollYBeforeLock}px`;
+        body.style.width = '100%';
         body.style.overflow = 'hidden';
         if (scrollBarWidth > 0) {
             body.style.paddingRight = `${scrollBarWidth}px`;
@@ -1520,6 +1534,10 @@ if ($canViewComments && !empty($mediaIds)) {
         if (body.dataset.scrollLock !== '1') return;
         body.style.overflow = bodyOverflow;
         body.style.paddingRight = bodyPaddingRight;
+        body.style.position = bodyPosition;
+        body.style.top = bodyTop;
+        body.style.width = bodyWidth;
+        window.scrollTo(0, scrollYBeforeLock || 0);
         delete body.dataset.scrollLock;
     }
 
