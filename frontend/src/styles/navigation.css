@@ -1,0 +1,95 @@
+@layer components {
+  /* Navigation (nutzt vorhandenes Markup in index.php) */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background-color: var(--card-bg);
+    border-bottom: 1px solid var(--border-subtle);
+    /* Kein seitlicher "Rand" – Navigation soll bündig bis zum Viewport laufen */
+    padding: 0.5rem 0.75rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .nav-spacer {
+    @apply min-w-0;
+  }
+
+  .nav-main {
+    @apply flex min-w-0 items-center justify-center gap-2;
+  }
+
+  .nav-main a {
+    @apply rounded-full px-3 py-2 text-sm font-semibold;
+    color: var(--secondary-color);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .nav-main a:hover {
+    background-color: var(--surface-hover);
+    color: var(--primary-color);
+  }
+
+  .nav-actions {
+    @apply inline-flex items-center justify-end gap-1;
+  }
+
+  .nav-theme,
+  .nav-account {
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-full;
+    color: var(--secondary-color);
+    line-height: 0;
+    border: 0;
+    background: transparent;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  .nav-theme:hover,
+  .nav-account:hover {
+    background-color: var(--surface-hover);
+    color: var(--primary-color);
+  }
+
+  .nav-theme svg,
+  .nav-account svg {
+    @apply h-5 w-5;
+  }
+
+  /* Icon swap via existing classes */
+  /* UX: In Lightmode zeigen wir die Sonne (Wechsel zu Dark),
+     in Darkmode den Mond (Wechsel zu Light). */
+  .nav-theme .nav-theme-icon--moon {
+    display: none;
+  }
+  .nav-theme .nav-theme-icon--sun {
+    display: block;
+  }
+  html[data-theme="dark"] .nav-theme .nav-theme-icon--moon {
+    display: block;
+  }
+  html[data-theme="dark"] .nav-theme .nav-theme-icon--sun {
+    display: none;
+  }
+
+  @media (max-width: 40rem) {
+    nav {
+      grid-template-columns: 1fr auto;
+    }
+    .nav-spacer {
+      display: none;
+    }
+    .nav-main {
+      @apply justify-start overflow-x-auto;
+      scrollbar-width: none;
+    }
+    .nav-main::-webkit-scrollbar {
+      display: none;
+    }
+  }
+}
+

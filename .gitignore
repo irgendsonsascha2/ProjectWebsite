@@ -11,6 +11,10 @@ logs/
 frontend/node_modules/
 frontend/.vite/
 
+## Local env overrides (contain secrets)
+.env.local
+.env
+
 ## OS/editor
 .DS_Store
 .idea/

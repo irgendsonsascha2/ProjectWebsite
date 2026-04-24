@@ -1,0 +1,105 @@
+@layer components {
+  /* Skeleton / Shimmer (für Home-Portrait + Heading) */
+  .skeleton-host {
+    position: relative;
+  }
+
+  @keyframes skeleton-shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .skeleton-panel {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: var(--skeleton-base);
+    overflow: hidden;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .skeleton-panel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      95deg,
+      transparent 0%,
+      var(--skeleton-shine) 48%,
+      transparent 96%
+    );
+    opacity: 0.55;
+    animation: skeleton-shimmer 1.35s ease-in-out infinite;
+  }
+
+  .skeleton-host.is-loaded .skeleton-panel {
+    opacity: 0;
+  }
+
+  .skeleton-host img,
+  .skeleton-host video {
+    position: relative;
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+
+  .skeleton-host.is-loaded img,
+  .skeleton-host.is-loaded video {
+    opacity: 1;
+  }
+
+  .skeleton-panel--circle,
+  .home-portrait.skeleton-host .skeleton-panel {
+    border-radius: 50%;
+  }
+
+  .skeleton-text-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    width: 100%;
+  }
+
+  .skeleton-line {
+    display: block;
+    height: 0.7rem;
+    max-width: 100%;
+    border-radius: var(--radius-pill);
+    background: var(--skeleton-base);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .skeleton-line::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      95deg,
+      transparent 0%,
+      var(--skeleton-shine) 45%,
+      transparent 92%
+    );
+    opacity: 0.45;
+    animation: skeleton-shimmer 1.35s ease-in-out infinite;
+  }
+
+  .skeleton-line--lg {
+    height: 0.85rem;
+    max-width: 80%;
+  }
+
+  .skeleton-line--short {
+    max-width: 55%;
+  }
+
+  .home-heading-skel {
+    @apply items-center;
+  }
+}
+

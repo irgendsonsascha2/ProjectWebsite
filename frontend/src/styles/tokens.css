@@ -1,0 +1,72 @@
+/* Theme tokens (legacy übernommen) */
+:root {
+  color-scheme: light;
+  --primary-color: #2563eb;
+  --primary-hover: #1d4ed8;
+  --secondary-color: #64748b;
+  --bg-color: #f8fafc;
+  --card-bg: #ffffff;
+  --text-main: #1e293b;
+  --text-on-primary: #ffffff;
+  --accent-color: #f59e0b;
+
+  /* Danger (z. B. FAB "löschen") */
+  --danger-fab-fg: #ffffff;
+  --danger-fab-bg: linear-gradient(135deg, #ef4444, #b91c1c);
+  --danger-fab-bg-hover: linear-gradient(135deg, #f97316, #dc2626);
+
+  --surface-hover: #eff6ff;
+  --surface-muted: #f1f5f9;
+  --border-subtle: #e2e8f0;
+
+  --border-radius: 0.5rem;
+
+  --radius-pill: 9999px;
+
+  /* Glass (halbtransparent) – zentrale Defaults */
+  --glass-bg: rgb(10 12 16 / 0.5);
+  --glass-bg-strong: rgb(12 14 18 / 0.65);
+  --glass-border: rgb(255 255 255 / 0.15);
+  --glass-blur: blur(0.625rem);
+  --glass-saturate: saturate(120%);
+
+  /* Lightbox */
+  --lightbox-overlay: rgb(15 23 42 / 0.78);
+  --lightbox-media-well: #101218;
+
+  /* Skeleton/Shimmer */
+  --skeleton-base: color-mix(in srgb, var(--surface-muted) 88%, var(--text-main) 12%);
+  --skeleton-shine: color-mix(in srgb, var(--card-bg) 55%, white 45%);
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --primary-color: #60a5fa;
+  --primary-hover: #3b82f6;
+  --secondary-color: #94a3b8;
+  --bg-color: #0f172a;
+  --card-bg: #1e293b;
+  --text-main: #f1f5f9;
+  --text-on-primary: #ffffff;
+  --accent-color: #fbbf24;
+
+  /* Danger (im Darkmode etwas weniger „glühend“) */
+  --danger-fab-fg: #ffffff;
+  --danger-fab-bg: linear-gradient(135deg, #f87171, #dc2626);
+  --danger-fab-bg-hover: linear-gradient(135deg, #fb923c, #ef4444);
+
+  --surface-hover: rgba(96, 165, 250, 0.18);
+  --surface-muted: #334155;
+  --border-subtle: #475569;
+
+  --skeleton-shine: color-mix(in srgb, var(--card-bg) 50%, white 50%);
+
+  /* Glass: im Darkmode minimal dichter */
+  --glass-bg: rgb(6 8 12 / 0.55);
+  --glass-bg-strong: rgb(6 8 12 / 0.72);
+  --glass-border: rgb(255 255 255 / 0.14);
+
+  --lightbox-overlay: rgb(0 0 0 / 0.82);
+  --lightbox-media-well: color-mix(in srgb, var(--bg-color) 94%, black 6%);
+}
+

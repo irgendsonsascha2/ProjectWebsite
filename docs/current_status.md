@@ -43,6 +43,10 @@ Der genaue Endzustand ist damit:
   - `COMMUNITY_DB_URI`
   - `CONTENT_MANAGER_DB_URI`
   - `ADMIN_DB_URI`
+- DB-Skript-Ausführung wurde stabilisiert:
+  - Admin-Dashboard zeigt die **effektive** DB-Konfiguration des laufenden PHP-Prozesses (Passwörter maskiert), um Env-Probleme sofort sichtbar zu machen.
+  - `03_db_init_mongo_roles.php` läuft im Admin-Panel garantiert über `ADMIN_DB_URI` (kein versehentlicher Rollen-Fallback).
+  - Optionaler `.env.local`-Workflow: `/.env.local` wird beim Start automatisch geladen; beim Ausführen von `03_db_init_mongo_roles.php` kann das Admin-Panel (Checkbox) die URIs in `.env.local` mit den neuen Passwörtern aktualisieren.
 
 ## Frontend/React (Hybrid) – offene UI-Punkte
 
@@ -70,6 +74,18 @@ Der genaue Endzustand ist damit:
 - React-native Styling: CSS-Struktur aufteilen
   - Aktuell liegt der Großteil der page-scoped Styles gesammelt in `frontend/src/app.css`.
   - Fix geplant: Aufteilung in mehrere Dateien (z. B. `styles/tokens.css`, `styles/layout.css`, `styles/pages/*`, `styles/admin.css`) und zentraler Import über `app.css`/`main.tsx`, um Wartbarkeit und Merge-Konflikte zu verbessern.
+
+## Geplant: Mini-CMS (Option A – in der eigenen App)
+
+Ziel: Inhalte ohne Code-Änderungen pflegen (Portfolio/Posts/Seiteninhalte) – passend zum bestehenden Rollen-/Permissions-Modell.
+
+Minimaler v1-Umfang (geplant):
+
+- **Seiteninhalte als Datenmodell**: neue Collection z. B. `pages_content` (Home/About/Impressum) + Rendering in PHP.
+- **Admin-UI für Content**: Bearbeiten + Preview + Speichern (mind. Text/Markdown; Richtext optional).
+- **Draft/Publish konsistent**: Status + `published_at` für Seiten und (falls noch uneinheitlich) Projekte.
+- **Medienbibliothek**: Metadaten (alt, type, owner, timestamps), Wiederverwendung, Aufräumen/Löschen, Referenzen zu Projekten/Seiten.
+- **Permissions**: `content_manager` darf Content/Projekte/Medien, aber keine DB-Skripte/Rollenverwaltung; `admin` darf alles.
 
 ## Nächster sinnvoller Einstieg
 

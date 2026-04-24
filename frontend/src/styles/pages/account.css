@@ -1,0 +1,54 @@
+@layer components {
+  /* Account: invite codes admin panel + table (ported from legacy account.css) */
+  .page-account .account-header {
+    @apply flex flex-wrap items-center justify-between gap-3;
+  }
+
+  .page-account .admin-panel {
+    @apply mt-5 rounded-2xl border p-4;
+    background: color-mix(in srgb, var(--accent-color) 10%, var(--card-bg));
+    border-color: color-mix(in srgb, var(--accent-color) 22%, var(--border-subtle));
+  }
+
+  .page-account .code-form {
+    @apply flex flex-wrap items-stretch gap-2;
+  }
+
+  .page-account .code-select {
+    @apply min-w-48 flex-[2];
+  }
+
+  .page-account .code-button {
+    @apply min-w-40 flex-[1];
+  }
+
+  /* Align select + button heights (override generic form button mt-2) */
+  .page-account .code-form select,
+  .page-account .code-form button {
+    @apply h-10;
+  }
+
+  .page-account .code-form button {
+    margin-top: 0;
+  }
+
+  .page-account .table-wrap {
+    @apply mt-3 overflow-x-auto;
+  }
+
+  .page-account table {
+    @apply w-full border-collapse;
+  }
+
+  .page-account th,
+  .page-account td {
+    @apply border-b px-3 py-2 text-left text-sm;
+    border-color: var(--border-subtle);
+  }
+
+  .page-account th {
+    @apply text-xs font-semibold uppercase tracking-wide;
+    color: var(--secondary-color);
+  }
+}
+

@@ -4,6 +4,124 @@ if (!class_exists('MongoDB\Client')) {
     require __DIR__ . '/../vendor/autoload.php';
 }
 
+if (!function_exists('load_simple_env_file')) {
+    function load_simple_env_file($path) {
+        if (!is_file($path) || !is_readable($path)) {
+            return;
+        }
+        $lines = file($path, FILE_IGNORE_NEW_LINES);
+        if (!is_array($lines)) {
+            return;
+        }
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if ($line === '' || str_starts_with($line, '#')) {
+                continue;
+            }
+            $eqPos = strpos($line, '=');
+            if ($eqPos === false) {
+                continue;
+            }
+            $key = trim(substr($line, 0, $eqPos));
+            $value = trim(substr($line, $eqPos + 1));
+            if ($key === '') {
+                continue;
+            }
+            // Allow quoted values.
+            if (strlen($value) >= 2) {
+                $first = $value[0];
+                $last = $value[strlen($value) - 1];
+                if (($first === '"' && $last === '"') || ($first === "'" && $last === "'")) {
+                    $value = substr($value, 1, -1);
+                }
+            }
+            // Don't override real environment.
+            $existing = getenv($key);
+            if ($existing !== false && trim((string)$existing) !== '') {
+                continue;
+            }
+            putenv($key . '=' . $value);
+            $_ENV[$key] = $value;
+        }
+    }
+}
+
+// Optional local env file support so the running PHP server process
+// uses the same DB settings as expected, without relying on shell-exported vars.
+if (!function_exists('bootstrap_local_env')) {
+    function bootstrap_local_env() {
+        static $done = false;
+        if ($done) return;
+        $done = true;
+
+        $root = realpath(__DIR__ . '/..');
+        if (!$root) return;
+
+        // Prefer .env.local, then .env (both are optional, and should not be committed).
+        load_simple_env_file($root . '/.env.local');
+        load_simple_env_file($root . '/.env');
+    }
+}
+
+bootstrap_local_env();
+
+if (!function_exists('mask_mongo_uri')) {
+    function mask_mongo_uri($uri) {
+        if (!is_string($uri) || $uri === '') return '';
+        // Mask password in mongodb://user:pass@host...
+        return preg_replace('/(mongodb(?:\\+srv)?:\\/\\/[^:\\/]+:)([^@]+)(@)/', '$1***$3', $uri);
+    }
+}
+
+if (!function_exists('mongo_uri_with_password')) {
+    function mongo_uri_with_password($uri, $password) {
+        if (!is_string($uri) || $uri === '') {
+            return $uri;
+        }
+        if (!is_string($password)) {
+            $password = '';
+        }
+        $password = trim($password);
+        if ($password === '') {
+            return $uri;
+        }
+
+        // Important: don't use preg_replace replacement strings with untrusted passwords.
+        // Characters like $ or \ are interpreted by preg_replace and can corrupt the URI.
+        // Use callbacks instead.
+
+        // Replace password in mongodb://user:OLD@...
+        $updated = preg_replace_callback(
+            '/^(mongodb(?:\\+srv)?:\\/\\/[^:\\/]+:)([^@]*)(@.*)$/',
+            function ($m) use ($password) {
+                return $m[1] . $password . $m[3];
+            },
+            $uri,
+            1,
+            $count
+        );
+        if (($count ?? 0) === 1 && is_string($updated)) {
+            return $updated;
+        }
+
+        // If URI contains user but no password: mongodb://user@...
+        $updated = preg_replace_callback(
+            '/^(mongodb(?:\\+srv)?:\\/\\/[^@:\\/]+)(@.*)$/',
+            function ($m) use ($password) {
+                return $m[1] . ':' . $password . $m[2];
+            },
+            $uri,
+            1,
+            $count2
+        );
+        if (($count2 ?? 0) === 1 && is_string($updated)) {
+            return $updated;
+        }
+
+        return $uri;
+    }
+}
+
 if (!function_exists('mongo_config')) {
     function mongo_config() {
         static $config = null;

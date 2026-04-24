@@ -1,0 +1,61 @@
+@layer components {
+  /* Home page quick port (so es nicht komplett ungestylt wirkt) */
+  .home-landing {
+    @apply mx-auto flex w-full max-w-xl flex-col items-center gap-2;
+  }
+  .home-intro {
+    @apply flex w-full flex-col items-center gap-0 text-center;
+  }
+  .home-visual {
+    @apply w-full max-w-40;
+    margin: 0;
+  }
+  .home-portrait {
+    @apply mx-auto aspect-square w-full overflow-hidden rounded-full bg-slate-300 shadow-sm dark:bg-slate-800;
+    margin: 0;
+  }
+  .home-portrait img {
+    @apply h-full w-full object-cover;
+    object-position: center 20%;
+  }
+  .home-name {
+    @apply text-3xl font-bold leading-tight;
+  }
+  .home-kicker {
+    @apply text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400;
+  }
+
+  /* Home-Textblöcke (vom alten home.css) */
+  .home-lead,
+  .home-body {
+    @apply text-sm leading-relaxed;
+    color: var(--text-main);
+  }
+  .home-copy {
+    @apply w-full text-center text-sm;
+    color: var(--text-main);
+  }
+
+  .home-lead {
+    margin-top: 0.125rem;
+  }
+  .home-cta {
+    @apply mt-4 inline-flex items-center justify-center rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700;
+    text-decoration: none;
+  }
+
+  /* Home: Abstand Portrait → Name enger */
+  .home-heading-wrap {
+    margin-top: -1rem;
+  }
+
+  /* Harte Overrides gegen Default-Element-Margins (figure etc.) */
+  .home-intro {
+    gap: 0 !important;
+  }
+
+  .home-visual {
+    margin-bottom: -0.5rem;
+  }
+}
+

@@ -1,0 +1,129 @@
+@layer components {
+  /* Create/Edit Project: media manager + header (ported from legacy create/edit CSS) */
+  .page-create_project .page-header,
+  .page-edit_project .page-header {
+    @apply flex flex-wrap items-center justify-between gap-3;
+  }
+
+  .page-create_project .draft-badge {
+    @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold;
+    background: color-mix(in srgb, var(--accent-color) 16%, var(--card-bg));
+    border: 1px solid color-mix(in srgb, var(--accent-color) 35%, var(--border-subtle));
+    color: color-mix(in srgb, var(--text-main) 82%, var(--accent-color));
+  }
+
+  .page-create_project label,
+  .page-edit_project label {
+    @apply mt-2 block text-sm font-semibold;
+    color: var(--text-main);
+  }
+
+  .page-create_project textarea,
+  .page-edit_project textarea {
+    min-height: 7rem;
+  }
+
+  .page-edit_project .current-image {
+    @apply mt-2 w-full max-w-48 rounded-xl;
+    border: 1px solid var(--border-subtle);
+  }
+
+  .page-create_project .media-manager,
+  .page-edit_project .media-manager {
+    @apply mt-8 pt-4;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .page-create_project .media-grid,
+  .page-edit_project .media-grid {
+    @apply my-4 grid gap-4;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  @media (max-width: 60rem) {
+    .page-create_project .media-grid,
+    .page-edit_project .media-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .page-create_project .media-grid,
+    .page-edit_project .media-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .page-create_project .media-tile,
+  .page-edit_project .media-tile {
+    position: relative;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 0.125rem 0.5rem rgb(0 0 0 / 0.12);
+    background: color-mix(in srgb, var(--surface-muted) 80%, var(--card-bg));
+    cursor: grab;
+    border: 1px solid var(--border-subtle);
+  }
+
+  .page-create_project .media-tile.is-dragging,
+  .page-edit_project .media-tile.is-dragging {
+    opacity: 0.6;
+    cursor: grabbing;
+  }
+
+  .page-create_project .media-tile img,
+  .page-create_project .media-tile video,
+  .page-edit_project .media-tile img,
+  .page-edit_project .media-tile video {
+    width: 100%;
+    height: 8rem;
+    object-fit: cover;
+    display: block;
+  }
+
+  .page-create_project .media-badge,
+  .page-edit_project .media-badge {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    background: var(--glass-bg-strong);
+    color: #fff;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.45rem;
+    border-radius: 999rem;
+    border: 1px solid var(--glass-border);
+    backdrop-filter: var(--glass-blur) var(--glass-saturate);
+    -webkit-backdrop-filter: var(--glass-blur) var(--glass-saturate);
+  }
+
+  .page-create_project .media-delete,
+  .page-edit_project .media-delete {
+    position: absolute;
+    bottom: 0.5rem;
+    right: 0.5rem;
+  }
+
+  .page-create_project .media-delete button,
+  .page-edit_project .media-delete button {
+    @apply !w-auto !px-3 !py-2 text-xs font-semibold;
+    background-image: var(--danger-fab-bg);
+    background-color: transparent;
+    color: var(--danger-fab-fg);
+    border: 0;
+    border-radius: var(--radius-pill);
+    appearance: none;
+    -webkit-appearance: none;
+    box-shadow: var(--shadow);
+  }
+
+  .page-create_project .media-delete button:hover,
+  .page-edit_project .media-delete button:hover {
+    background-image: var(--danger-fab-bg-hover);
+  }
+
+  .page-create_project .media-upload-form,
+  .page-edit_project .media-upload-form {
+    @apply mt-4;
+  }
+}
+

@@ -1,0 +1,82 @@
+@layer components {
+  /* Layout */
+  .main-content {
+    @apply mx-auto w-full max-w-6xl px-4 py-6;
+  }
+
+  /* Legacy PHP pages: common wrapper + basic form UI (token-based) */
+  .container {
+    @apply mx-auto w-full max-w-3xl px-4 py-6;
+  }
+
+  .field-hint {
+    @apply text-sm;
+    color: var(--secondary-color);
+  }
+
+  .account-divider {
+    @apply my-6;
+    border: 0;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .alert {
+    @apply mb-4 rounded-xl px-4 py-3 text-sm;
+    background: var(--surface-muted);
+    color: var(--text-main);
+    border: 1px solid var(--border-subtle);
+  }
+  .alert--success {
+    border-color: color-mix(in srgb, #10b981 40%, var(--border-subtle) 60%);
+    background: color-mix(in srgb, #10b981 12%, var(--surface-muted) 88%);
+  }
+  .alert--error {
+    border-color: color-mix(in srgb, #ef4444 40%, var(--border-subtle) 60%);
+    background: color-mix(in srgb, #ef4444 10%, var(--surface-muted) 90%);
+  }
+
+  /* Inputs/Buttons inside main site (keine Admin-Unterseiten) */
+  .container form input[type='text'],
+  .container form input[type='email'],
+  .container form input[type='password'],
+  .container form input[type='url'],
+  .container form select,
+  .container form textarea {
+    @apply w-full rounded-xl px-3 py-2 text-sm;
+    background: var(--card-bg);
+    color: var(--text-main);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .container form input:focus,
+  .container form select:focus,
+  .container form textarea:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 35%, transparent 65%);
+    border-color: color-mix(in srgb, var(--primary-color) 45%, var(--border-subtle) 55%);
+  }
+
+  .container form button[type='submit'],
+  .container form button {
+    @apply mt-2 inline-flex items-center justify-center rounded-full px-5 py-2 text-sm font-semibold;
+    background: var(--primary-color);
+    color: var(--text-on-primary);
+    border: 0;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  .container form button:hover {
+    background: var(--primary-hover);
+  }
+
+  /* Default vertical spacing for stacked forms, but don't break inline flex forms */
+  .container form:not(.code-form) {
+    @apply space-y-3;
+  }
+
+  /* If a legacy inline form is flex, neutralize any inherited "space-y" margins */
+  .container form.code-form > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0 !important;
+  }
+}
+

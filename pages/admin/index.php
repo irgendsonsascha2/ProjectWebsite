@@ -142,6 +142,13 @@ function admin_script_fields($scriptName) {
                 'type' => 'password',
                 'required' => true,
                 'placeholder' => 'Passwort setzen'
+            ],
+            [
+                'name' => 'update_env_local',
+                'label' => 'Auch .env.local aktualisieren (URIs mit neuen Passwörtern)',
+                'type' => 'checkbox',
+                'required' => false,
+                'placeholder' => ''
             ]
         ];
     }
@@ -154,8 +161,94 @@ function admin_script_input($name, $default = '') {
     return is_string($value) ? trim($value) : $default;
 }
 
+function admin_script_checkbox($name) {
+    $v = $_POST[$name] ?? null;
+    return $v === '1' || $v === 1 || $v === true || $v === 'on';
+}
+
+function update_env_local_file($updates) {
+    if (!is_array($updates) || count($updates) === 0) {
+        return;
+    }
+
+    $root = realpath(__DIR__ . '/../../');
+    if (!$root) {
+        throw new RuntimeException('Projektroot konnte nicht aufgelöst werden.');
+    }
+    $path = $root . '/.env.local';
+
+    $lines = [];
+    if (is_file($path) && is_readable($path)) {
+        $existing = file($path, FILE_IGNORE_NEW_LINES);
+        if (is_array($existing)) {
+            $lines = $existing;
+        }
+    }
+
+    $seen = [];
+    $out = [];
+    foreach ($lines as $line) {
+        $trim = trim($line);
+        if ($trim === '' || str_starts_with($trim, '#') || strpos($trim, '=') === false) {
+            $out[] = $line;
+            continue;
+        }
+        $eqPos = strpos($line, '=');
+        $key = trim(substr($line, 0, $eqPos));
+        if ($key === '') {
+            $out[] = $line;
+            continue;
+        }
+        if (array_key_exists($key, $updates)) {
+            $seen[$key] = true;
+            $out[] = $key . '=' . $updates[$key];
+        } else {
+            $out[] = $line;
+        }
+    }
+
+    foreach ($updates as $k => $v) {
+        if (!isset($seen[$k])) {
+            $out[] = $k . '=' . $v;
+        }
+    }
+
+    $content = implode("\n", $out) . "\n";
+    if (file_put_contents($path, $content) === false) {
+        throw new RuntimeException('Konnte .env.local nicht schreiben.');
+    }
+}
+
 $availableScripts = list_admin_db_scripts();
 $allowedScriptNames = array_map('basename', $availableScripts);
+
+function env_is_set($key) {
+    $v = getenv($key);
+    return $v !== false && trim((string)$v) !== '';
+}
+
+function admin_effective_db_config_html() {
+    $cfg = mongo_config();
+    $rows = [
+        ['APP_DB_NAME', $cfg['db_name'], env_is_set('APP_DB_NAME')],
+        ['APP_DB_URI', mask_mongo_uri($cfg['app_uri']), env_is_set('APP_DB_URI')],
+        ['VIEWER_DB_URI', mask_mongo_uri($cfg['viewer_uri']), env_is_set('VIEWER_DB_URI')],
+        ['COMMUNITY_DB_URI', mask_mongo_uri($cfg['community_member_uri']), env_is_set('COMMUNITY_DB_URI')],
+        ['CONTENT_MANAGER_DB_URI', mask_mongo_uri($cfg['content_manager_uri']), env_is_set('CONTENT_MANAGER_DB_URI')],
+        ['ADMIN_DB_URI', mask_mongo_uri($cfg['admin_uri']), env_is_set('ADMIN_DB_URI')],
+    ];
+
+    $html = '<div class="admin-card"><h2>Effektive DB-Konfiguration (laufender PHP-Prozess)</h2>';
+    $html .= '<p class="muted">Passwörter sind maskiert. „Env gesetzt“ heißt: die Variable ist im PHP-Prozess wirklich vorhanden (nicht nur in deiner Shell).</p>';
+    $html .= '<div class="code-block"><pre>';
+    foreach ($rows as $r) {
+        [$name, $value, $isSet] = $r;
+        $flag = $isSet ? 'yes' : 'no';
+        $html .= htmlspecialchars(str_pad($name, 24)) . ' = ' . htmlspecialchars((string)$value) . '   [env: ' . $flag . ']' . "\n";
+    }
+    $html .= '</pre></div></div>';
+    return $html;
+}
 
 // --- LOGIK: SCRIPT AUSFÜHREN ---
 if (isset($_POST['run_script'])) {
@@ -182,8 +275,29 @@ if (isset($_POST['run_script'])) {
                 'mongo_admin_db_password' => admin_script_input('mongo_admin_db_password')
             ];
 
-            [$client, $db] = get_admin_mongo_connection();
+            // Force DB scripts to run with the configured ADMIN_DB_URI.
+            // If the password is provided via dialog, use it for this connection too,
+            // so the script can't accidentally run with a stale default password.
+            $cfg = mongo_config();
+            $adminUri = $cfg['admin_uri'];
+            $adminPass = $GLOBALS['dbScriptInput']['mongo_admin_db_password'] ?? '';
+            $adminUri = mongo_uri_with_password($adminUri, $adminPass);
+
+            [$client, $db] = create_mongo_connection($adminUri);
             include $scriptPath;
+
+            if ($requestedScript === '03_db_init_mongo_roles.php' && admin_script_checkbox('update_env_local')) {
+                $cfg = mongo_config();
+                $updates = [
+                    'APP_DB_NAME' => $cfg['db_name'],
+                    'VIEWER_DB_URI' => mongo_uri_with_password($cfg['viewer_uri'], $GLOBALS['dbScriptInput']['mongo_viewer_db_password'] ?? ''),
+                    'COMMUNITY_DB_URI' => mongo_uri_with_password($cfg['community_member_uri'], $GLOBALS['dbScriptInput']['mongo_community_db_password'] ?? ''),
+                    'CONTENT_MANAGER_DB_URI' => mongo_uri_with_password($cfg['content_manager_uri'], $GLOBALS['dbScriptInput']['mongo_content_manager_db_password'] ?? ''),
+                    'ADMIN_DB_URI' => mongo_uri_with_password($cfg['admin_uri'], $GLOBALS['dbScriptInput']['mongo_admin_db_password'] ?? ''),
+                ];
+                update_env_local_file($updates);
+                echo "<br>✅ <b>.env.local</b> wurde aktualisiert (Passwörter gesetzt).<br>";
+            }
 
             $message = "<h3>Ergebnis für: " . htmlspecialchars($requestedScript) . "</h3><pre>" . ob_get_clean() . "</pre>";
         } catch (Exception $e) {
@@ -228,6 +342,8 @@ if (isset($_POST['run_script'])) {
         </div>
 
         <p>Eingeloggt als: <strong><?php echo $_SESSION['email']; ?></strong></p>
+
+        <?php echo admin_effective_db_config_html(); ?>
 
         <div class="admin-nav">
             <a href="index.php">Dashboard</a>
@@ -280,19 +396,26 @@ if (isset($_POST['run_script'])) {
                                     <input type="hidden" name="script_name" value="<?php echo htmlspecialchars($scriptName); ?>">
                                     <?php foreach ($scriptFields as $field): ?>
                                         <p>
-                                            <label>
-                                                <?php echo htmlspecialchars($field['label']); ?><br>
-                                                <input
-                                                    type="<?php echo htmlspecialchars($field['type']); ?>"
-                                                    name="<?php echo htmlspecialchars($field['name']); ?>"
-                                                    <?php if (!empty($field['placeholder'])): ?>
-                                                        placeholder="<?php echo htmlspecialchars($field['placeholder']); ?>"
-                                                    <?php endif; ?>
-                                                    <?php if (!empty($field['required'])): ?>
-                                                        required
-                                                    <?php endif; ?>
-                                                >
-                                            </label>
+                                            <?php if (($field['type'] ?? '') === 'checkbox'): ?>
+                                                <label>
+                                                    <input type="checkbox" name="<?php echo htmlspecialchars($field['name']); ?>" value="1" checked>
+                                                    <?php echo htmlspecialchars($field['label']); ?>
+                                                </label>
+                                            <?php else: ?>
+                                                <label>
+                                                    <?php echo htmlspecialchars($field['label']); ?><br>
+                                                    <input
+                                                        type="<?php echo htmlspecialchars($field['type']); ?>"
+                                                        name="<?php echo htmlspecialchars($field['name']); ?>"
+                                                        <?php if (!empty($field['placeholder'])): ?>
+                                                            placeholder="<?php echo htmlspecialchars($field['placeholder']); ?>"
+                                                        <?php endif; ?>
+                                                        <?php if (!empty($field['required'])): ?>
+                                                            required
+                                                        <?php endif; ?>
+                                                    >
+                                                </label>
+                                            <?php endif; ?>
                                         </p>
                                     <?php endforeach; ?>
                                     <button type="submit" name="run_script">Ausführen</button>

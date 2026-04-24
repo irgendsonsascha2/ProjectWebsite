@@ -1,0 +1,161 @@
+@layer components {
+  /* Project Detail: lightbox (markup from pages/project_detail.php) */
+  .page-project_detail .lightbox {
+    position: fixed;
+    inset: 0;
+    background: var(--lightbox-overlay);
+    backdrop-filter: blur(0.75rem) saturate(90%);
+    -webkit-backdrop-filter: blur(0.75rem) saturate(90%);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    z-index: 2000;
+    overscroll-behavior: contain;
+  }
+
+  .page-project_detail .lightbox.is-open {
+    display: flex;
+  }
+
+  .page-project_detail .lightbox-content {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+    background: var(--card-bg);
+    padding: 1rem;
+    border-radius: 0.75rem;
+    color: var(--text-main);
+    border: none;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .page-project_detail .lightbox-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .page-project_detail .lightbox-media {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--lightbox-media-well);
+    border-radius: var(--border-radius);
+  }
+
+  .page-project_detail .lightbox-media img,
+  .page-project_detail .lightbox-media video {
+    max-width: 80vw;
+    max-height: 70vh;
+    display: block;
+    margin: 0 auto;
+  }
+
+  .page-project_detail .lightbox-panel {
+    background: transparent;
+    border-radius: 0;
+    padding: 0;
+    min-width: 16rem;
+    color: var(--text-main);
+    border: none;
+    box-sizing: border-box;
+    max-height: min(40vh, 22rem);
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  .page-project_detail .lightbox-panel .comment-list {
+    margin-top: 1rem;
+  }
+
+  .page-project_detail .lightbox-panel .comment-list h3 {
+    color: var(--text-main);
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .page-project_detail .lightbox-panel .interaction-status {
+    color: var(--secondary-color);
+  }
+
+  .page-project_detail .lightbox-panel .comment-form-row {
+    background: var(--card-bg);
+    border-color: var(--border-subtle);
+  }
+
+  .page-project_detail .comment-form.lightbox-comment-form {
+    margin-bottom: 0.75rem;
+  }
+
+  /* inset-Ring statt outline: bei overflow:auto (z. B. .lightbox-panel) wird äußerer Outline links/rechts abgeschnitten */
+  .page-project_detail .lightbox-panel .comment-form-row:focus-within {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--primary-color);
+  }
+
+  @media (min-width: 64rem) {
+    .page-project_detail .lightbox-content {
+      max-width: 92vw;
+      max-height: 88vh;
+    }
+
+    .page-project_detail .lightbox-body {
+      flex-direction: row;
+      align-items: flex-start;
+    }
+
+    .page-project_detail .lightbox-panel {
+      width: min(24rem, 30vw);
+      max-height: 80vh;
+      overflow: auto;
+      scrollbar-gutter: stable;
+      padding-right: 0.6rem;
+      padding-left: 0.1rem;
+    }
+
+    .page-project_detail .lightbox-media img,
+    .page-project_detail .lightbox-media video {
+      max-width: 60vw;
+      max-height: 78vh;
+    }
+  }
+
+  .page-project_detail .lightbox-close {
+    position: fixed;
+    top: 1.25rem;
+    right: 1.25rem;
+    background: transparent;
+    border: none;
+    color: var(--text-main);
+    font-size: 2rem;
+    cursor: pointer;
+    border-radius: 999rem;
+    line-height: 1;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2005;
+  }
+
+  .page-project_detail .lightbox-close:hover {
+    color: var(--primary-color);
+    background: var(--surface-hover);
+  }
+
+  .page-project_detail .lightbox-close:focus,
+  .page-project_detail .lightbox-close:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--primary-color);
+  }
+}
+
