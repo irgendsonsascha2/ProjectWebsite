@@ -62,6 +62,11 @@ Der genaue Endzustand ist damit:
     - Unique-Index in MongoDB auf `registration_codes.code` setzen **und**
     - beim Generieren Duplicate-Key abfangen und neu generieren (Retry/Backoff).
 
+- Einladungscodes – Fix umgesetzt (2026-04-24):
+  - Code-Länge auf 16 Hex-Zeichen erhöht (`random_bytes(8)`), damit Kollisionen praktisch nicht mehr auftreten.
+  - Beim Generieren wird ein Unique-Index auf `registration_codes.code` best-effort sichergestellt (Legacy-DBs).
+  - Duplicate-Key (`11000`) wird abgefangen und automatisch neu generiert (Retry), statt dass der Admin beim Generieren einen Fehler sieht.
+
 - Copy-UI Abstände/Margins:
   - Auf der Account-Seite (`index.php?page=account`) wirken die Abstände zwischen Copy-Feld und Copy-Button aktuell teils „zu eng“ bzw. inkonsistent.
   - Ursache ist sehr wahrscheinlich ein Zusammenspiel aus Legacy-Defaults (z. B. globale `button`-Regeln) und dem neuen React/Tailwind-Layout.

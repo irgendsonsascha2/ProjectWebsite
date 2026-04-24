@@ -39,17 +39,55 @@ if (! empty($_SESSION['register_validation_errors'])) {
 
 // --- LOGIK: CODE GENERIEREN (Nur Admin) ---
 if (isset($_POST['generate_code']) && can('generate_codes')) {
-    $newCode = strtoupper(bin2hex(random_bytes(4)));
     $targetRole = $_POST['target_role'];
 
-    $db->registration_codes->insertOne([
-        'code' => $newCode,
-        'role' => $targetRole,
-        'is_used' => false,
-        'created_at' => new UTCDateTime()
-    ]);
-    $message = "✅ Neuer Code generiert: <b>$newCode</b>";
-    $messageClass = 'alert alert--success';
+    // Ensure uniqueness with both DB constraint and application retry.
+    // (Index exists in dbScripts/00_db_init_accounts.php, but may be missing on legacy DBs.)
+    try {
+        $db->registration_codes->createIndex(['code' => 1], ['unique' => true]);
+    } catch (Exception $e) {
+        // ignore - generation below still handles duplicate keys
+    }
+
+    $maxAttempts = 10;
+    $newCode = null;
+    for ($i = 0; $i < $maxAttempts; $i++) {
+        // 16 hex chars (2^64 possibilities) vs old 8 chars (2^32).
+        $candidate = strtoupper(bin2hex(random_bytes(8)));
+        try {
+            $db->registration_codes->insertOne([
+                'code' => $candidate,
+                'role' => $targetRole,
+                'is_used' => false,
+                'created_at' => new UTCDateTime()
+            ]);
+            $newCode = $candidate;
+            break;
+        } catch (\MongoDB\Driver\Exception\BulkWriteException $e) {
+            // Duplicate key error (unique index collision) => retry with a new random code.
+            $writeResult = $e->getWriteResult();
+            $writeErrors = $writeResult ? $writeResult->getWriteErrors() : [];
+            $isDuplicate = false;
+            foreach ($writeErrors as $we) {
+                if (method_exists($we, 'getCode') && (int)$we->getCode() === 11000) {
+                    $isDuplicate = true;
+                    break;
+                }
+            }
+            if ($isDuplicate) {
+                continue;
+            }
+            throw $e;
+        }
+    }
+
+    if ($newCode === null) {
+        $message = "❌ Konnte keinen eindeutigen Code generieren (bitte erneut versuchen).";
+        $messageClass = 'alert alert--error';
+    } else {
+        $message = "✅ Neuer Code generiert: <b>$newCode</b>";
+        $messageClass = 'alert alert--success';
+    }
 }
 
 // (Login/Register-Fehler werden auf den jeweiligen Seiten angezeigt)

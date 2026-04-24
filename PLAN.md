@@ -3,6 +3,9 @@
 - Admin-Zugangsprozess
   - Anfrage/Workflow an Admin einrichten, um Zugangsdaten / Account-Freigabe zu bekommen
 
+- Responsive Design (nach Invite-Code-Fix, vor Smoke-Test)
+  - Mobile/Tablet/Desktop-Pass für Navigation, Account/Admin-Tabellen, Grid/Detail, Lightbox/Dialogs
+
 - 2FA
   - Zwei-Faktor-Authentifizierung ergänzen (z. B. TOTP)
 

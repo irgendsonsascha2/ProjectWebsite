@@ -360,6 +360,7 @@ Die Auth-/Invite-Funktionen umfassen:
 - Registrierung per Einmal-Code
 - Rollenzuweisung anhand des verwendeten Registrierungscodes
 - Generierung neuer Einladungscodes für berechtigte Nutzer
+- Robustheit/Skalierung: Codes sind lang genug für praktisch kollisionsfreie Generierung und werden bei Duplicate-Key automatisch neu generiert (Unique-Index + Retry).
 - **Einladungs-Direktlinks** in der Tabelle: `index.php?page=register&reg_token=<CODE>#register-section` (führt zur Registrierungsseite und füllt den Code in das Feld **Einmal-Code** vor; der Link muss in HTML-Attribute als Text ausgegeben werden, damit `&reg_token` nicht als HTML-Entity `&reg;` in `®_token` verfälscht wird). **Legacy:** alte Links auf `page=account&reg_token=...` werden serverseitig auf `page=register` umgeleitet.
 - In der Tabelle stehen neben **Code** und **Direkt-Link** **Kopier-Buttons** (Clipboard), damit man Werte schnell teilen kann
 - Meldungen/Alerts sind themefähig (Light/Dark über CSS-Variablen), damit sie im **Darkmode** lesbar bleiben
