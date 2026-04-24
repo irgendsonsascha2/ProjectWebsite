@@ -307,9 +307,64 @@
     background: var(--primary-color);
     color: var(--text-on-primary);
     align-self: flex-end;
+    border: none;
+    outline: none;
+    box-shadow: none;
+    appearance: none;
   }
 
   .page-project_detail .comment-form-row button[type='submit']:hover {
+    background: var(--primary-hover);
+  }
+
+  /* Viewer (gesperrt): soll optisch wie die echte Comment-Row aussehen */
+  .page-project_detail .comment-form-row .comment-form-locked-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 2.5rem;
+    max-height: 14rem;
+    padding: 0.4rem 0.3rem;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    resize: none;
+    overflow-y: auto;
+    background: transparent;
+    color: var(--text-main);
+    font: inherit;
+    line-height: 1.5;
+    overflow: hidden;
+    cursor: text;
+    appearance: none;
+  }
+
+  .page-project_detail .comment-form-row .comment-form-locked-input::placeholder {
+    color: var(--secondary-color);
+    opacity: 0.9;
+  }
+
+  .page-project_detail .comment-form-row .interaction-button--locked {
+    width: 2.375rem;
+    height: 2.375rem;
+    min-width: 2.375rem;
+    min-height: 2.375rem;
+    padding: 0;
+    margin: 0;
+    flex-shrink: 0;
+    border-radius: 999rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-color);
+    color: var(--text-on-primary);
+    align-self: flex-end;
+    border: none;
+    outline: none;
+    box-shadow: none;
+    appearance: none;
+  }
+
+  .page-project_detail .comment-form-row .interaction-button--locked:hover {
     background: var(--primary-hover);
   }
 

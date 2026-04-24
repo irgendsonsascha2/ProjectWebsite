@@ -990,16 +990,16 @@ if ($canViewComments && !empty($mediaIds)) {
                     </form>
                 <?php else: ?>
                     <?php if ($canViewLikes): ?>
-                        <div class="interaction-buttons lightbox-interaction-display" aria-hidden="true">
-                            <div>
+                        <div class="interaction-buttons lightbox-interaction-display">
+                            <button type="button" class="interaction-button interaction-button--locked" data-auth-redirect="like_dislike" aria-disabled="true">
                                 <span class="interaction-emoji" aria-hidden="true">
                                     <svg class="ui-icon ui-icon--outline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
                                         <path d="M20 8h-5.612l1.123-3.367c.202-.608.1-1.282-.275-1.802S14.253 2 13.612 2H12c-.297 0-.578.132-.769.36L6.531 8H4c-1.103 0-2 .897-2 2v9c0 1.103.897 2 2 2h13.307a2.01 2.01 0 0 0 1.873-1.298l2.757-7.351A1 1 0 0 0 22 12v-2c0-1.103-.897-2-2-2zM4 10h2v9H4v-9zm16 1.819L17.307 19H8V9.362L12.468 4h1.146l-1.562 4.683A.998.998 0 0 0 13 10h7v1.819z"/>
                                     </svg>
                                 </span>
                                 <span class="like-count">0</span>
-                            </div>
-                            <div>
+                            </button>
+                            <button type="button" class="interaction-button interaction-button--locked" data-auth-redirect="like_dislike" aria-disabled="true">
                                 <span class="interaction-emoji" aria-hidden="true">
                                     <svg class="ui-icon ui-icon--outline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
                                         <g transform="translate(0 24) scale(1 -1)">
@@ -1008,7 +1008,7 @@ if ($canViewComments && !empty($mediaIds)) {
                                     </svg>
                                 </span>
                                 <span class="dislike-count">0</span>
-                            </div>
+                            </button>
                         </div>
                     <?php endif; ?>
                 <?php endif; ?>
@@ -1028,6 +1028,24 @@ if ($canViewComments && !empty($mediaIds)) {
                             </button>
                         </div>
                     </form>
+                <?php else: ?>
+                    <div class="comment-form comment-form--locked" aria-disabled="true">
+                        <div class="comment-form-row">
+                            <textarea
+                                class="comment-form-locked-input"
+                                readonly
+                                aria-readonly="true"
+                                data-auth-redirect="comment"
+                                placeholder="Schreibe einen Kommentar... (Anmeldung erforderlich)"
+                                rows="1"
+                            ></textarea>
+                            <button type="button" class="interaction-button interaction-button--locked" data-auth-redirect="comment" aria-disabled="true" aria-label="Zum Login">
+                                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                                    <path d="M2 21l21-9L2 3v7l15 2-15 2z" fill="currentColor"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 <?php endif; ?>
 
                 <section class="comment-list lightbox-comment-list">
@@ -1580,6 +1598,27 @@ if ($canViewComments && !empty($mediaIds)) {
         resetLightboxState();
         unlockBodyScroll();
     }
+
+    function redirectToLogin() {
+        const next = window.location.href;
+        window.location.href = `index.php?page=login&err=forbidden&next=${encodeURIComponent(next)}`;
+    }
+
+    document.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        const locked = target.closest('[data-auth-redirect]');
+        if (!locked) return;
+        event.preventDefault();
+        redirectToLogin();
+    }, true);
+
+    document.addEventListener('focusin', (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        if (!target.closest('[data-auth-redirect]')) return;
+        redirectToLogin();
+    }, true);
 
     document.querySelectorAll('.media-item[data-src]').forEach((item) => {
         item.addEventListener('click', () => {

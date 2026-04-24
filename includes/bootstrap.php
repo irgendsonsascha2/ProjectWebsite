@@ -1,6 +1,21 @@
 <?php
+// Lazy sessions: Only set a session cookie when needed.
+// - If a session cookie already exists, always resume.
+// - For login/register/account flows and POST requests, start a session.
+// - Admin pages always require a session.
+$shouldStartSession = false;
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    $sessionCookieName = session_name();
+    $hasSessionCookie = isset($_COOKIE[$sessionCookieName]) && (string)$_COOKIE[$sessionCookieName] !== '';
+    $isPost = (string)($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';
+    $page = (string)($_GET['page'] ?? '');
+    $script = (string)($_SERVER['SCRIPT_NAME'] ?? '');
+    $isAdminScript = strpos($script, '/pages/admin/') !== false;
+    $needsSessionForPage = in_array($page, ['login', 'register', 'account'], true);
+    $shouldStartSession = $hasSessionCookie || $isPost || $needsSessionForPage || $isAdminScript;
+    if ($shouldStartSession) {
+        session_start();
+    }
 }
 
 if (isset($_GET['debug']) && $_GET['debug'] === '1') {
@@ -24,11 +39,15 @@ if (isset($_GET['debug']) && $_GET['debug'] === '1') {
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/svg_icons.php';
 
+$sessionActive = session_status() === PHP_SESSION_ACTIVE;
+$effectiveRole = $sessionActive ? ($_SESSION['role'] ?? 'viewer') : 'viewer';
+$effectivePermissions = [];
+
 if (!isset($db)) {
-    [$client, $db] = get_request_mongo_connection($_SESSION['role'] ?? 'viewer');
+    [$client, $db] = get_request_mongo_connection($effectiveRole);
 }
 
-if (isset($_SESSION['user_id']) && (
+if ($sessionActive && isset($_SESSION['user_id']) && (
     !isset($_SESSION['permissions']) ||
     !is_array($_SESSION['permissions']) ||
     !isset($_SESSION['role']) ||
@@ -59,26 +78,47 @@ if (isset($_SESSION['user_id']) && (
     }
 }
 
-if (!isset($_SESSION['user_id'])) {
-    if (!isset($_SESSION['role'])) {
-        $_SESSION['role'] = 'viewer';
-    }
-    if (!isset($_SESSION['permissions']) || !is_array($_SESSION['permissions'])) {
-        $roleData = $db->roles_config->findOne(['role' => $_SESSION['role']]);
-        if ($roleData && isset($roleData['permissions'])) {
-            $_SESSION['permissions'] = iterator_to_array($roleData['permissions']);
-        } else {
-            $_SESSION['permissions'] = [];
+if (!$sessionActive || !isset($_SESSION['user_id'])) {
+    if ($sessionActive) {
+        if (!isset($_SESSION['role'])) {
+            $_SESSION['role'] = 'viewer';
         }
+        if (!isset($_SESSION['permissions']) || !is_array($_SESSION['permissions'])) {
+            $roleData = $db->roles_config->findOne(['role' => $_SESSION['role']]);
+            if ($roleData && isset($roleData['permissions'])) {
+                $_SESSION['permissions'] = iterator_to_array($roleData['permissions']);
+            } else {
+                $_SESSION['permissions'] = [];
+            }
+        }
+        $effectiveRole = (string)($_SESSION['role'] ?? 'viewer');
+        $effectivePermissions = (array)($_SESSION['permissions'] ?? []);
+        [$client, $db] = get_request_mongo_connection($effectiveRole);
+    } else {
+        // No session: act as viewer, but still load permissions for can()
+        $roleData = $db->roles_config->findOne(['role' => 'viewer']);
+        if ($roleData && isset($roleData['permissions'])) {
+            $effectivePermissions = iterator_to_array($roleData['permissions']);
+        } else {
+            $effectivePermissions = [];
+        }
+        $effectiveRole = 'viewer';
+        [$client, $db] = get_request_mongo_connection($effectiveRole);
     }
-    [$client, $db] = get_request_mongo_connection($_SESSION['role']);
 }
 
 if (!function_exists('can')) {
     function can($permission) {
-        return isset($_SESSION['permissions']) && in_array($permission, $_SESSION['permissions']);
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            return isset($_SESSION['permissions']) && in_array($permission, $_SESSION['permissions'], true);
+        }
+        $perms = $GLOBALS['effective_permissions'] ?? [];
+        return is_array($perms) && in_array($permission, $perms, true);
     }
 }
+
+$GLOBALS['effective_role'] = $effectiveRole;
+$GLOBALS['effective_permissions'] = $effectivePermissions;
 
 if (!function_exists('can_edit_project')) {
     function can_edit_project($project) {

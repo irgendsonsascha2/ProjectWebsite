@@ -347,6 +347,7 @@ if (isset($_POST['run_script'])) {
 
         <div class="admin-nav">
             <a href="index.php">Dashboard</a>
+            <a href="registration_requests.php">Registrierungsanfragen</a>
             <a href="roles.php">Rollen</a>
             <a href="permissions.php">Berechtigungen</a>
             <a href="../../index.php">Zur Hauptseite</a>

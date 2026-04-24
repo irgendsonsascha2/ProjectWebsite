@@ -5,7 +5,7 @@ namespace App\Models;
 use MongoDB\Laravel\Eloquent\Model;
 
 /**
- * Einmal-Codes für invite-basierte Registrierung (gleiche Collection wie die PHP-App).
+ * Registrierungscodes für invite-basierte Registrierung (gleiche Collection wie die PHP-App).
  */
 class RegistrationCode extends Model
 {

@@ -1,0 +1,120 @@
+@layer components {
+  /* Register page: request-code dialog + trigger button */
+  .page-register #open-request-code-dialog {
+    @apply inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold;
+    background: var(--text-main);
+    color: var(--bg-color);
+    border: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+  }
+
+  .page-register #open-request-code-dialog:hover {
+    background: color-mix(in srgb, var(--text-main) 85%, var(--primary-color));
+  }
+
+  .page-register dialog#request-code-dialog {
+    border: none;
+    border-radius: 1rem;
+    padding: 0;
+    width: min(560px, 92vw);
+    box-shadow: 0 18px 40px rgb(0 0 0 / 0.2);
+    overflow: hidden;
+    box-sizing: border-box;
+    max-height: 92vh;
+    overscroll-behavior: contain;
+    background: var(--card-bg);
+    color: var(--text-main);
+  }
+
+  .page-register dialog#request-code-dialog::backdrop {
+    background: rgb(0 0 0 / 0.4);
+  }
+
+  .page-register #request-code-dialog .dialog-card {
+    @apply p-5;
+    overflow-x: hidden;
+    overflow-y: auto;
+    box-sizing: border-box;
+    max-height: 92vh;
+    overscroll-behavior: contain;
+  }
+
+  .page-register #request-code-dialog .dialog-header {
+    @apply mb-3 flex items-center justify-between gap-3;
+  }
+
+  .page-register #request-code-dialog .close-button {
+    @apply inline-flex items-center justify-center rounded-full px-3 py-2 text-sm font-semibold;
+    background: var(--surface-muted);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-main);
+    cursor: pointer;
+  }
+
+  .page-register #request-code-dialog .close-button:hover {
+    background: var(--surface-hover);
+    color: var(--primary-color);
+  }
+
+  .page-register #request-code-dialog form,
+  .page-register #request-code-dialog p,
+  .page-register #request-code-dialog label {
+    max-width: 100%;
+  }
+
+  .page-register #request-code-dialog input:not([type='checkbox']):not([type='radio']) {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Register form: privacy consent should read like flowing text */
+  .page-register .privacy-consent {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    margin-top: 0.25rem;
+    font-size: 0.95rem;
+    color: var(--text-main);
+    line-height: 1.35;
+    white-space: normal;
+  }
+
+  .page-register .privacy-consent input[type='checkbox'] {
+    margin-top: 0.15rem;
+    width: 1.05rem;
+    height: 1.05rem;
+    accent-color: var(--primary-color);
+    flex: 0 0 auto;
+  }
+
+  .page-register .privacy-consent__text {
+    display: inline;
+    min-width: 0;
+  }
+
+  .page-register .privacy-consent a {
+    color: var(--primary-color);
+    display: inline !important;
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--primary-color) 45%, transparent);
+    text-underline-offset: 3px;
+  }
+
+  .page-register .privacy-consent a:hover {
+    color: var(--primary-hover);
+  }
+
+  /* Dialog version: keep it compact and readable */
+  .page-register #request-code-dialog .privacy-consent--dialog {
+    margin: 0.75rem 0 0;
+  }
+
+  /* Prevent scroll chaining when dialog open (where supported) */
+  body:has(.page-register dialog[open]) {
+    overflow: hidden;
+  }
+}
+

@@ -19,7 +19,7 @@ Wichtige Kernfunktionen des Projekts:
 - Likes und Dislikes pro Medium vergeben
 - Kommentare und Antworten schreiben
 - Zugriff über Rollen und Berechtigungen steuern
-- Registrierung nur über Invite-/Einmal-Codes erlauben
+- Registrierung nur über Invite-/Registrierungscodes erlauben
 
 ## Technischer Rahmen
 

@@ -10,6 +10,7 @@
 @import "./styles/components/lightbox.css";
 
 @import "./styles/pages/account.css";
+@import "./styles/pages/register.css";
 @import "./styles/pages/create-edit-project.css";
 @import "./styles/pages/404.css";
 @import "./styles/pages/home.css";

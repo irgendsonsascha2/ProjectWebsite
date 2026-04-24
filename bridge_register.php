@@ -34,6 +34,12 @@ if ($sessionToken === '' || ! hash_equals($sessionToken, $postToken)) {
     exit;
 }
 
+$privacyOk = isset($_POST['privacy_consent_register']) && (string) $_POST['privacy_consent_register'] === '1';
+if (! $privacyOk) {
+    header('Location: index.php?page=register&err=privacy');
+    exit;
+}
+
 $data = [
     'registration_code' => trim((string) ($_POST['reg_code'] ?? '')),
     'username' => (string) ($_POST['username'] ?? ''),

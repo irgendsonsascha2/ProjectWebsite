@@ -3,7 +3,7 @@
         @csrf
 
         <div>
-            <x-input-label for="registration_code" :value="__('Einmal-Code')" />
+            <x-input-label for="registration_code" :value="__('Registrierungscode')" />
             <x-text-input id="registration_code" class="block mt-1 w-full" type="text" name="registration_code" :value="old('registration_code', $prefilled_code)" required autofocus autocomplete="one-time-code" />
             <x-input-error :messages="$errors->get('registration_code')" class="mt-2" />
         </div>

@@ -89,7 +89,7 @@ try {
         ]
     ]);
     $db->registration_codes->createIndex(['code' => 1], ['unique' => true]);
-    echo "✅ Einmal-Code System bereit.<br>";
+    echo "✅ Registrierungscode-System bereit.<br>";
 
     // --- D. USERS ---
     $db->dropCollection("users");

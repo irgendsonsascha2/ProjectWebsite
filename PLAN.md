@@ -3,6 +3,10 @@
 - Admin-Zugangsprozess
   - Anfrage/Workflow an Admin einrichten, um Zugangsdaten / Account-Freigabe zu bekommen
 
+- Registrierungscode-Anfragen per E-Mail (Invite Flow)
+  - Mailversand/SMTP-Konfiguration sauber machen (aktuell nutzt der Prototyp PHP `mail()` + `MAIL_FROM_EMAIL`)
+  - E-Mail-Templates/Betreff/Absender später konfigurierbar machen
+
 - Responsive Design (nach Invite-Code-Fix, vor Smoke-Test)
   - Mobile/Tablet/Desktop-Pass für Navigation, Account/Admin-Tabellen, Grid/Detail, Lightbox/Dialogs
 

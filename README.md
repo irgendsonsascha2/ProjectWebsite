@@ -12,7 +12,7 @@ Test-Aufrufe für geschützte Bereiche (z. B. Admin-URLs) immer unter **dersel
 
 Hauptfunktionen:
 
-- Invite-basierte Registrierung über Einmal-Codes
+- Invite-basierte Registrierung über Registrierungscodes
 - Login/Logout mit Rollen und Berechtigungen
 - Projektübersicht im Grid
 - Projektdetails mit Mediengalerie
@@ -35,7 +35,7 @@ Hauptfunktionen:
 
 ### Laravel (`laravel/`)
 
-Parallel zur klassischen PHP-App liegt eine **Laravel-13-Anwendung** mit **MongoDB** (`mongodb/laravel-mongodb`), **Laravel Breeze** (Blade-Auth) und der gleichen Nutzerlogik wie `pages/account.php`: Login mit **E-Mail oder Username**, Registrierung nur mit **Einmal-Code** aus der Collection `registration_codes`.
+Parallel zur klassischen PHP-App liegt eine **Laravel-13-Anwendung** mit **MongoDB** (`mongodb/laravel-mongodb`), **Laravel Breeze** (Blade-Auth) und der gleichen Nutzerlogik wie `pages/account.php`: Login mit **E-Mail oder Username**, Registrierung nur mit **Registrierungscode** aus der Collection `registration_codes`.
 
 **Testprojekt — Kurzablauf (du):**
 
@@ -349,7 +349,7 @@ Die Funktion `can($permission)` in `includes/bootstrap.php` dient als zentrale R
 Die klassischen Auth-Seiten sind aufgeteilt:
 
 - **Login**: `index.php?page=login` (Formular → `bridge_auth.php`)
-- **Registrierung**: `index.php?page=register` (Formular → `bridge_register.php`, Invite-/Einmal-Code via `reg_token`)
+- **Registrierung**: `index.php?page=register` (Formular → `bridge_register.php`, Invite-/Registrierungscode via `reg_token`)
 - **Account-Dashboard (eingeloggt)**: `index.php?page=account` (Logout + Admin: Einladungscodes/Links)
 
 Einladungscodes werden weiterhin in `registration_codes` gespeichert (Einmalverwendung).
@@ -357,11 +357,11 @@ Einladungscodes werden weiterhin in `registration_codes` gespeichert (Einmalverw
 Die Auth-/Invite-Funktionen umfassen:
 
 - Login per E-Mail oder Username
-- Registrierung per Einmal-Code
+- Registrierung per Registrierungscode
 - Rollenzuweisung anhand des verwendeten Registrierungscodes
 - Generierung neuer Einladungscodes für berechtigte Nutzer
 - Robustheit/Skalierung: Codes sind lang genug für praktisch kollisionsfreie Generierung und werden bei Duplicate-Key automatisch neu generiert (Unique-Index + Retry).
-- **Einladungs-Direktlinks** in der Tabelle: `index.php?page=register&reg_token=<CODE>#register-section` (führt zur Registrierungsseite und füllt den Code in das Feld **Einmal-Code** vor; der Link muss in HTML-Attribute als Text ausgegeben werden, damit `&reg_token` nicht als HTML-Entity `&reg;` in `®_token` verfälscht wird). **Legacy:** alte Links auf `page=account&reg_token=...` werden serverseitig auf `page=register` umgeleitet.
+- **Einladungs-Direktlinks** in der Tabelle: `index.php?page=register&reg_token=<CODE>#register-section` (führt zur Registrierungsseite und füllt den Code in das Feld **Registrierungscode** vor; der Link muss in HTML-Attribute als Text ausgegeben werden, damit `&reg_token` nicht als HTML-Entity `&reg;` in `®_token` verfälscht wird). **Legacy:** alte Links auf `page=account&reg_token=...` werden serverseitig auf `page=register` umgeleitet.
 - In der Tabelle stehen neben **Code** und **Direkt-Link** **Kopier-Buttons** (Clipboard), damit man Werte schnell teilen kann
 - Meldungen/Alerts sind themefähig (Light/Dark über CSS-Variablen), damit sie im **Darkmode** lesbar bleiben
 

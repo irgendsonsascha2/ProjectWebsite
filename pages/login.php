@@ -25,6 +25,15 @@ if (isset($_GET['err']) && $_GET['err'] === 'handoff') {
     $message = '❌ Anmeldung nicht möglich: In laravel/.env fehlen HANDOFF_SECRET oder LEGACY_SITE_URL passt nicht zur Website-URL.';
     $messageClass = 'alert alert--error';
 }
+if (isset($_GET['err']) && $_GET['err'] === 'forbidden') {
+    $message = '❌ Du hast keine Berechtigung für diese Aktion. Bitte melde dich an.';
+    $messageClass = 'alert alert--error';
+    $next = isset($_GET['next']) ? trim((string) $_GET['next']) : '';
+    if ($next !== '') {
+        $safeNext = htmlspecialchars($next, ENT_QUOTES, 'UTF-8');
+        $message .= ' <a href="'.$safeNext.'">Zurück</a>';
+    }
+}
 if (isset($_GET['err']) && $_GET['err'] === 'throttle') {
     $w = isset($_GET['wait']) ? (int) $_GET['wait'] : 0;
     $message = $w > 0
@@ -48,7 +57,7 @@ if (isset($_GET['handoff_err'])) {
     $messageClass = 'alert alert--error';
 }
 
-if (isset($_SESSION['user_id'])) {
+if (isset($_SESSION['user_id']) && (!isset($_GET['err']) || $_GET['err'] !== 'forbidden')) {
     header('Location: index.php?page=account');
     exit;
 }
