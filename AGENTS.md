@@ -53,7 +53,7 @@ Damit die klassische PHP-Seite sichtbares Styling (Tailwind/React-Bundle aus `re
    - im Projektroot: `php -S 127.0.0.1:8080 -t .`
 3. Wenn HMR Probleme macht, HMR-Variablen in `.env.local` entfernen bzw. auskommentieren und mit **nur** `npm run build` (ohne laufendes Vite) arbeiten.
 
-`includes/vite_assets.php` sorgt dafür, dass bei aktivem HMR zusätzlich die **per Manifest gebundenen** Stylesheets aus `react-dist/` eingebunden werden, damit die Seite nicht „nackt“ bleibt, falls Vite-Module nicht zuverlässig laden. Ausführlichere Begründung und Fehlersuche: `README.md` (Abschnitt React/Vite und „Wenn kein Styling“).
+`includes/vite_assets.php` nutzt HMR **nur** mit `VITE_HMR=1` **und** `VITE_DEV_SERVER_URL` und wenn der PHP-Prozess Vite per Socket/HTTP erreicht und der `@vite/client` mit 200 antwortet; sonst Manifest. Bei aktivem HMR kommen **zusätzlich** die zuletzt gebauten **CSS-`<link>`-**Einträge aus `react-dist/.vite/manifest.json` (braucht also einen vorherigen `npm run build`). Fehlersuche: `README.md` → *Wenn kein Styling / keine React-Assets*; technischer Stand: `docs/current_status.md` (Abschnitt Vite-PHP-Brücke).
 
 **Laravel-Auth-App (getrennt):** Eigener Start über `laravel/`, `php artisan serve` bzw. wie in `README.md` beschrieben; nicht mit dem obigen `php -S` verwechseln.
 

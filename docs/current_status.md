@@ -2,7 +2,7 @@
 
 **Hinweis (Arbeitsweise):** Es wird vorerst **nur lokal** weiterentwickelt; ein Deployment auf einen Server steht an, sobald dafür ausdrücklich entschieden wurde (siehe auch `README.md` → *Entwicklung und Deployment (Arbeitsweise)*).
 
-## Stand vom 2026-04-01
+## Stand vom 2026-04-01 (Aktualisierungen: siehe unten, z. B. Vite-Loader 2026-04-26)
 
 Aktueller Blocker bei der Sicherheits- und MongoDB-Umstellung:
 
@@ -49,6 +49,13 @@ Der genaue Endzustand ist damit:
   - Admin-Dashboard zeigt die **effektive** DB-Konfiguration des laufenden PHP-Prozesses (Passwörter maskiert), um Env-Probleme sofort sichtbar zu machen.
   - `03_db_init_mongo_roles.php` läuft im Admin-Panel garantiert über `ADMIN_DB_URI` (kein versehentlicher Rollen-Fallback).
   - Optionaler `.env.local`-Workflow: `/.env.local` wird beim Start automatisch geladen; beim Ausführen von `03_db_init_mongo_roles.php` kann das Admin-Panel (Checkbox) die URIs in `.env.local` mit den neuen Passwörtern aktualisieren.
+
+## Vite-PHP-Brücke (`includes/vite_assets.php`) – Stand 2026-04-26
+
+- HMR (`.env` mit `VITE_HMR=1` und `VITE_DEV_SERVER_URL`) nur, wenn Vite wirklich läuft; sonst Rückfall auf `react-dist/`-Manifest.
+- Im HMR-Modus werden **zusätzlich** die im Manifest verlinkten **CSS-Dateien** aus dem letzten `npm run build` per `<link>` geladen, damit die Seite nicht ohne Styling bleibt, falls ES-Module von Vite nicht geladen werden (Netzwerk, Host/Port, Mixed Content).
+- `VITE_USE_BUILT_ASSETS=1` erzwingt ausschließlich Manifest, ohne Dev-Skripte (z. B. CI).
+- Doku: `README.md` (React/Vite, Tabelle *Wenn kein Styling*), `AGENTS.md` (Lokaler Start).
 
 ## Frontend/React (Hybrid) – offene UI-Punkte
 

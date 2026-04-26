@@ -63,9 +63,7 @@ if ($isAjax) {
     <script src="<?php echo $asset('js/esc-back.js'); ?>"></script>
 
     <?php
-        // React/Vite Frontend Assets (liefert das Styling).
-        // Dev: export VITE_DEV_SERVER_URL=http://127.0.0.1:5173
-        // Prod: npm run build (frontend) erzeugt /react-dist
+        // React/Vite: Standard = gebautes react-dist/; HMR: .env VITE_HMR=1 + VITE_DEV_SERVER_URL
         vite_react_assets('src/main.tsx');
     ?>
 </head>

@@ -207,7 +207,7 @@ Die Einbindung steckt in `includes/vite_assets.php` → `vite_react_assets()`.
 | Modus | Voraussetzung | Was passiert |
 |--------|----------------|--------------|
 | **Standard (empfohlen)** | Kein `VITE_HMR=1` (oder weggelassen) | Es werden die **gebauten** Dateien aus `react-dist/.vite/manifest.json` eingebunden. Voraussetzung: `cd frontend && npm run build` war einmal (oder kürzlich) gelaufen. |
-| **HMR** | In `.env.local` (o. ä.) u. a. `VITE_HMR=1` **und** `VITE_DEV_SERVER_URL=…` (gleiche Portangabe wie `npm run dev`) **und** Vite wirklich gestartet | Skripte kommen von Vite. Läuft Vite nicht oder liefert `/react-dist/@vite/client` kein 200, fällt der Code **automatisch** auf `react-dist/` zurück, sofern ein Build existiert. |
+| **HMR** | In `.env.local` (o. ä.) u. a. `VITE_HMR=1` **und** `VITE_DEV_SERVER_URL=…` (gleiche Port/Host/Schema wie `npm run dev`) **und** Vite wirklich gestartet, PHP muss Vite per Socket/HTTP erreichen | Skripte (`@vite/client` + Entry) von Vite. **Zusätzlich** werden die im Manifest stehenden **CSS-Dateien** aus `react-dist/` per `<link>` eingebunden, damit Styling erhalten bleibt, falls Module nicht laden. Läuft Vite nicht, fällt die Logik auf vollständiges **Manifest-Rendering** (CSS + JS) zurück, sofern ein Build existiert. |
 | **Nur Build erzwingen** | `VITE_USE_BUILT_ASSETS=1` in der Umgebung | Es werden **nur** Manifest-Dateien genutzt (z. B. für Tests/CI), nie Dev-Skripte. |
 
 Typische Fälle ohne Styling:
@@ -215,6 +215,7 @@ Typische Fälle ohne Styling:
 1. **Kein Build:** Wenn `react-dist/.vite/manifest.json` fehlt, kommen **keine** Link-/Script-Tags (still). *Lösung:* `cd frontend && npm run build`.
 2. **Nur alte Doku/Shell:** Früher wurde oft `VITE_DEV_SERVER_URL` **ohne** laufendes Vite benutzt. Jetzt reicht: **HMR** nur mit `VITE_HMR=1` **oder** ganz weglassen und nur per Build arbeiten.
 3. **HMR an, Vite aus:** Dann Anzeige meist trotzdem per Fallback aus `react-dist/`, sofern gebaut. Ohne Build bleibt die Seite ungestylt.
+4. **HMR, aber fremde/HTTPS-Startseite:** Die Dev-URL stammt aus `VITE_DEV_SERVER_URL` (kein künstliches Umschreiben von Host/Schema); bei **HTTPS-Seite** + **HTTP-Vite** blockieren Browser ggf. Skripte (Mixed Content) — dann HMR ausschalten, nur `npm run build` nutzen, oder Vite/Proxy per HTTPS.
 
 2. Sicherstellen, dass MongoDB lokal läuft:
 
