@@ -42,6 +42,24 @@ try {
 
     echo '✅ collMod für Collection <code>users</code> ausgeführt (<code>additionalProperties: true</code>).<br>';
     echo '<p>Registrierung über Laravel / bridge_register sollte nun nicht mehr mit „Document failed validation“ abbrechen.</p>';
+
+    echo '<hr>';
+    echo '<h2>users: Unique-Index sicherstellen</h2>';
+    echo '<p class="muted">Hinweis: Wenn bereits doppelte E-Mails/Usernames existieren, schlägt der Unique-Index fehl. Dann Duplikate bereinigen und das Script erneut ausführen.</p>';
+
+    try {
+        $db->users->createIndex(['email' => 1], ['unique' => true]);
+        echo '✅ Unique-Index auf <code>users.email</code> ist gesetzt.<br>';
+    } catch (Throwable $e) {
+        echo '⚠️ Konnte Unique-Index auf <code>users.email</code> nicht setzen: ' . htmlspecialchars($e->getMessage()) . '<br>';
+    }
+
+    try {
+        $db->users->createIndex(['username' => 1], ['unique' => true]);
+        echo '✅ Unique-Index auf <code>users.username</code> ist gesetzt.<br>';
+    } catch (Throwable $e) {
+        echo '⚠️ Konnte Unique-Index auf <code>users.username</code> nicht setzen: ' . htmlspecialchars($e->getMessage()) . '<br>';
+    }
 } catch (Throwable $e) {
     echo '❌ Fehler: '.htmlspecialchars($e->getMessage()).'<br>';
 }

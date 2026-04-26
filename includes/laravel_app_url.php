@@ -34,3 +34,38 @@ function laravel_app_url(): string
 
     return $cached = $default;
 }
+
+/**
+ * True, wenn die Laravel-App (APP_URL) erreichbar ist.
+ * Für lokale Dev-Setups verhindert das "kaputte" Links, wenn `php artisan serve`
+ * nicht läuft.
+ */
+function laravel_app_reachable(int $timeoutMs = 250): bool
+{
+    $url = laravel_app_url();
+    $parts = parse_url($url);
+    if (!is_array($parts)) {
+        return false;
+    }
+
+    $host = (string)($parts['host'] ?? '');
+    if ($host === '') {
+        return false;
+    }
+
+    $scheme = strtolower((string)($parts['scheme'] ?? 'http'));
+    $port = (int)($parts['port'] ?? ($scheme === 'https' ? 443 : 80));
+    if ($port < 1 || $port > 65535) {
+        return false;
+    }
+
+    $timeoutSec = max(1, (int)ceil($timeoutMs / 1000));
+    $errno = 0;
+    $errstr = '';
+    $fp = @fsockopen($host, $port, $errno, $errstr, $timeoutSec);
+    if (!is_resource($fp)) {
+        return false;
+    }
+    fclose($fp);
+    return true;
+}

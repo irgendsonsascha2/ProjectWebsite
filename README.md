@@ -411,8 +411,13 @@ Technik:
 
 - Collection: `registration_code_requests` (Token + Metadaten, Verifikation/Freigabe)
 - Admin-Seite: `pages/admin/registration_requests.php`
-- Mailversand: PHP `mail()`; Sender über `MAIL_FROM_EMAIL` (Env). Für Debug wird eine Kopie best-effort nach `logs/mail.log` geschrieben.
-  **Hinweis:** Ein echter E-Mail-Server/MTA ist aktuell **nicht eingerichtet**. Für produktiven Betrieb muss SMTP/Mailversand sauber konfiguriert werden; lokal ist `logs/mail.log` die verlässliche Quelle für Testlinks.
+- Mailversand: Standard PHP `mail()`; optional **lokales SMTP** ohne TLS (für z. B. MailHog) über Umgebungsvariablen:
+  - `MAIL_SMTP_HOST` (z. B. `127.0.0.1`) — wenn gesetzt, wird statt `mail()` direkt per SMTP (Plain, kein Auth/TLS) gesendet
+  - `MAIL_SMTP_PORT` (z. B. `1025` für MailHog; Default ohne Variable: `25`)
+  - `MAIL_FROM_EMAIL` (Absender)
+  - `MAIL_LOG_REDACT_SECRETS=1` (Default): Bestätigungs-Token und Registrierungscodes erscheinen in `logs/mail.log` **nur in redigierter Form**; `=0` schreibt den vollen Text (nur in vertrauenswürdiger Dev-Umgebung)
+- Für Debug schreibt die Mail-Hilfe weiterhin best-effort nach `logs/mail.log` inkl. `via: mail()` bzw. `via: smtp://…`.
+- **Hinweis:** Ohne `MAIL_SMTP_HOST` und ohne lokalen MTA liefert `mail()` typischerweise `sent: false` — dann bleibt `mail.log` die Quelle für Test-URLs. Für einen lokalen **Web-UI-Posteingang** (MailHog, MailDev o. ä.): Container starten, `MAIL_SMTP_HOST`/`MAIL_SMTP_PORT` in `.env.local` setzen. Offene TODOs/Backlog: `docs/local_next_steps.md`.
 
 Die Auth-/Invite-Funktionen umfassen:
 

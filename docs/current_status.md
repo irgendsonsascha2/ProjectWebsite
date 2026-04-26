@@ -105,6 +105,7 @@ Minimaler v1-Umfang (geplant):
 
 - Admin-Zugangsprozess: klarer Workflow/Anfrage an Admin für Zugangsdaten oder Freigabe.
 - Registrierung / E-Mail: SMTP und Templates produktionsreif (siehe auch `includes/mail.php` / Konfiguration).
+- Lokal-Setup (2026-04-26): MailHog-SMTP (Plain) fürs Testen + Laravel läuft lokal für „Passwort vergessen“; `users.email`/`users.username` sind per Unique-Index vorgesehen (DB-Skript `04_db_users_validator_allow_laravel.php` zieht das auf bestehenden DBs nach).
 - Responsive Pass, 2FA, Sicherheits-Review und Deployment: parallel zu `security_roadmap.md` und den offenen UI-Punkten oben.
 
 ## Nächster sinnvoller Einstieg

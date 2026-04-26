@@ -72,7 +72,18 @@ if (isset($_SESSION['user_id']) && (!isset($_GET['err']) || $_GET['err'] !== 'fo
 
     <section>
         <p class="field-hint" style="margin-bottom:1rem;">Hier meldest du dich mit Nutzerdaten und Passwort aus der Datenbank an (technisch dieselbe Prüfung wie bei der geschützten Login-Routine).</p>
-        <p class="field-hint" style="margin-bottom:1rem;"><a href="<?php echo htmlspecialchars(laravel_app_url().'/forgot-password', ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener">Passwort vergessen</a> (Laravel unter <?php echo htmlspecialchars(laravel_app_url(), ENT_QUOTES, 'UTF-8'); ?>)</p>
+        <?php if (laravel_app_reachable()): ?>
+            <p class="field-hint" style="margin-bottom:1rem;">
+                <a href="<?php echo htmlspecialchars(laravel_app_url().'/forgot-password', ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener">Passwort vergessen</a>
+                (Laravel unter <?php echo htmlspecialchars(laravel_app_url(), ENT_QUOTES, 'UTF-8'); ?>)
+            </p>
+        <?php else: ?>
+            <p class="field-hint" style="margin-bottom:1rem;">
+                Passwort vergessen ist lokal über Laravel verfügbar, aber die Laravel-App läuft gerade nicht unter
+                <?php echo htmlspecialchars(laravel_app_url(), ENT_QUOTES, 'UTF-8'); ?>.
+                Starte sie z. B. mit: <code>cd laravel &amp;&amp; php artisan serve --host 127.0.0.1 --port 8000</code>
+            </p>
+        <?php endif; ?>
         <form method="POST" id="login-form" action="bridge_auth.php">
             <input type="hidden" name="_token" value="<?php echo htmlspecialchars($_SESSION['csrf_bridge'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
             <input type="text" id="login_id" name="login_id" placeholder="E-Mail oder Username" autocomplete="username" required>
