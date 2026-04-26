@@ -91,6 +91,36 @@ try {
     $db->registration_codes->createIndex(['code' => 1], ['unique' => true]);
     echo "✅ Registrierungscode-System bereit.<br>";
 
+    // --- C2. REGISTRATION_CODE_REQUESTS (E-Mail-Verifikation + Admin-Freigabe) ---
+    // Nutzer können (ohne Code) eine Anfrage stellen, bestätigen ihre E-Mail über Token,
+    // danach kann der Admin einen Code freigeben und per Mail senden.
+    $db->dropCollection("registration_code_requests");
+    $db->createCollection("registration_code_requests", [
+        'validator' => [
+            '$jsonSchema' => [
+                'bsonType' => 'object',
+                'required' => ['email', 'token', 'created_at', 'expires_at', 'verified_at', 'approved_at', 'code', 'privacy_consent_at'],
+                'properties' => [
+                    'email' => ['bsonType' => 'string', 'pattern' => '^.+@.+$'],
+                    'token' => ['bsonType' => 'string'],
+                    'created_at' => ['bsonType' => 'date'],
+                    'expires_at' => ['bsonType' => 'date'],
+                    'verified_at' => ['bsonType' => ['date', 'null']],
+                    'approved_at' => ['bsonType' => ['date', 'null']],
+                    'code' => ['bsonType' => ['string', 'null']],
+                    'privacy_consent_at' => ['bsonType' => 'date'],
+                    'requested_ip' => ['bsonType' => 'string'],
+                    'user_agent' => ['bsonType' => 'string'],
+                ],
+                'additionalProperties' => true,
+            ],
+        ],
+    ]);
+    $db->registration_code_requests->createIndex(['token' => 1], ['unique' => true]);
+    $db->registration_code_requests->createIndex(['email' => 1]);
+    $db->registration_code_requests->createIndex(['verified_at' => 1, 'approved_at' => 1]);
+    echo "✅ Registrierungscode-Anfragen bereit.<br>";
+
     // --- D. USERS ---
     $db->dropCollection("users");
     $db->createCollection("users", [

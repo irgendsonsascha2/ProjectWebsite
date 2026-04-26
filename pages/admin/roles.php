@@ -1,15 +1,8 @@
 <?php
-require_once __DIR__ . '/../../includes/bootstrap.php';
-require_once __DIR__ . '/../../includes/vite_assets.php';
+require_once __DIR__ . '/_layout.php';
+require_once __DIR__ . '/../../includes/svg_icons.php';
 
-if (!isset($_SESSION['user_id'])) {
-    header('Location: ../../index.php?page=login');
-    exit();
-}
-
-if ($_SESSION['role'] !== 'admin') {
-    die("<h1>Zugriff verweigert</h1><p>Diese Seite ist nur für Administratoren.</p>");
-}
+// Admin access is enforced by the admin layout.
 
 $notice = '';
 $error = '';
@@ -219,300 +212,268 @@ try {
 }
 ?>
 
-<!DOCTYPE html>
-<html lang="de">
+<?php admin_render_page('Rollen verwalten', 'roles', function () use ($error, $notice, $groupedPermissions, $roles, $permissionMap, $rolesMap, $roleCounts) { ?>
+    <div class="page-header">
+        <h1>Rollen verwalten</h1>
+        <a href="index.php">Zurück</a>
+    </div>
 
-<head>
-    <meta charset="UTF-8">
-    <title>Rollen verwalten</title>
-    <script>
-        (function () {
-            try {
-                var KEY = 'portfolio-theme';
-                var t = localStorage.getItem(KEY);
-                if (t !== 'dark' && t !== 'light') {
-                    t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                }
-                document.documentElement.setAttribute('data-theme', t);
-            } catch (e) {
-                document.documentElement.setAttribute('data-theme', 'light');
-            }
-        })();
-    </script>
-    <?php vite_react_assets('src/main.tsx'); ?>
-</head>
+    <?php if ($error): ?>
+        <div class="alert error"><?php echo htmlspecialchars($error); ?></div>
+    <?php endif; ?>
+    <?php if ($notice): ?>
+        <div class="alert success"><?php echo htmlspecialchars($notice); ?></div>
+    <?php endif; ?>
 
-<body class="admin-page">
-    <div class="container">
-        <div class="page-header">
-            <h1>Rollen verwalten</h1>
-            <a href="index.php">Zurück</a>
-        </div>
+    <div class="toolbar">
+        <button type="button" class="dialog-button" data-dialog-open="create-role-dialog">Neue Rolle</button>
+    </div>
 
-        <div class="admin-nav">
-            <a href="index.php">Dashboard</a>
-            <a href="roles.php">Rollen</a>
-            <a href="permissions.php">Berechtigungen</a>
-            <a href="../../index.php">Zur Hauptseite</a>
-        </div>
-
-        <?php if ($error): ?>
-            <div class="alert error"><?php echo htmlspecialchars($error); ?></div>
-        <?php endif; ?>
-        <?php if ($notice): ?>
-            <div class="alert success"><?php echo htmlspecialchars($notice); ?></div>
-        <?php endif; ?>
-
-        <div class="toolbar">
-            <button type="button" class="dialog-button" data-dialog-open="create-role-dialog">Neue Rolle</button>
-        </div>
-
-        <dialog id="create-role-dialog">
-            <div class="dialog-card">
-                <div class="dialog-header">
-                    <h2>Neue Rolle erstellen</h2>
-                    <button type="button" class="close-button" data-dialog-close>Schließen</button>
+    <dialog id="create-role-dialog">
+        <div class="dialog-card">
+            <div class="dialog-header">
+                <h2>Neue Rolle erstellen</h2>
+                <button type="button" class="close-button" data-dialog-close>Schließen</button>
+            </div>
+            <form method="POST" class="role-form">
+                <input type="hidden" name="action" value="create_role">
+                <div class="field">
+                    <label for="role_key">Rollen-Schlüssel</label>
+                    <input type="text" id="role_key" name="role_key" placeholder="z.B. editor" required>
+                    <div class="hint">Nur Kleinbuchstaben, Zahlen, _ und -</div>
                 </div>
-                <form method="POST" class="role-form">
-                    <input type="hidden" name="action" value="create_role">
-                    <div class="field">
-                        <label for="role_key">Rollen-Schlüssel</label>
-                        <input type="text" id="role_key" name="role_key" placeholder="z.B. editor" required>
-                        <div class="hint">Nur Kleinbuchstaben, Zahlen, _ und -</div>
-                    </div>
-                    <div class="field">
-                        <label for="role_label">Anzeigename</label>
-                        <input type="text" id="role_label" name="role_label" placeholder="z.B. Editor">
-                    </div>
-                    <div class="field">
-                        <label>Berechtigungen</label>
-                        <div class="permissions">
-                            <?php foreach ($groupedPermissions as $group): ?>
-                                <div class="permission-group">
-                                    <div class="permission-group-title"><?php echo htmlspecialchars($group['label']); ?></div>
-                                    <?php foreach ($group['items'] as $perm): ?>
-                                        <label>
-                                            <input type="checkbox" name="permissions[]" value="<?php echo htmlspecialchars($perm['key']); ?>">
-                                            <span>
-                                                <?php echo htmlspecialchars($perm['label']); ?>
-                                                <?php if (!empty($perm['description'])): ?>
-                                                    <small><?php echo htmlspecialchars($perm['description']); ?></small>
-                                                <?php endif; ?>
-                                            </span>
-                                        </label>
-                                        <?php if ($perm['key'] === 'comment_limit'): ?>
-                                            <div class="permission-subfield comment-limit-field" data-limit-field>
-                                                <div class="hint">Nur wirksam mit Berechtigung "Kommentar-Limit". 0 = unbegrenzt.</div>
-                                                <input type="number" name="comment_limit" min="0" step="1" value="0" disabled>
-                                            </div>
-                                        <?php elseif ($perm['key'] === 'delete_comments'): ?>
-                                            <div class="permission-subfield">
-                                                <div class="hint">Gilt nur mit Berechtigung "Kommentare löschen".</div>
-                                                <div class="role-selector" data-role-selector>
-                                                    <button type="button" class="role-selector-toggle" aria-expanded="false">Rollen auswählen</button>
-                                                    <div class="role-selector-panel" hidden>
-                                                        <div class="role-selector-search">
-                                                            <input type="text" placeholder="Rollen suchen..." aria-label="Rollen suchen">
-                                                        </div>
-                                                        <label class="role-selector-all">
-                                                            <input type="checkbox" data-role-select-all>
-                                                            <span>Alle Rollen auswählen</span>
-                                                        </label>
-                                                        <div class="role-selector-list">
-                                                            <?php foreach ($roles as $roleItem): ?>
-                                                                <?php
-                                                                    $targetRoleKey = $roleItem['role'] ?? '';
-                                                                    $targetRoleLabel = $roleItem['label'] ?? $targetRoleKey;
-                                                                    if (!$targetRoleKey) {
-                                                                        continue;
-                                                                    }
-                                                                ?>
-                                                                <label>
-                                                                    <input type="checkbox" name="comment_delete_roles[]" value="<?php echo htmlspecialchars($targetRoleKey); ?>">
-                                                                    <span><?php echo htmlspecialchars($targetRoleLabel); ?></span>
-                                                                </label>
-                                                            <?php endforeach; ?>
-                                                        </div>
+                <div class="field">
+                    <label for="role_label">Anzeigename</label>
+                    <input type="text" id="role_label" name="role_label" placeholder="z.B. Editor">
+                </div>
+                <div class="field">
+                    <label>Berechtigungen</label>
+                    <div class="permissions">
+                        <?php foreach ($groupedPermissions as $group): ?>
+                            <div class="permission-group">
+                                <div class="permission-group-title"><?php echo htmlspecialchars($group['label']); ?></div>
+                                <?php foreach ($group['items'] as $perm): ?>
+                                    <label>
+                                        <input type="checkbox" name="permissions[]" value="<?php echo htmlspecialchars($perm['key']); ?>">
+                                        <span>
+                                            <?php echo htmlspecialchars($perm['label']); ?>
+                                            <?php if (!empty($perm['description'])): ?>
+                                                <small><?php echo htmlspecialchars($perm['description']); ?></small>
+                                            <?php endif; ?>
+                                        </span>
+                                    </label>
+                                    <?php if ($perm['key'] === 'comment_limit'): ?>
+                                        <div class="permission-subfield comment-limit-field" data-limit-field>
+                                            <div class="hint">Nur wirksam mit Berechtigung "Kommentar-Limit". 0 = unbegrenzt.</div>
+                                            <input type="number" name="comment_limit" min="0" step="1" value="0" disabled>
+                                        </div>
+                                    <?php elseif ($perm['key'] === 'delete_comments'): ?>
+                                        <div class="permission-subfield">
+                                            <div class="hint">Gilt nur mit Berechtigung "Kommentare löschen".</div>
+                                            <div class="role-selector" data-role-selector>
+                                                <button type="button" class="role-selector-toggle" aria-expanded="false">Rollen auswählen</button>
+                                                <div class="role-selector-panel" hidden>
+                                                    <div class="role-selector-search">
+                                                        <input type="text" placeholder="Rollen suchen..." aria-label="Rollen suchen">
+                                                    </div>
+                                                    <label class="role-selector-all">
+                                                        <input type="checkbox" data-role-select-all>
+                                                        <span>Alle Rollen auswählen</span>
+                                                    </label>
+                                                    <div class="role-selector-list">
+                                                        <?php foreach ($roles as $roleItem): ?>
+                                                            <?php
+                                                                $targetRoleKey = $roleItem['role'] ?? '';
+                                                                $targetRoleLabel = $roleItem['label'] ?? $targetRoleKey;
+                                                                if (!$targetRoleKey) {
+                                                                    continue;
+                                                                }
+                                                            ?>
+                                                            <label>
+                                                                <input type="checkbox" name="comment_delete_roles[]" value="<?php echo htmlspecialchars($targetRoleKey); ?>">
+                                                                <span><?php echo htmlspecialchars($targetRoleLabel); ?></span>
+                                                            </label>
+                                                        <?php endforeach; ?>
                                                     </div>
                                                 </div>
                                             </div>
-                                        <?php endif; ?>
-                                    <?php endforeach; ?>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
+                                        </div>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endforeach; ?>
                     </div>
-                    <div class="actions">
-                        <button type="submit">Rolle anlegen</button>
-                    </div>
-                </form>
-            </div>
-        </dialog>
+                </div>
+                <div class="actions">
+                    <button type="submit">Rolle anlegen</button>
+                </div>
+            </form>
+        </div>
+    </dialog>
 
-        <h2>Bestehende Rollen</h2>
-        <div class="grid">
-            <?php foreach ($roles as $role): ?>
-                <?php
-                    $roleKey = $role['role'] ?? '';
-                    if (!$roleKey) {
-                        continue;
-                    }
-                    $roleLabel = $role['label'] ?? $roleKey;
-                    $rolePermissions = $role['permissions'] ?? [];
-                    $rolePermissions = normalize_permission_keys($rolePermissions);
-                    $roleDeleteRoles = $role['comment_delete_roles'] ?? [];
-                    $roleDeleteRoles = normalize_role_keys($roleDeleteRoles);
-                    $roleCommentLimit = isset($role['comment_limit']) ? (int)$role['comment_limit'] : 0;
-                    $userCount = $roleCounts[$roleKey] ?? 0;
-                ?>
-                <div class="card">
-                    <div class="role-header">
-                        <div>
-                            <h3><?php echo htmlspecialchars($roleLabel); ?></h3>
-                            <div class="hint">Schlüssel: <?php echo htmlspecialchars($roleKey); ?> · Nutzer: <?php echo (int)$userCount; ?></div>
-                        </div>
-                    </div>
-
-                    <div class="card-actions">
-                        <button type="button" class="icon-button" data-dialog-open="edit-role-<?php echo htmlspecialchars($roleKey); ?>" aria-label="Rolle bearbeiten" title="Rolle bearbeiten"><?php echo svg_icon_pencil(18); ?></button>
-                        <button type="button" class="icon-button" data-dialog-open="info-role-<?php echo htmlspecialchars($roleKey); ?>" aria-label="Berechtigungen anzeigen" title="Berechtigungen anzeigen">ℹ</button>
-                        <form method="POST" onsubmit="return confirm('Rolle wirklich löschen?');">
-                        <input type="hidden" name="action" value="delete_role">
-                        <input type="hidden" name="role_key" value="<?php echo htmlspecialchars($roleKey); ?>">
-                            <button type="submit" class="icon-button danger" aria-label="Rolle löschen" title="Rolle löschen">🗑</button>
-                        </form>
+    <h2>Bestehende Rollen</h2>
+    <div class="grid">
+        <?php foreach ($roles as $role): ?>
+            <?php
+                $roleKey = $role['role'] ?? '';
+                if (!$roleKey) {
+                    continue;
+                }
+                $roleLabel = $role['label'] ?? $roleKey;
+                $rolePermissions = $role['permissions'] ?? [];
+                $rolePermissions = normalize_permission_keys($rolePermissions);
+                $roleDeleteRoles = $role['comment_delete_roles'] ?? [];
+                $roleDeleteRoles = normalize_role_keys($roleDeleteRoles);
+                $roleCommentLimit = isset($role['comment_limit']) ? (int)$role['comment_limit'] : 0;
+                $userCount = $roleCounts[$roleKey] ?? 0;
+            ?>
+            <div class="card">
+                <div class="role-header">
+                    <div>
+                        <h3><?php echo htmlspecialchars($roleLabel); ?></h3>
+                        <div class="hint">Schlüssel: <?php echo htmlspecialchars($roleKey); ?> · Nutzer: <?php echo (int)$userCount; ?></div>
                     </div>
                 </div>
 
-                <dialog id="info-role-<?php echo htmlspecialchars($roleKey); ?>">
-                    <div class="dialog-card">
-                        <div class="dialog-header">
-                            <h2>Berechtigungen</h2>
-                            <button type="button" class="close-button" data-dialog-close>Schließen</button>
-                        </div>
-                        <div class="permission-list">
-                            <?php if (count($rolePermissions) === 0): ?>
-                                <div class="permission-item">Keine Berechtigungen zugeordnet.</div>
-                            <?php else: ?>
-                                <?php foreach ($rolePermissions as $permKey): ?>
-                                    <?php
-                                        $permLabel = $permissionMap[$permKey]['label'] ?? $permKey;
-                                        $permDesc = $permissionMap[$permKey]['description'] ?? '';
-                                    ?>
-                                    <div class="permission-item">
-                                        <?php echo htmlspecialchars($permLabel); ?>
-                                        <?php if ($permDesc): ?>
-                                            <small><?php echo htmlspecialchars($permDesc); ?></small>
-                                        <?php endif; ?>
-                                    </div>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </div>
-                        <div class="permission-list spaced">
-                            <div class="permission-item heading">Kommentar-Limit (pro Nutzer/Projekt)</div>
-                            <div class="permission-item">
-                                <?php echo $roleCommentLimit > 0 ? (int)$roleCommentLimit : 'Unbegrenzt'; ?>
-                            </div>
-                        </div>
-                        <div class="permission-list spaced">
-                            <div class="permission-item heading">Kommentare löschen von Rollen</div>
-                            <?php if (count($roleDeleteRoles) === 0): ?>
-                                <div class="permission-item">Keine Rollen ausgewählt.</div>
-                            <?php else: ?>
-                                <?php foreach ($roleDeleteRoles as $deleteRoleKey): ?>
-                                    <?php
-                                        $deleteRoleLabel = $rolesMap[$deleteRoleKey]['label'] ?? $deleteRoleKey;
-                                    ?>
-                                    <div class="permission-item"><?php echo htmlspecialchars($deleteRoleLabel); ?></div>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
+                <div class="card-actions">
+                    <button type="button" class="icon-button" data-dialog-open="edit-role-<?php echo htmlspecialchars($roleKey); ?>" aria-label="Rolle bearbeiten" title="Rolle bearbeiten"><?php echo svg_icon_pencil(18); ?></button>
+                    <button type="button" class="icon-button" data-dialog-open="info-role-<?php echo htmlspecialchars($roleKey); ?>" aria-label="Berechtigungen anzeigen" title="Berechtigungen anzeigen">ℹ</button>
+                    <form method="POST" onsubmit="return confirm('Rolle wirklich löschen?');">
+                    <input type="hidden" name="action" value="delete_role">
+                    <input type="hidden" name="role_key" value="<?php echo htmlspecialchars($roleKey); ?>">
+                        <button type="submit" class="icon-button danger" aria-label="Rolle löschen" title="Rolle löschen">🗑</button>
+                    </form>
+                </div>
+            </div>
+
+            <dialog id="info-role-<?php echo htmlspecialchars($roleKey); ?>">
+                <div class="dialog-card">
+                    <div class="dialog-header">
+                        <h2>Berechtigungen</h2>
+                        <button type="button" class="close-button" data-dialog-close>Schließen</button>
+                    </div>
+                    <div class="permission-list">
+                        <?php if (count($rolePermissions) === 0): ?>
+                            <div class="permission-item">Keine Berechtigungen zugeordnet.</div>
+                        <?php else: ?>
+                            <?php foreach ($rolePermissions as $permKey): ?>
+                                <?php
+                                    $permLabel = $permissionMap[$permKey]['label'] ?? $permKey;
+                                    $permDesc = $permissionMap[$permKey]['description'] ?? '';
+                                ?>
+                                <div class="permission-item">
+                                    <?php echo htmlspecialchars($permLabel); ?>
+                                    <?php if ($permDesc): ?>
+                                        <small><?php echo htmlspecialchars($permDesc); ?></small>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                    <div class="permission-list spaced">
+                        <div class="permission-item heading">Kommentar-Limit (pro Nutzer/Projekt)</div>
+                        <div class="permission-item">
+                            <?php echo $roleCommentLimit > 0 ? (int)$roleCommentLimit : 'Unbegrenzt'; ?>
                         </div>
                     </div>
-                </dialog>
+                    <div class="permission-list spaced">
+                        <div class="permission-item heading">Kommentare löschen von Rollen</div>
+                        <?php if (count($roleDeleteRoles) === 0): ?>
+                            <div class="permission-item">Keine Rollen ausgewählt.</div>
+                        <?php else: ?>
+                            <?php foreach ($roleDeleteRoles as $deleteRoleKey): ?>
+                                <?php
+                                    $deleteRoleLabel = $rolesMap[$deleteRoleKey]['label'] ?? $deleteRoleKey;
+                                ?>
+                                <div class="permission-item"><?php echo htmlspecialchars($deleteRoleLabel); ?></div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </dialog>
 
-                <dialog id="edit-role-<?php echo htmlspecialchars($roleKey); ?>">
-                    <div class="dialog-card">
-                        <div class="dialog-header">
-                            <h2>Rolle bearbeiten</h2>
-                            <button type="button" class="close-button" data-dialog-close>Schließen</button>
+            <dialog id="edit-role-<?php echo htmlspecialchars($roleKey); ?>">
+                <div class="dialog-card">
+                    <div class="dialog-header">
+                        <h2>Rolle bearbeiten</h2>
+                        <button type="button" class="close-button" data-dialog-close>Schließen</button>
+                    </div>
+                    <form method="POST" class="role-form" data-role="<?php echo htmlspecialchars($roleKey); ?>">
+                        <input type="hidden" name="action" value="update_role">
+                        <input type="hidden" name="role_key" value="<?php echo htmlspecialchars($roleKey); ?>">
+                        <div class="field">
+                            <label>Anzeigename</label>
+                            <input type="text" name="role_label" value="<?php echo htmlspecialchars($roleLabel); ?>">
                         </div>
-                        <form method="POST" class="role-form" data-role="<?php echo htmlspecialchars($roleKey); ?>">
-                            <input type="hidden" name="action" value="update_role">
-                            <input type="hidden" name="role_key" value="<?php echo htmlspecialchars($roleKey); ?>">
-                            <div class="field">
-                                <label>Anzeigename</label>
-                                <input type="text" name="role_label" value="<?php echo htmlspecialchars($roleLabel); ?>">
-                            </div>
-                            <div class="field">
-                                <label>Berechtigungen</label>
-                                <div class="permissions">
-                                    <?php foreach ($groupedPermissions as $group): ?>
-                                        <div class="permission-group">
-                                            <div class="permission-group-title"><?php echo htmlspecialchars($group['label']); ?></div>
-                                            <?php foreach ($group['items'] as $perm): ?>
-                                                <?php $isChecked = in_array($perm['key'], $rolePermissions, true); ?>
-                                                <label>
-                                                    <input type="checkbox" name="permissions[]" value="<?php echo htmlspecialchars($perm['key']); ?>" <?php echo $isChecked ? 'checked' : ''; ?>>
-                                                    <span>
-                                                        <?php echo htmlspecialchars($perm['label']); ?>
-                                                        <?php if (!empty($perm['description'])): ?>
-                                                            <small><?php echo htmlspecialchars($perm['description']); ?></small>
-                                                        <?php endif; ?>
-                                                    </span>
-                                                </label>
-                                                <?php if ($perm['key'] === 'comment_limit'): ?>
-                                                    <div class="permission-subfield comment-limit-field" data-limit-field>
-                                                        <div class="hint">Nur wirksam mit Berechtigung "Kommentar-Limit". 0 = unbegrenzt.</div>
-                                                        <input type="number" name="comment_limit" min="0" step="1" value="<?php echo (int)$roleCommentLimit; ?>" disabled>
-                                                    </div>
-                                                <?php elseif ($perm['key'] === 'delete_comments'): ?>
-                                                    <div class="permission-subfield">
-                                                        <div class="hint">Gilt nur mit Berechtigung "Kommentare löschen".</div>
-                                                        <div class="role-selector" data-role-selector>
-                                                            <button type="button" class="role-selector-toggle" aria-expanded="false">Rollen auswählen</button>
-                                                            <div class="role-selector-panel" hidden>
-                                                                <div class="role-selector-search">
-                                                                    <input type="text" placeholder="Rollen suchen..." aria-label="Rollen suchen">
-                                                                </div>
-                                                                <label class="role-selector-all">
-                                                                    <input type="checkbox" data-role-select-all>
-                                                                    <span>Alle Rollen auswählen</span>
-                                                                </label>
-                                                                <div class="role-selector-list">
-                                                                    <?php foreach ($roles as $roleItem): ?>
-                                                                        <?php
-                                                                            $targetRoleKey = $roleItem['role'] ?? '';
-                                                                            $targetRoleLabel = $roleItem['label'] ?? $targetRoleKey;
-                                                                            if (!$targetRoleKey) {
-                                                                                continue;
-                                                                            }
-                                                                            $isChecked = in_array($targetRoleKey, $roleDeleteRoles, true);
-                                                                        ?>
-                                                                        <label>
-                                                                            <input type="checkbox" name="comment_delete_roles[]" value="<?php echo htmlspecialchars($targetRoleKey); ?>" <?php echo $isChecked ? 'checked' : ''; ?>>
-                                                                            <span><?php echo htmlspecialchars($targetRoleLabel); ?></span>
-                                                                        </label>
-                                                                    <?php endforeach; ?>
-                                                                </div>
+                        <div class="field">
+                            <label>Berechtigungen</label>
+                            <div class="permissions">
+                                <?php foreach ($groupedPermissions as $group): ?>
+                                    <div class="permission-group">
+                                        <div class="permission-group-title"><?php echo htmlspecialchars($group['label']); ?></div>
+                                        <?php foreach ($group['items'] as $perm): ?>
+                                            <?php $isChecked = in_array($perm['key'], $rolePermissions, true); ?>
+                                            <label>
+                                                <input type="checkbox" name="permissions[]" value="<?php echo htmlspecialchars($perm['key']); ?>" <?php echo $isChecked ? 'checked' : ''; ?>>
+                                                <span>
+                                                    <?php echo htmlspecialchars($perm['label']); ?>
+                                                    <?php if (!empty($perm['description'])): ?>
+                                                        <small><?php echo htmlspecialchars($perm['description']); ?></small>
+                                                    <?php endif; ?>
+                                                </span>
+                                            </label>
+                                            <?php if ($perm['key'] === 'comment_limit'): ?>
+                                                <div class="permission-subfield comment-limit-field" data-limit-field>
+                                                    <div class="hint">Nur wirksam mit Berechtigung "Kommentar-Limit". 0 = unbegrenzt.</div>
+                                                    <input type="number" name="comment_limit" min="0" step="1" value="<?php echo (int)$roleCommentLimit; ?>" disabled>
+                                                </div>
+                                            <?php elseif ($perm['key'] === 'delete_comments'): ?>
+                                                <div class="permission-subfield">
+                                                    <div class="hint">Gilt nur mit Berechtigung "Kommentare löschen".</div>
+                                                    <div class="role-selector" data-role-selector>
+                                                        <button type="button" class="role-selector-toggle" aria-expanded="false">Rollen auswählen</button>
+                                                        <div class="role-selector-panel" hidden>
+                                                            <div class="role-selector-search">
+                                                                <input type="text" placeholder="Rollen suchen..." aria-label="Rollen suchen">
+                                                            </div>
+                                                            <label class="role-selector-all">
+                                                                <input type="checkbox" data-role-select-all>
+                                                                <span>Alle Rollen auswählen</span>
+                                                            </label>
+                                                            <div class="role-selector-list">
+                                                                <?php foreach ($roles as $roleItem): ?>
+                                                                    <?php
+                                                                        $targetRoleKey = $roleItem['role'] ?? '';
+                                                                        $targetRoleLabel = $roleItem['label'] ?? $targetRoleKey;
+                                                                        if (!$targetRoleKey) {
+                                                                            continue;
+                                                                        }
+                                                                        $isChecked = in_array($targetRoleKey, $roleDeleteRoles, true);
+                                                                    ?>
+                                                                    <label>
+                                                                        <input type="checkbox" name="comment_delete_roles[]" value="<?php echo htmlspecialchars($targetRoleKey); ?>" <?php echo $isChecked ? 'checked' : ''; ?>>
+                                                                        <span><?php echo htmlspecialchars($targetRoleLabel); ?></span>
+                                                                    </label>
+                                                                <?php endforeach; ?>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                <?php endif; ?>
-                                            <?php endforeach; ?>
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
+                                                </div>
+                                            <?php endif; ?>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endforeach; ?>
                             </div>
-                            <div class="actions">
-                                <button type="submit" class="save-button" disabled>Speichern</button>
-                            </div>
-                        </form>
-                    </div>
-                </dialog>
-            <?php endforeach; ?>
-        </div>
+                        </div>
+                        <div class="actions">
+                            <button type="submit" class="save-button" disabled>Speichern</button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+        <?php endforeach; ?>
     </div>
-</body>
+<?php }); ?>
 
 <script>
 (() => {

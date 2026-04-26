@@ -173,6 +173,43 @@ export VITE_DEV_SERVER_URL=http://127.0.0.1:5173
 
 Ohne `VITE_DEV_SERVER_URL` lädt die PHP-Seite automatisch das gebaute `react-dist/`.
 
+### Lokales Starten (empfohlen / reproduzierbar)
+
+Die Website besteht aus der klassischen PHP-App (Projektroot) + einem Vite/React-Asset-Build unter `react-dist/`.
+Für ein **stabil gestyltes** Setup ist es am zuverlässigsten, die Assets einmal zu bauen und dann nur den PHP-Server zu starten.
+
+**Variante A (stabil, empfohlen): PHP + gebautes `react-dist/`**
+
+```bash
+cd frontend
+npm install
+npm run build
+
+cd ..
+php -S 127.0.0.1:8080 -t .
+```
+
+Dann öffnen: `http://127.0.0.1:8080/`
+
+**Variante B (Dev/HMR): PHP + Vite Dev-Server**
+
+Terminal 1:
+
+```bash
+cd frontend
+npm run dev -- --host 127.0.0.1 --port 5173
+```
+
+Terminal 2 (PHP):
+
+```bash
+export VITE_DEV_SERVER_URL=http://127.0.0.1:5173
+php -S 127.0.0.1:8080 -t .
+```
+
+Wichtig: Vite ist in `frontend/vite.config.ts` mit `base: '/react-dist/'` konfiguriert. Daher müssen Dev-Assets unter
+`/react-dist/…` erreichbar sein (z. B. `http://127.0.0.1:5173/react-dist/@vite/client`).
+
 2. Sicherstellen, dass MongoDB lokal läuft:
 
 ```text
@@ -354,6 +391,22 @@ Die klassischen Auth-Seiten sind aufgeteilt:
 
 Einladungscodes werden weiterhin in `registration_codes` gespeichert (Einmalverwendung).
 
+### Registrierungscode anfragen (E-Mail-Verifikation + Admin-Freigabe)
+
+Wenn noch kein Registrierungscode vorhanden ist, kann auf `index.php?page=register` eine Anfrage mit **E-Mail-Adresse** gestellt werden.
+Der Ablauf ist:
+
+- Anfrage absenden → es wird ein Bestätigungslink per Mail gesendet (`page=verify_registration_request&token=...`, gültig für 24h)
+- nach Klick auf den Link steht die Anfrage im Admin-Bereich als „verifiziert, warte auf Freigabe“
+- Admin gibt frei → es wird ein Registrierungscode erzeugt und per Mail versendet
+
+Technik:
+
+- Collection: `registration_code_requests` (Token + Metadaten, Verifikation/Freigabe)
+- Admin-Seite: `pages/admin/registration_requests.php`
+- Mailversand: PHP `mail()`; Sender über `MAIL_FROM_EMAIL` (Env). Für Debug wird eine Kopie best-effort nach `logs/mail.log` geschrieben.
+  **Hinweis:** Ein echter E-Mail-Server/MTA ist aktuell **nicht eingerichtet**. Für produktiven Betrieb muss SMTP/Mailversand sauber konfiguriert werden; lokal ist `logs/mail.log` die verlässliche Quelle für Testlinks.
+
 Die Auth-/Invite-Funktionen umfassen:
 
 - Login per E-Mail oder Username
@@ -413,6 +466,8 @@ Datenhaltung:
 Der Admin-Bereich liegt unter `pages/admin/` und umfasst:
 
 - `index.php`
+  - Dashboard (Übersicht + effektive DB-Konfiguration)
+- `db_scripts.php`
   - Ausführung und Einsicht der Datenbankskripte aus `dbScripts/`
 - `roles.php`
   - Rollen anlegen, bearbeiten und löschen
@@ -420,6 +475,14 @@ Der Admin-Bereich liegt unter `pages/admin/` und umfasst:
   - Berechtigungen anlegen, bearbeiten und löschen
 
 Zugriff ist ausschließlich für eingeloggte Nutzer mit Rolle `admin` vorgesehen.
+
+### Admin: Master-Layout + Navigation
+
+Die Admin-Seiten nutzen ein gemeinsames „Rahmen“-Layout in `pages/admin/_layout.php` (Theme-Bootstrap `data-theme`, Vite-Assets, Navigation). Inhaltseiten rendern ihren Body über `admin_render_page(...)`, damit Navigation/Grundstruktur nicht pro Datei dupliziert werden muss.
+
+- Menüpunkte: Dashboard, **DB-Skripte**, Registrierungsanfragen, Rollen, Berechtigungen, Zur Hauptseite
+- Der aktive Menüpunkt wird hervorgehoben (CSS: `.admin-nav a.is-active`)
+- `index.php` zeigt **nur im Dashboard** die effektive DB-Konfiguration (laufender PHP‑Prozess) plus ein paar simple Metriken (z. B. Anzahl `users`/`projects`)
 
 ## Datenbankskripte
 

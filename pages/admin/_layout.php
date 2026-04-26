@@ -1,0 +1,97 @@
+<?php
+
+require_once __DIR__ . '/../../includes/bootstrap.php';
+require_once __DIR__ . '/../../includes/vite_assets.php';
+
+/**
+ * Admin master layout:
+ * - ensures admin session + role
+ * - applies theme bootstrap (data-theme)
+ * - loads Vite assets
+ * - renders a consistent admin navigation frame
+ */
+
+if (!function_exists('admin_require_access')) {
+    function admin_require_access(): void
+    {
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: ../../index.php?page=login');
+            exit();
+        }
+        if (($_SESSION['role'] ?? '') !== 'admin') {
+            die("<h1>Zugriff verweigert</h1><p>Diese Seite ist nur für Administratoren.</p>");
+        }
+    }
+}
+
+if (!function_exists('admin_theme_bootstrap_script')) {
+    function admin_theme_bootstrap_script(): string
+    {
+        return <<<HTML
+<script>
+    (function () {
+        try {
+            var KEY = 'portfolio-theme';
+            var t = localStorage.getItem(KEY);
+            if (t !== 'dark' && t !== 'light') {
+                t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+            document.documentElement.setAttribute('data-theme', t);
+        } catch (e) {
+            document.documentElement.setAttribute('data-theme', 'light');
+        }
+    })();
+</script>
+HTML;
+    }
+}
+
+if (!function_exists('admin_nav_html')) {
+    function admin_nav_html(string $active = ''): string
+    {
+        $items = [
+            'dashboard' => ['href' => 'index.php', 'label' => 'Dashboard'],
+            'db_scripts' => ['href' => 'db_scripts.php', 'label' => 'DB-Skripte'],
+            'registration_requests' => ['href' => 'registration_requests.php', 'label' => 'Registrierungsanfragen'],
+            'roles' => ['href' => 'roles.php', 'label' => 'Rollen'],
+            'permissions' => ['href' => 'permissions.php', 'label' => 'Berechtigungen'],
+            'home' => ['href' => '../../index.php', 'label' => 'Zur Hauptseite'],
+        ];
+
+        $out = '<div class="admin-nav">';
+        foreach ($items as $key => $item) {
+            $isActive = ($key === $active);
+            $class = $isActive ? ' class="is-active"' : '';
+            $out .= '<a href="' . htmlspecialchars($item['href'], ENT_QUOTES, 'UTF-8') . '"' . $class . '>'
+                . htmlspecialchars($item['label'], ENT_QUOTES, 'UTF-8')
+                . '</a>';
+        }
+        $out .= '</div>';
+
+        return $out;
+    }
+}
+
+if (!function_exists('admin_render_page')) {
+    /**
+     * @param callable():void $renderContent
+     */
+    function admin_render_page(string $title, string $activeNav, callable $renderContent): void
+    {
+        admin_require_access();
+        $safeTitle = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+        echo "<!DOCTYPE html>\n<html lang=\"de\">\n<head>\n";
+        echo "    <meta charset=\"UTF-8\">\n";
+        echo "    <title>{$safeTitle}</title>\n";
+        echo admin_theme_bootstrap_script() . "\n";
+        vite_react_assets('src/main.tsx');
+        echo "</head>\n<body class=\"admin-page\">\n";
+        echo "    <div class=\"container\">\n";
+        echo admin_nav_html($activeNav) . "\n";
+        echo "        <hr>\n";
+        $renderContent();
+        echo "    </div>\n";
+        echo "</body>\n</html>\n";
+    }
+}
+

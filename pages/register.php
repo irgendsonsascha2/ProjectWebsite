@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../includes/laravel_app_url.php';
+require_once __DIR__ . '/../includes/mail.php';
 
 $message = '';
 $messageClass = 'alert';
@@ -11,19 +12,6 @@ function site_base_url_from_request(): string {
     $script = (string)($_SERVER['SCRIPT_NAME'] ?? '/index.php');
     $basePath = rtrim(str_replace(basename($script), '', $script), '/');
     return $scheme . '://' . $host . ($basePath !== '' ? $basePath : '');
-}
-
-function send_plain_mail(string $to, string $subject, string $body, ?string $replyTo = null): bool {
-    $from = (string)(getenv('MAIL_FROM_EMAIL') ?: 'no-reply@localhost');
-    $from = trim($from) !== '' ? trim($from) : 'no-reply@localhost';
-    $headers = [];
-    $headers[] = 'MIME-Version: 1.0';
-    $headers[] = 'Content-Type: text/plain; charset=utf-8';
-    $headers[] = 'From: ' . $from;
-    if ($replyTo) {
-        $headers[] = 'Reply-To: ' . $replyTo;
-    }
-    return @mail($to, $subject, $body, implode("\r\n", $headers));
 }
 
 // CSRF für bridge_register.php

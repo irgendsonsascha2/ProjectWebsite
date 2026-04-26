@@ -15,8 +15,11 @@ function vite_react_assets(string $entry = 'src/main.tsx'): void
     $devServer = getenv('VITE_DEV_SERVER_URL');
     if ($devServer) {
         $devServer = rtrim($devServer, '/');
-        echo '<script type="module" src="' . htmlspecialchars($devServer . '/@vite/client', ENT_QUOTES, 'UTF-8') . '"></script>' . PHP_EOL;
-        echo '<script type="module" src="' . htmlspecialchars($devServer . '/' . $entry, ENT_QUOTES, 'UTF-8') . '"></script>' . PHP_EOL;
+        // Vite läuft in diesem Repo mit `base: '/react-dist/'` (siehe `frontend/vite.config.ts`).
+        // In Dev müssen daher auch `@vite/client` und der Entry unter diesem Base-Pfad geladen werden.
+        $basePath = '/react-dist';
+        echo '<script type="module" src="' . htmlspecialchars($devServer . $basePath . '/@vite/client', ENT_QUOTES, 'UTF-8') . '"></script>' . PHP_EOL;
+        echo '<script type="module" src="' . htmlspecialchars($devServer . $basePath . '/' . ltrim($entry, '/'), ENT_QUOTES, 'UTF-8') . '"></script>' . PHP_EOL;
         return;
     }
 

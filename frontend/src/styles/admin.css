@@ -29,6 +29,12 @@
     color: var(--primary-color);
   }
 
+  body.admin-page .admin-nav a.is-active {
+    background: var(--surface-hover);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+  }
+
   body.admin-page hr {
     @apply my-5;
     border: 0;

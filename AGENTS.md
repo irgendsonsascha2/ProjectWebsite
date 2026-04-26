@@ -60,7 +60,11 @@ Wichtige Kernfunktionen des Projekts:
 - `pages/edit_project.php`
   - Projektbearbeitung
 - `pages/admin/index.php`
-  - Admin-Dashboard und DB-Skripte
+  - Admin-Dashboard (DB-Konfig-Überblick, Metriken)
+- `pages/admin/db_scripts.php`
+  - Ausführung der destruktiven `dbScripts/`-Skripte
+- `pages/admin/_layout.php`
+  - gemeinsames Admin-Layout (Nav, Vite-Assets, Theme)
 - `pages/admin/roles.php`
   - Rollenverwaltung
 - `pages/admin/permissions.php`
