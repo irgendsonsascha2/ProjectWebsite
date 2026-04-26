@@ -1,13 +1,19 @@
 # Security Roadmap
 
-## Ausgangslage
+## Aktueller Stand (Kurz)
 
-Der aktuelle Stand des Projekts hat mehrere sicherheitsrelevante Lücken:
+**Stand 2026:** **Schritt 1** (kein direkter öffentlicher Webzugriff auf `dbScripts/`, Laufzeit-Guards) und **Schritt 2** (getrennte Mongo-URIs pro Rolle, Admin-Skripte nur über `ADMIN_DB_URI` / Admin-Pfad) sind in der laufenden App umgesetzt. Details: `docs/current_status.md`.
 
-- `dbScripts/db_init_master.php` ist direkt per URL erreichbar und kann ohne Website-Admin-Authentifizierung ausgeführt werden.
-- Initialisierungs- und Reset-Skripte können Datenbankstruktur und Inhalte verändern, obwohl diese Funktion nur Administratoren vorbehalten sein sollte.
-- Berechtigungen werden aktuell stark in der Website-Logik geprüft, aber noch nicht systematisch in die Datenzugriffslogik gezogen.
-- Accounts haben noch keine Zwei-Faktor-Authentifizierung.
+Offen bzw. nur teilweise erfüllt bleiben u. a. **Schritt 3** (zentrale Autorisierung bei allen relevanten Datenzugriffen), **2FA** und weiteres harte Maßnahmen laut Zielbild unten.
+
+## Ausgangslage (früherer Ist-Stand, teilweise inzwischen adressiert)
+
+Folgendes war zu verschiedenen Zeiten sichtbar; die ersten Punkte betreffen die jetzige Codebasis **nicht mehr** in derselben Form:
+
+- ~~`dbScripts/db_init_master.php` war direkt per URL ausführbar~~ → mit Guard + Admin-Pfad ersetzt (siehe `current_status.md`).
+- ~~Initialisierungs- und Reset-Skripte ohne saubere Admin-Einbettung~~ → nur noch mit Guard / privilegiertem Kanal.
+- Berechtigungen: stark in der Website-Logik, **noch nicht überall** in einer zentralen Datenzugriffsschicht (weiter: Schritt 3).
+- Accounts haben **noch keine** Zwei-Faktor-Authentifizierung.
 
 Da sich die Datenbank noch im Aufbau befindet, dürfen Struktur und Initialisierungslogik angepasst werden, auch wenn dafür bestehende Collections oder Seed-Strukturen geändert werden müssen.
 
@@ -45,6 +51,8 @@ Wichtig: MongoDB-Rollen sind technisch sinnvoll für grobe Rechte auf Datenbank-
 
 ## Schritt 1: Öffentliche DB-Skriptausführung schließen
 
+**Status: umgesetzt** (siehe `docs/current_status.md`).
+
 Ziel:
 
 - `dbScripts/*.php` sollen nicht mehr direkt per URL ausführbar sein.
@@ -63,6 +71,8 @@ Was danach testbar ist:
 - Ausführung über den Admin-Bereich funktioniert nur als eingeloggter Admin.
 
 ## Schritt 2: Technische Datenbankrechte trennen
+
+**Status: umgesetzt** (getrennte URIs, Admin-Pfad für Skripte; Details `current_status.md`).
 
 Ziel:
 
@@ -249,3 +259,7 @@ Bestätigte Entscheidungen:
 - Bei der ersten Anmeldung ist eine E-Mail-Bestätigung erforderlich.
 - Backup-Codes sind verpflichtender Teil der Recovery-Strategie.
 - 2FA ist für alle Benutzer verpflichtend und nicht optional.
+
+## Einordnung: Code-Aufräumen vor Security-Fixing
+
+**Vor** der gezielten Abarbeitung der nummerierten Security-Schritte (insbesondere bevor weitere Sicherheits- und Rechte-Logik tief in die Anwendung gezogen wird) ist vorgesehen, **Code-Aufräumen** zu betreiben: technische Schulden reduzieren, Struktur und Duplikate verkleinern, Konfiguration und Abgrenzung zwischen Laravel- und Legacy-Teil klarer ziehen, lesbare Grenzen und Tests dort festziehen, wo es Security später erleichtert. Ziel ist, die Security-Änderungen auf einer **stabileren, nachvollziehbareren Basis** zu machen und unnötige Merge-Konflikte / Seiteneffekte zu vermeiden. (Details, was genau in welcher Reihenfolge aufgeräumt wird, wird in der praktischen Planung mit dem Codebestand festgelegt; nicht zuletzt überschneidet sich das mit `docs/current_status.md` → Frontend-/CSS-Struktur.)

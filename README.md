@@ -129,6 +129,10 @@ MongoDB ohne Replica Set unterstützt keine DB-Transaktionen wie Laravels `Refre
   - `content/videos`
   - `logs`
 
+## Entwicklung und Deployment (Arbeitsweise)
+
+Bis auf Weiteres wird **ausschließlich lokal** entwickelt und getestet. Ein Einsatz auf einem entfernten Server (Produktion oder Staging) erfolgt **erst**, wenn dafür ausdrücklich entschieden wurde; vorher fokussieren sich Setup, Konfiguration und Features auf die lokale Umgebung.
+
 ## Installation und Start
 
 1. Abhängigkeiten installieren:
@@ -140,6 +144,8 @@ composer install
 ### React/Vite (Styling-Bundling)
 
 Die Website lädt Frontend-Assets aus `react-dist/` über ein Vite-Manifest (`includes/vite_assets.php`).
+Der Ordner **`react-dist/` ist Build-Output und wird nicht ins Repository aufgenommen** — nach einem `git clone` (oder wenn der Build fehlt) unbedingt `cd frontend && npm install && npm run build` ausführen.
+
 Damit kann das Styling schrittweise „über React“ kommen, ohne die PHP-Seiten sofort umzubauen.
 
 **Einmalig installieren & bauen:**
@@ -150,7 +156,14 @@ npm install
 npm run build
 ```
 
-**Dev-Workflow (optional):**
+**HMR-Workflow (optional, nur für Live-Reload der Frontend-Dateien):**
+
+`includes/vite_assets.php` nutzt **standardmäßig ein gebautes** `react-dist/` (nach `npm run build`). HMR (Skripte von Vite statt Build) muss in `.env.local` (Projektroot) **ausdrücklich** eingeschaltet werden, damit bei gesetzter `VITE_DEV_SERVER_URL` kein reines HMR-Setup nötig ist und Styling zuverlässig über `react-dist/` geht.
+
+```text
+VITE_HMR=1
+VITE_DEV_SERVER_URL=http://127.0.0.1:5173
+```
 
 Terminal 1:
 
@@ -159,19 +172,13 @@ cd frontend
 npm run dev -- --host 127.0.0.1 --port 5173
 ```
 
-Terminal 2 (PHP-Server im Projektroot, Beispiel):
+Terminal 2 (PHP im Projektroot, dieselbe Variable muss im PHP-Prozess stehen, z. B. per `.env.local` wie oben):
 
 ```bash
 php -S 127.0.0.1:8080 -t .
 ```
 
-Dann im selben Terminal wie der PHP-Server:
-
-```bash
-export VITE_DEV_SERVER_URL=http://127.0.0.1:5173
-```
-
-Ohne `VITE_DEV_SERVER_URL` lädt die PHP-Seite automatisch das gebaute `react-dist/`.
+Ohne `VITE_HMR=1` reicht `npm run build` — **kein** laufendes Vite, **kein** `VITE_DEV_SERVER_URL` nötig.
 
 ### Lokales Starten (empfohlen / reproduzierbar)
 
@@ -191,24 +198,23 @@ php -S 127.0.0.1:8080 -t .
 
 Dann öffnen: `http://127.0.0.1:8080/`
 
-**Variante B (Dev/HMR): PHP + Vite Dev-Server**
+**Variante B (HMR, optional):** `npm run dev` in `frontend` starten, in `.env.local` zusätzlich `VITE_HMR=1` **und** `VITE_DEV_SERVER_URL=http://127.0.0.1:5173` (Port wie Vite) setzen, dann `php -S` wie oben. Vite ist mit `base: '/react-dist/'` konfiguriert (`frontend/vite.config.ts`); im HMR-Modus müssen `…/react-dist/@vite/client` u. a. **vom Vite-Port** antworten.
 
-Terminal 1:
+### Wenn kein Styling / keine React-Assets (Fehlersuche)
 
-```bash
-cd frontend
-npm run dev -- --host 127.0.0.1 --port 5173
-```
+Die Einbindung steckt in `includes/vite_assets.php` → `vite_react_assets()`.
 
-Terminal 2 (PHP):
+| Modus | Voraussetzung | Was passiert |
+|--------|----------------|--------------|
+| **Standard (empfohlen)** | Kein `VITE_HMR=1` (oder weggelassen) | Es werden die **gebauten** Dateien aus `react-dist/.vite/manifest.json` eingebunden. Voraussetzung: `cd frontend && npm run build` war einmal (oder kürzlich) gelaufen. |
+| **HMR** | In `.env.local` (o. ä.) u. a. `VITE_HMR=1` **und** `VITE_DEV_SERVER_URL=…` (gleiche Portangabe wie `npm run dev`) **und** Vite wirklich gestartet | Skripte kommen von Vite. Läuft Vite nicht oder liefert `/react-dist/@vite/client` kein 200, fällt der Code **automatisch** auf `react-dist/` zurück, sofern ein Build existiert. |
+| **Nur Build erzwingen** | `VITE_USE_BUILT_ASSETS=1` in der Umgebung | Es werden **nur** Manifest-Dateien genutzt (z. B. für Tests/CI), nie Dev-Skripte. |
 
-```bash
-export VITE_DEV_SERVER_URL=http://127.0.0.1:5173
-php -S 127.0.0.1:8080 -t .
-```
+Typische Fälle ohne Styling:
 
-Wichtig: Vite ist in `frontend/vite.config.ts` mit `base: '/react-dist/'` konfiguriert. Daher müssen Dev-Assets unter
-`/react-dist/…` erreichbar sein (z. B. `http://127.0.0.1:5173/react-dist/@vite/client`).
+1. **Kein Build:** Wenn `react-dist/.vite/manifest.json` fehlt, kommen **keine** Link-/Script-Tags (still). *Lösung:* `cd frontend && npm run build`.
+2. **Nur alte Doku/Shell:** Früher wurde oft `VITE_DEV_SERVER_URL` **ohne** laufendes Vite benutzt. Jetzt reicht: **HMR** nur mit `VITE_HMR=1` **oder** ganz weglassen und nur per Build arbeiten.
+3. **HMR an, Vite aus:** Dann Anzeige meist trotzdem per Fallback aus `react-dist/`, sofern gebaut. Ohne Build bleibt die Seite ungestylt.
 
 2. Sicherstellen, dass MongoDB lokal läuft:
 

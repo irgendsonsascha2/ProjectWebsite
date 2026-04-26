@@ -1,1 +1,0 @@
-{"root":["./src/main.tsx","./src/components/ThemeToggle.tsx","./src/features/account/InviteCodes.tsx","./src/features/projectDetail/MediaLightbox.tsx","./src/ui/Button.tsx","./src/ui/Card.tsx","./src/ui/CopyButton.tsx","./src/ui/CopyField.tsx","./src/ui/Modal.tsx","./src/ui/toast.tsx"],"version":"5.9.3"}

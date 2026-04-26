@@ -1,5 +1,7 @@
 # Current Status
 
+**Hinweis (Arbeitsweise):** Es wird vorerst **nur lokal** weiterentwickelt; ein Deployment auf einen Server steht an, sobald dafür ausdrücklich entschieden wurde (siehe auch `README.md` → *Entwicklung und Deployment (Arbeitsweise)*).
+
 ## Stand vom 2026-04-01
 
 Aktueller Blocker bei der Sicherheits- und MongoDB-Umstellung:
@@ -91,6 +93,12 @@ Minimaler v1-Umfang (geplant):
 - **Draft/Publish konsistent**: Status + `published_at` für Seiten und (falls noch uneinheitlich) Projekte.
 - **Medienbibliothek**: Metadaten (alt, type, owner, timestamps), Wiederverwendung, Aufräumen/Löschen, Referenzen zu Projekten/Seiten.
 - **Permissions**: `content_manager` darf Content/Projekte/Medien, aber keine DB-Skripte/Rollenverwaltung; `admin` darf alles.
+
+## Backlog (kurz, ehemals `PLAN.md` im Root)
+
+- Admin-Zugangsprozess: klarer Workflow/Anfrage an Admin für Zugangsdaten oder Freigabe.
+- Registrierung / E-Mail: SMTP und Templates produktionsreif (siehe auch `includes/mail.php` / Konfiguration).
+- Responsive Pass, 2FA, Sicherheits-Review und Deployment: parallel zu `security_roadmap.md` und den offenen UI-Punkten oben.
 
 ## Nächster sinnvoller Einstieg
 

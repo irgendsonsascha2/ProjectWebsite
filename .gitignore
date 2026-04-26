@@ -10,6 +10,14 @@ logs/
 ## Node/Frontend build artifacts
 frontend/node_modules/
 frontend/.vite/
+frontend/tsconfig.tsbuildinfo
+
+## Vite output (im Repo nicht versionieren — nach Klon/Änderung: `cd frontend && npm run build`)
+react-dist/
+
+## Upload-Scratch (Runtime; optional .gitkeep behalten)
+content/tmp/**
+!content/tmp/.gitkeep
 
 ## Local env overrides (contain secrets)
 .env.local

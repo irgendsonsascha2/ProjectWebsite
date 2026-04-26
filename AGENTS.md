@@ -32,6 +32,31 @@ Wichtige Kernfunktionen des Projekts:
 - Medien lokal unter `content/images` und `content/videos`
 - **parallel:** Verzeichnis **`laravel/`** — Laravel (MongoDB über `mongodb/laravel-mongodb`) übernimmt **Auth-Logik** (Login/Register/Passwort/Verifizierung); die klassische Website bleibt Router + Seiten + `$_SESSION` nach **Handoff**.
 
+## Lokaler Start: Server, Website, Styling (React/Vite)
+
+Damit die klassische PHP-Seite sichtbares Styling (Tailwind/React-Bundle aus `react-dist/`, Einbindung über `includes/vite_assets.php`) bekommt:
+
+**Empfohlen: nur PHP-Dev-Server + einmaliger Frontend-Build**
+
+1. Eine gültige **`.env.local`** im **Projektroot** (lokal, nicht committen) mit den MongoDB-URIs, siehe `README.md`.
+2. **Frontend bauen** (erzeugt `react-dist/` inkl. `manifest.json` und CSS/JS-Hashes; der Ordner ist **kein** Git-Bestandteil — nach Klon o. ä. zwingend bauen):
+   - `cd frontend && npm install && npm run build`
+3. **PHP eingebauten Server** im **Projektroot** starten:
+   - `php -S 127.0.0.1:8080 -t .`
+4. Im Browser öffnen: `http://127.0.0.1:8080/` (Host einheitlich **127.0.0.1** verwenden, nicht wahlweise `localhost` mischen, siehe Doku)
+
+**Optional: HMR (Vite-Dev) für schnellere Frontend-Iteration**
+
+1. In **`.env.local`**: `VITE_HMR=1` und `VITE_DEV_SERVER_URL=http://127.0.0.1:5173` (Port wie Vite; Variable muss im PHP-Prozess landen, dafür reicht die Datei, sie wird über `includes/db.php` geladen).
+2. **Terminals:** zuerst Vite, dann PHP:
+   - `cd frontend && npm run dev -- --host 127.0.0.1 --port 5173`
+   - im Projektroot: `php -S 127.0.0.1:8080 -t .`
+3. Wenn HMR Probleme macht, HMR-Variablen in `.env.local` entfernen bzw. auskommentieren und mit **nur** `npm run build` (ohne laufendes Vite) arbeiten.
+
+`includes/vite_assets.php` sorgt dafür, dass bei aktivem HMR zusätzlich die **per Manifest gebundenen** Stylesheets aus `react-dist/` eingebunden werden, damit die Seite nicht „nackt“ bleibt, falls Vite-Module nicht zuverlässig laden. Ausführlichere Begründung und Fehlersuche: `README.md` (Abschnitt React/Vite und „Wenn kein Styling“).
+
+**Laravel-Auth-App (getrennt):** Eigener Start über `laravel/`, `php artisan serve` bzw. wie in `README.md` beschrieben; nicht mit dem obigen `php -S` verwechseln.
+
 ## Hybrid-Authentifizierung (Laravel)
 
 - **`bridge_auth.php`** / **`bridge_register.php`** (Projektroot): laden Laravel, prüfen Credentials bzw. **`RegisterInvitedUser`**, danach Redirect über **`LegacySiteHandoff`** zu **`laravel_handoff.php`** (HMAC), dort wird dieselbe PHP-Session wie früher gesetzt.
