@@ -10,6 +10,12 @@
   --text-on-primary: #ffffff;
   --accent-color: #f59e0b;
 
+  /* Code / pre blocks (used in admin + dialogs) */
+  --code-bg: #f1f5f9;
+  --code-fg: #0f172a;
+  --code-border: #e2e8f0;
+  --code-success-fg: #065f46;
+
   /* Danger (z. B. FAB "löschen") */
   --danger-fab-fg: #ffffff;
   --danger-fab-bg: linear-gradient(135deg, #ef4444, #b91c1c);
@@ -49,6 +55,11 @@ html[data-theme="dark"] {
   --text-main: #f1f5f9;
   --text-on-primary: #ffffff;
   --accent-color: #fbbf24;
+
+  --code-bg: #0b1220;
+  --code-fg: #e5e7eb;
+  --code-border: #475569;
+  --code-success-fg: #a7f3d0;
 
   /* Danger (im Darkmode etwas weniger „glühend“) */
   --danger-fab-fg: #ffffff;

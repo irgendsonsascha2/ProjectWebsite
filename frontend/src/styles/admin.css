@@ -66,6 +66,9 @@
   body.admin-page .container form button[type='submit'] {
     background: var(--text-main) !important;
     color: var(--bg-color) !important;
+    padding-inline: 1rem;
+    padding-block: 0.5rem;
+    border-radius: 9999px;
     margin-top: 0;
   }
 
@@ -118,9 +121,9 @@
 
   body.admin-page .output {
     @apply mt-6 rounded-2xl border p-4 text-sm;
-    background: color-mix(in srgb, #0b1220 88%, var(--card-bg));
+    background: color-mix(in srgb, var(--code-bg) 92%, var(--card-bg));
     border-color: var(--border-subtle);
-    color: #a7f3d0;
+    color: var(--code-success-fg);
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
       monospace;
     white-space: pre-wrap;
@@ -186,15 +189,20 @@
 
   body.admin-page .code-block {
     @apply rounded-2xl border p-4 text-sm;
-    background: #0b1220;
-    border-color: var(--border-subtle);
-    color: #e5e7eb;
+    background: var(--code-bg);
+    border-color: var(--code-border);
+    color: var(--code-fg);
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
       monospace;
     white-space: pre-wrap;
     max-height: 60vh;
     overflow: auto;
     overscroll-behavior: contain;
+  }
+
+  body.admin-page .code-block pre {
+    margin: 0;
+    color: inherit;
   }
 
   /* Prevent scroll chaining to the page when dialogs are open */
