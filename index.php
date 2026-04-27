@@ -102,6 +102,8 @@ if ($isAjax) {
         ?>
     </main>
 
+    <div id="react-root" data-page="<?php echo htmlspecialchars($safe_page, ENT_QUOTES, 'UTF-8'); ?>"></div>
+
     <footer class="site-footer" role="contentinfo">
         <div class="site-footer__inner">
             <a href="index.php?page=impressum">Impressum</a>
@@ -111,8 +113,6 @@ if ($isAjax) {
             <a href="index.php?page=nutzungsbedingungen">Nutzungsbedingungen</a>
         </div>
     </footer>
-
-    <div id="react-root" data-page="<?php echo htmlspecialchars($safe_page, ENT_QUOTES, 'UTF-8'); ?>"></div>
 
     <script src="<?php echo $asset('js/media-skeleton.js'); ?>" defer></script>
 </body>
