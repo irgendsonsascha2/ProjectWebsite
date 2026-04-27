@@ -40,12 +40,19 @@ if (! $privacyOk) {
     exit;
 }
 
+$contentOk = isset($_POST['content_responsibility_consent_register']) && (string) $_POST['content_responsibility_consent_register'] === '1';
+if (! $contentOk) {
+    header('Location: index.php?page=register&err=content');
+    exit;
+}
+
 $data = [
     'registration_code' => trim((string) ($_POST['reg_code'] ?? '')),
     'username' => (string) ($_POST['username'] ?? ''),
     'email' => (string) ($_POST['email'] ?? ''),
     'password' => (string) ($_POST['password'] ?? ''),
     'password_confirmation' => (string) ($_POST['password_confirmation'] ?? $_POST['password'] ?? ''),
+    'content_responsibility_consent' => true,
 ];
 
 try {

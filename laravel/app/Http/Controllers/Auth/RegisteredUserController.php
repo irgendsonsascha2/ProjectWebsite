@@ -33,6 +33,7 @@ class RegisteredUserController extends Controller
             'email',
             'password',
             'password_confirmation',
+            'content_responsibility_consent',
         ]));
 
         Auth::login($user);

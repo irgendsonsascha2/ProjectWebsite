@@ -42,6 +42,20 @@
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
         </div>
 
+        <div class="mt-4">
+            <label class="flex items-start gap-2 text-sm text-gray-700">
+                <input type="checkbox" name="content_responsibility_consent" value="1" required class="mt-1 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                <span>
+                    Ich habe die
+                    <a class="underline" href="{{ (config('legacy.site_url') ? config('legacy.site_url') : '') }}/index.php?page=nutzungsbedingungen" target="_blank" rel="noopener noreferrer">
+                        Nutzungsbedingungen
+                    </a>
+                    gelesen und übernehme die Verantwortung für Inhalte, die ich hochlade oder kommentiere.
+                </span>
+            </label>
+            <x-input-error :messages="$errors->get('content_responsibility_consent')" class="mt-2" />
+        </div>
+
         <div class="flex items-center justify-end mt-4">
             <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('login') }}">
                 {{ __('Bereits registriert?') }}

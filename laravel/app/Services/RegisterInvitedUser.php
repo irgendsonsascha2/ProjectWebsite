@@ -26,6 +26,7 @@ class RegisterInvitedUser
             'username' => ['required', 'string', 'regex:/^[a-z0-9._-]{3,20}$/'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'content_responsibility_consent' => ['accepted'],
         ])->validate();
 
         $code = strtoupper(trim($validated['registration_code']));
@@ -55,6 +56,7 @@ class RegisterInvitedUser
             'password' => $validated['password'],
             'role' => $validCode->role,
             'created_at' => now(),
+            'content_responsibility_consent_at' => now(),
         ]);
 
         $validCode->update(['is_used' => true]);

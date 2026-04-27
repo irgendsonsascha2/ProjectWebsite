@@ -48,6 +48,10 @@ if (isset($_GET['err']) && $_GET['err'] === 'privacy') {
     $message = '❌ Bitte bestätige den Datenschutz-Hinweis, um fortzufahren.';
     $messageClass = 'alert alert--error';
 }
+if (isset($_GET['err']) && $_GET['err'] === 'content') {
+    $message = '❌ Bitte bestätige die Nutzungsbedingungen, um fortzufahren.';
+    $messageClass = 'alert alert--error';
+}
 if (isset($_GET['err']) && $_GET['err'] === 'throttle') {
     $w = isset($_GET['wait']) ? (int) $_GET['wait'] : 0;
     $message = $w > 0
@@ -165,6 +169,12 @@ if (isset($_SESSION['user_id'])) {
                 <input type="checkbox" name="privacy_consent_register" value="1" required>
                 <span class="privacy-consent__text">
                     Ich habe die&nbsp;<a href="index.php?page=datenschutz">Datenschutzerklärung</a>&nbsp;gelesen und bin mit der Verarbeitung meiner Daten für die Registrierung einverstanden.
+                </span>
+            </label>
+            <label class="privacy-consent">
+                <input type="checkbox" name="content_responsibility_consent_register" value="1" required>
+                <span class="privacy-consent__text">
+                    Ich habe die&nbsp;<a href="index.php?page=nutzungsbedingungen">Nutzungsbedingungen</a>&nbsp;gelesen und übernehme die Verantwortung für Inhalte, die ich hochlade oder kommentiere.
                 </span>
             </label>
             <button type="submit" name="register">Konto erstellen</button>

@@ -78,5 +78,27 @@
   .container form.code-form > :not([hidden]) ~ :not([hidden]) {
     margin-top: 0 !important;
   }
+
+  .site-footer {
+    @apply mt-10 border-t;
+    border-color: var(--border-subtle);
+    background: color-mix(in srgb, var(--card-bg) 92%, var(--surface-muted));
+  }
+
+  .site-footer__inner {
+    @apply mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-2 px-4 py-6 text-sm;
+    color: var(--secondary-color);
+  }
+
+  .site-footer__inner a {
+    color: inherit;
+    text-decoration: none;
+    @apply rounded-full px-2 py-1 font-semibold;
+  }
+
+  .site-footer__inner a:hover {
+    background: var(--surface-hover);
+    color: var(--primary-color);
+  }
 }
 

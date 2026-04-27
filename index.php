@@ -75,7 +75,6 @@ if ($isAjax) {
         <div class="nav-main">
             <a href="index.php">Start</a>
             <a href="index.php?page=project_grid">Projekte</a>
-            <a href="index.php?page=impressum">Impressum</a>
             <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
                 <a href="pages/admin/index.php" style="color: red;">Admin</a>
             <?php endif; ?>
@@ -102,6 +101,16 @@ if ($isAjax) {
         }
         ?>
     </main>
+
+    <footer class="site-footer" role="contentinfo">
+        <div class="site-footer__inner">
+            <a href="index.php?page=impressum">Impressum</a>
+            <span aria-hidden="true">·</span>
+            <a href="index.php?page=datenschutz">Datenschutz</a>
+            <span aria-hidden="true">·</span>
+            <a href="index.php?page=nutzungsbedingungen">Nutzungsbedingungen</a>
+        </div>
+    </footer>
 
     <div id="react-root" data-page="<?php echo htmlspecialchars($safe_page, ENT_QUOTES, 'UTF-8'); ?>"></div>
 
