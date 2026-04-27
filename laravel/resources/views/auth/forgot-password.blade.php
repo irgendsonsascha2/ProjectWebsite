@@ -1,23 +1,39 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Passwort vergessen</title>
-</head>
-<body>
-<h1>Passwort-Link anfordern</h1>
-@if (session('status'))
-    <p>{{ session('status') }}</p>
-@endif
-@if ($errors->any())
-    <ul>@foreach ($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
-@endif
-<form method="POST" action="{{ route('password.email') }}">
-    @csrf
-    <label>E-Mail <input type="email" name="email" value="{{ old('email') }}" required autofocus></label>
-    <button type="submit">Link senden</button>
-</form>
-<p><a href="{{ route('login') }}">Zurück zum Login</a></p>
-</body>
-</html>
+<x-guest-layout>
+    <div class="mb-4 text-sm text-gray-600">
+        {{ __('Passwort vergessen? Kein Problem. Gib deine E-Mail-Adresse an und wir senden dir einen Link zum Zurücksetzen.') }}
+    </div>
+
+    <x-auth-session-status class="mb-4" :status="session('status')" />
+
+    <form method="POST" action="{{ route('password.email') }}">
+        @csrf
+
+        <div>
+            <x-input-label for="email" :value="__('E-Mail')" />
+            <x-text-input
+                id="email"
+                class="block mt-1 w-full"
+                type="email"
+                name="email"
+                :value="old('email')"
+                required
+                autofocus
+                autocomplete="email"
+            />
+            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+        </div>
+
+        <div class="flex items-center justify-end mt-4">
+            <a
+                class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                href="{{ route('login') }}"
+            >
+                {{ __('Zurück zum Login') }}
+            </a>
+
+            <x-primary-button class="ms-4">
+                {{ __('Link senden') }}
+            </x-primary-button>
+        </div>
+    </form>
+</x-guest-layout>
