@@ -1,39 +1,44 @@
 <x-guest-layout>
-    <div class="mb-4 text-sm text-gray-600">
-        {{ __('Passwort vergessen? Kein Problem. Gib deine E-Mail-Adresse an und wir senden dir einen Link zum Zurücksetzen.') }}
-    </div>
+    <h1>Passwort vergessen</h1>
 
-    <x-auth-session-status class="mb-4" :status="session('status')" />
+    <p class="field-hint" style="margin-bottom:1rem;">
+        Gib deine E-Mail-Adresse an. Wir senden dir einen Link zum Zurücksetzen deines Passworts.
+    </p>
+
+    @if (session('status'))
+        <div class="alert">{{ session('status') }}</div>
+    @endif
+
+    @if ($errors->any())
+        <div class="alert">
+            <div style="margin-bottom:0.5rem;"><b>❌ Bitte prüfe deine Eingabe:</b></div>
+            <ul style="margin:0; padding-left:1.25rem;">
+                @foreach ($errors->all() as $e)
+                    <li>{{ $e }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
     <form method="POST" action="{{ route('password.email') }}">
         @csrf
 
-        <div>
-            <x-input-label for="email" :value="__('E-Mail')" />
-            <x-text-input
-                id="email"
-                class="block mt-1 w-full"
-                type="email"
-                name="email"
-                :value="old('email')"
-                required
-                autofocus
-                autocomplete="email"
-            />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
-        </div>
+        <input
+            type="email"
+            name="email"
+            placeholder="E-Mail Adresse"
+            value="{{ old('email') }}"
+            required
+            autofocus
+            autocomplete="email"
+        >
 
-        <div class="flex items-center justify-end mt-4">
-            <a
-                class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                href="{{ route('login') }}"
-            >
-                {{ __('Zurück zum Login') }}
-            </a>
-
-            <x-primary-button class="ms-4">
-                {{ __('Link senden') }}
-            </x-primary-button>
-        </div>
+        <button type="submit">Link senden</button>
     </form>
+
+    <hr class="account-divider">
+
+    <p class="field-hint">
+        <a href="{{ route('login') }}">Zurück zum Login</a>
+    </p>
 </x-guest-layout>
