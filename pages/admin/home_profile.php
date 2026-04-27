@@ -182,19 +182,6 @@ admin_render_page('Startseite', 'home_profile', function () use ($notice, $error
         <div class="alert success"><?php echo htmlspecialchars($notice, ENT_QUOTES, 'UTF-8'); ?></div>
     <?php endif; ?>
 
-    <div class="admin-card">
-        <h2>Vorschau</h2>
-        <div class="code-block">
-            <pre><?php echo htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8'); ?> — <?php echo htmlspecialchars($kicker, ENT_QUOTES, 'UTF-8'); ?></pre>
-        </div>
-        <div class="home-profile-preview">
-            <img class="home-profile-avatar" src="<?php echo htmlspecialchars($portraitUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="Portrait" width="96" height="96">
-            <div class="home-profile-preview-text">
-                <div class="hint"><?php echo nl2br(htmlspecialchars($lead, ENT_QUOTES, 'UTF-8')); ?></div>
-            </div>
-        </div>
-    </div>
-
     <div class="admin-card admin-card--spaced">
         <h2>Bearbeiten</h2>
         <form method="POST" enctype="multipart/form-data">

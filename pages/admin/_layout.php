@@ -63,13 +63,13 @@ if (!function_exists('admin_nav_html')) {
     function admin_nav_html(string $active = ''): string
     {
         $items = [
+            'home' => ['href' => '../../index.php', 'label' => 'Zur Hauptseite'],
             'dashboard' => ['href' => 'index.php', 'label' => 'Dashboard'],
             'home_profile' => ['href' => 'home_profile.php', 'label' => 'Startseite'],
             'db_scripts' => ['href' => 'db_scripts.php', 'label' => 'DB-Skripte'],
             'registration_requests' => ['href' => 'registration_requests.php', 'label' => 'Registrierungsanfragen'],
             'roles' => ['href' => 'roles.php', 'label' => 'Rollen'],
             'permissions' => ['href' => 'permissions.php', 'label' => 'Berechtigungen'],
-            'home' => ['href' => '../../index.php', 'label' => 'Zur Hauptseite'],
         ];
 
         $out = '<div class="admin-nav">';
