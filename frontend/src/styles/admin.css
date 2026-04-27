@@ -45,6 +45,23 @@
     @apply my-4 flex justify-end;
   }
 
+  body.admin-page .alert {
+    @apply mb-4 rounded-2xl border px-4 py-3 text-sm;
+    background: var(--surface-muted);
+    color: var(--text-main);
+    border-color: var(--border-subtle);
+  }
+
+  body.admin-page .alert.success {
+    border-color: color-mix(in srgb, #10b981 40%, var(--border-subtle) 60%);
+    background: color-mix(in srgb, #10b981 12%, var(--surface-muted) 88%);
+  }
+
+  body.admin-page .alert.error {
+    border-color: color-mix(in srgb, #ef4444 40%, var(--border-subtle) 60%);
+    background: color-mix(in srgb, #ef4444 10%, var(--surface-muted) 90%);
+  }
+
   body.admin-page button,
   body.admin-page .dialog-button {
     @apply inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold;
@@ -117,6 +134,51 @@
 
   body.admin-page .script-actions {
     @apply flex flex-wrap items-center gap-2;
+  }
+
+  body.admin-page .admin-card {
+    @apply rounded-2xl border p-4;
+    background: var(--surface-muted);
+    border-color: var(--border-subtle);
+  }
+
+  body.admin-page .admin-card.admin-card--spaced {
+    @apply mt-4;
+  }
+
+  body.admin-page .home-profile-preview {
+    @apply mt-3 flex flex-wrap items-center gap-4;
+  }
+
+  body.admin-page .home-profile-avatar {
+    width: 96px;
+    height: 96px;
+    border-radius: 9999px;
+    object-fit: cover;
+    border: 1px solid var(--border-subtle);
+    background: var(--card-bg);
+  }
+
+  body.admin-page .home-profile-preview-text {
+    min-width: min(420px, 100%);
+  }
+
+  body.admin-page .checkbox-row {
+    @apply flex items-start gap-2 rounded-xl border px-3 py-2 text-sm;
+    background: color-mix(in srgb, var(--surface-muted) 72%, var(--card-bg));
+    border-color: var(--border-subtle);
+    font-weight: 500;
+  }
+
+  body.admin-page .checkbox-row input[type='checkbox'] {
+    margin-top: 0.2rem;
+    flex: 0 0 auto;
+  }
+
+  body.admin-page .checkbox-row code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+      monospace;
+    font-size: 0.85em;
   }
 
   body.admin-page .output {
@@ -275,6 +337,10 @@
   body.admin-page label {
     @apply mb-1 block text-sm font-semibold;
     color: var(--text-main);
+  }
+
+  body.admin-page label.checkbox-row {
+    margin-bottom: 0;
   }
 
   body.admin-page input[type='text'],

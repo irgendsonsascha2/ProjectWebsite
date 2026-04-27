@@ -9,16 +9,7 @@ $allowedRoles = ['admin', 'content_manager'];
 
 function home_profile_default_portrait_src(): string
 {
-    $base = realpath(__DIR__ . '/../../img');
-    if (!$base) {
-        return 'img/placeholder.svg';
-    }
-    foreach (['portrait.jpg', 'portrait.png', 'portrait.webp'] as $f) {
-        if (is_file($base . '/' . $f)) {
-            return 'img/' . $f;
-        }
-    }
-    return 'img/placeholder.svg';
+    return 'img/profile-placeholder.svg';
 }
 
 function is_safe_image_path(string $path): bool
@@ -70,10 +61,10 @@ try {
 }
 
 // Defaults (falls noch nicht initialisiert)
-$displayName = (string)($doc['display_name'] ?? 'Sascha Fähling');
-$kicker = (string)($doc['kicker'] ?? 'Softwareentwicklung mit C# / .NET');
-$lead = (string)($doc['lead'] ?? "Softwareentwickler mit mehrjähriger Praxiserfahrung im Rahmen eines dualen Informatikstudiums (B.Sc.).\nSchwerpunkt auf datenbankgestützter Systementwicklung und Weiterentwicklung unternehmensinterner\nCRM- und ERP-Softwarelösungen.");
-$body = (string)($doc['body'] ?? "Neben dem Beruf entwickle ich diese Website und weitere eigene Projekte, betreibe einen Heimserver,\nproduziere Musik mit FL Studio und trainiere Krafttraining im Gym. Vertiefende Arbeiten und Medien\nsind in der Projektgalerie zusammengefasst.");
+$displayName = (string)($doc['display_name'] ?? 'Dein Name');
+$kicker = (string)($doc['kicker'] ?? 'Deine Position / Spezialisierung');
+$lead = (string)($doc['lead'] ?? "Kurze Beschreibung.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.");
+$body = (string)($doc['body'] ?? "Langer Text.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam.\n\nSed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum. Praesent mauris.");
 $portraitUrl = (string)($doc['portrait_url'] ?? '');
 if ($portraitUrl === '' || !is_safe_image_path($portraitUrl)) {
     $portraitUrl = home_profile_default_portrait_src();
@@ -196,15 +187,15 @@ admin_render_page('Startseite', 'home_profile', function () use ($notice, $error
         <div class="code-block">
             <pre><?php echo htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8'); ?> — <?php echo htmlspecialchars($kicker, ENT_QUOTES, 'UTF-8'); ?></pre>
         </div>
-        <div style="margin-top: 0.75rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-            <img src="<?php echo htmlspecialchars($portraitUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="Portrait" width="96" height="96" style="border-radius: 9999px; object-fit: cover;">
-            <div style="min-width: 240px;">
+        <div class="home-profile-preview">
+            <img class="home-profile-avatar" src="<?php echo htmlspecialchars($portraitUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="Portrait" width="96" height="96">
+            <div class="home-profile-preview-text">
                 <div class="hint"><?php echo nl2br(htmlspecialchars($lead, ENT_QUOTES, 'UTF-8')); ?></div>
             </div>
         </div>
     </div>
 
-    <div class="admin-card" style="margin-top: 1rem;">
+    <div class="admin-card admin-card--spaced">
         <h2>Bearbeiten</h2>
         <form method="POST" enctype="multipart/form-data">
             <input type="hidden" name="action" value="save_home_profile">
@@ -236,9 +227,9 @@ admin_render_page('Startseite', 'home_profile', function () use ($notice, $error
             </div>
 
             <div class="field">
-                <label>
+                <label class="checkbox-row">
                     <input type="checkbox" name="delete_portrait" value="1">
-                    Portrait zurücksetzen (DB‑Portrait löschen, Fallback auf `img/portrait.*`)
+                    <span>Portrait zurücksetzen (DB‑Portrait löschen, Fallback auf <code>img/portrait.*</code>)</span>
                 </label>
             </div>
 

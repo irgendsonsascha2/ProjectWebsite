@@ -1,13 +1,7 @@
 <?php
 function home_profile_default_portrait_src(): string
 {
-    $base = __DIR__ . '/../img/';
-    foreach (['portrait.jpg', 'portrait.png', 'portrait.webp'] as $f) {
-        if (is_file($base . $f)) {
-            return 'img/' . $f;
-        }
-    }
-    return 'img/placeholder.svg';
+    return 'img/profile-placeholder.svg';
 }
 
 function is_safe_home_image_path(string $path): bool
@@ -25,14 +19,14 @@ function is_safe_home_image_path(string $path): bool
     return strpos($path, 'content/images/') === 0 || strpos($path, 'img/') === 0;
 }
 
-$displayName = 'Sascha Fähling';
-$kicker = 'Softwareentwicklung mit C# / .NET';
-$lead = "Softwareentwickler mit mehrjähriger Praxiserfahrung im Rahmen eines dualen Informatikstudiums (B.Sc.).\nSchwerpunkt auf datenbankgestützter Systementwicklung und Weiterentwicklung unternehmensinterner\nCRM- und ERP-Softwarelösungen.";
-$body = "Neben dem Beruf entwickle ich diese Website und weitere eigene Projekte, betreibe einen Heimserver,\nproduziere Musik mit FL Studio und trainiere Krafttraining im Gym. Vertiefende Arbeiten und Medien\nsind in der Projektgalerie zusammengefasst.";
+$displayName = 'Dein Name';
+$kicker = 'Deine Position / Spezialisierung';
+$lead = "Kurze Beschreibung.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
+$body = "Langer Text.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam.\n\nSed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum. Praesent mauris.";
 $portraitSrc = home_profile_default_portrait_src();
 
 try {
-    if (isset($db) && isset($db->site_pages)) {
+    if (isset($db)) {
         $doc = $db->site_pages->findOne(['_id' => 'home_profile']);
         if ($doc) {
             if (isset($doc['display_name']) && is_string($doc['display_name']) && trim($doc['display_name']) !== '') {
@@ -87,3 +81,16 @@ try {
         <a class="home-cta" href="index.php?page=project_grid">Zur Projektgalerie</a>
     </div>
 </section>
+
+<?php
+// Floating edit button like project_detail (admin/content_manager only)
+$isLoggedIn = isset($_SESSION['user_id']);
+$role = (string)($_SESSION['role'] ?? '');
+$canEditHome = $isLoggedIn && in_array($role, ['admin', 'content_manager'], true);
+?>
+
+<?php if ($canEditHome): ?>
+  <a href="pages/admin/home_profile.php" class="fab fab-edit" title="Startseite bearbeiten" aria-label="Startseite bearbeiten">
+    <?php echo svg_icon_pencil(22); ?>
+  </a>
+<?php endif; ?>

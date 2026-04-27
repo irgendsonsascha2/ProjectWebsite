@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" role="img" aria-label="Profil-Platzhalter">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f8fafc"/>
+      <stop offset="1" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="32%" r="70%">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ink" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#94a3b8"/>
+      <stop offset="1" stop-color="#64748b"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="800" height="800" fill="url(#bg)"/>
+  <rect width="800" height="800" fill="url(#glow)"/>
+
+  <!-- modern silhouette (no extra frame inside the image) -->
+  <circle cx="400" cy="325" r="118" fill="url(#ink)" fill-opacity="0.95"/>
+  <path
+    d="M110 800c34-164 170-272 290-272s256 108 290 272"
+    fill="url(#ink)"
+    fill-opacity="0.9"
+  />
+</svg>
+

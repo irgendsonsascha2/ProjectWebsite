@@ -42,10 +42,10 @@ try {
 
     $db->site_pages->insertOne([
         '_id' => 'home_profile',
-        'display_name' => 'Sascha Fähling',
-        'kicker' => 'Softwareentwicklung mit C# / .NET',
-        'lead' => "Softwareentwickler mit mehrjähriger Praxiserfahrung im Rahmen eines dualen Informatikstudiums (B.Sc.).\nSchwerpunkt auf datenbankgestützter Systementwicklung und Weiterentwicklung unternehmensinterner\nCRM- und ERP-Softwarelösungen.",
-        'body' => "Neben dem Beruf entwickle ich diese Website und weitere eigene Projekte, betreibe einen Heimserver,\nproduziere Musik mit FL Studio und trainiere Krafttraining im Gym. Vertiefende Arbeiten und Medien\nsind in der Projektgalerie zusammengefasst.",
+        'display_name' => 'Dein Name',
+        'kicker' => 'Deine Position / Spezialisierung',
+        'lead' => "Kurze Beschreibung.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        'body' => "Langer Text.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam.\n\nSed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum. Praesent mauris.",
         'portrait_url' => '',
         'created_at' => $now,
         'updated_at' => $now,
