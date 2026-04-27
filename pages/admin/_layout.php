@@ -62,15 +62,35 @@ HTML;
 if (!function_exists('admin_nav_html')) {
     function admin_nav_html(string $active = ''): string
     {
-        $items = [
-            'home' => ['href' => '../../index.php', 'label' => 'Zur Hauptseite'],
-            'dashboard' => ['href' => 'index.php', 'label' => 'Dashboard'],
-            'home_profile' => ['href' => 'home_profile.php', 'label' => 'Startseite'],
-            'db_scripts' => ['href' => 'db_scripts.php', 'label' => 'DB-Skripte'],
-            'registration_requests' => ['href' => 'registration_requests.php', 'label' => 'Registrierungsanfragen'],
-            'roles' => ['href' => 'roles.php', 'label' => 'Rollen'],
-            'permissions' => ['href' => 'permissions.php', 'label' => 'Berechtigungen'],
-        ];
+        $role = (string)($_SESSION['role'] ?? '');
+        $isAdmin = $role === 'admin';
+        $items = [];
+
+        // Always left-most
+        $items['home'] = ['href' => '../../index.php', 'label' => 'Zur Hauptseite'];
+
+        // Dashboard only makes sense for admins
+        if ($isAdmin) {
+            $items['dashboard'] = ['href' => 'index.php', 'label' => 'Dashboard'];
+        }
+
+        // Content
+        $items['home_profile'] = ['href' => 'home_profile.php', 'label' => 'Startseite'];
+
+        if ($isAdmin && function_exists('can') && can('generate_codes')) {
+            $items['invite_codes'] = ['href' => 'invite_codes.php', 'label' => 'Einladungscodes'];
+        }
+
+        if ($isAdmin && is_file(__DIR__ . '/registration_requests.php')) {
+            $items['registration_requests'] = ['href' => 'registration_requests.php', 'label' => 'Registrierungsanfragen'];
+        }
+
+        // Access management + maintenance (admin only)
+        if ($isAdmin) {
+            $items['roles'] = ['href' => 'roles.php', 'label' => 'Rollen'];
+            $items['permissions'] = ['href' => 'permissions.php', 'label' => 'Berechtigungen'];
+            $items['db_scripts'] = ['href' => 'db_scripts.php', 'label' => 'DB-Skripte'];
+        }
 
         $out = '<div class="admin-nav">';
         foreach ($items as $key => $item) {
