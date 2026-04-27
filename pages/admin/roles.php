@@ -215,7 +215,6 @@ try {
 <?php admin_render_page('Rollen verwalten', 'roles', function () use ($error, $notice, $groupedPermissions, $roles, $permissionMap, $rolesMap, $roleCounts) { ?>
     <div class="page-header">
         <h1>Rollen verwalten</h1>
-        <a href="index.php">Zurück</a>
     </div>
 
     <?php if ($error): ?>

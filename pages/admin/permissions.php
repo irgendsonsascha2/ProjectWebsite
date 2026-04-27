@@ -101,7 +101,6 @@ try {
 <?php admin_render_page('Berechtigungen verwalten', 'permissions', function () use ($error, $notice, $permissions, $usageCounts) { ?>
     <div class="page-header">
         <h1>Berechtigungen verwalten</h1>
-        <a href="index.php">Zurück</a>
     </div>
 
     <?php if ($error): ?>
