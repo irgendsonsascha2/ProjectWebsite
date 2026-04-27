@@ -136,6 +136,41 @@
     @apply flex flex-wrap items-center gap-2;
   }
 
+  /* Tables (e.g. invite codes list) */
+  body.admin-page .table-wrap {
+    @apply mt-3 overflow-x-auto;
+  }
+
+  body.admin-page table {
+    @apply w-full border-collapse;
+  }
+
+  body.admin-page th,
+  body.admin-page td {
+    @apply border-b px-3 py-2 text-left text-sm;
+    border-color: var(--border-subtle);
+    vertical-align: top;
+  }
+
+  body.admin-page th {
+    @apply text-xs font-semibold uppercase tracking-wide;
+    color: var(--secondary-color);
+  }
+
+  /* Inline code-form (select + button) */
+  body.admin-page .code-form {
+    @apply mt-2 flex flex-wrap items-stretch gap-2;
+  }
+
+  body.admin-page .code-form select,
+  body.admin-page .code-form button {
+    @apply h-10;
+  }
+
+  body.admin-page .code-form button {
+    margin-top: 0 !important;
+  }
+
   body.admin-page .admin-card {
     @apply rounded-2xl border p-4;
     background: var(--surface-muted);
