@@ -128,70 +128,10 @@ if (!empty($roleOptions)) {
 
     <?php if (can('generate_codes')): ?>
         <section class="admin-panel">
-            <h3>Einladungscodes & Links</h3>
-            <form method="POST" class="code-form">
-                <select name="target_role" class="code-select">
-                    <?php foreach ($roleOptions as $roleOption): ?>
-                        <?php
-                            $roleKey = $roleOption['role'] ?? '';
-                            $roleLabel = $roleOption['label'] ?? $roleKey;
-                            if (!$roleKey) {
-                                continue;
-                            }
-                        ?>
-                        <option value="<?php echo htmlspecialchars($roleKey); ?>"><?php echo htmlspecialchars($roleLabel); ?></option>
-                    <?php endforeach; ?>
-                </select>
-                <button type="submit" name="generate_code" class="code-button">Code generieren</button>
-            </form>
-
-            <?php
-            $inviteCodesData = [];
-            $activeCodes = $db->registration_codes->find(['is_used' => false]);
-            foreach ($activeCodes as $c) {
-                $scheme = (! empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-                $basePath = explode('?', $_SERVER['REQUEST_URI'])[0];
-                $link = $scheme . "://" . $_SERVER['HTTP_HOST'] . $basePath . "?page=register&reg_token=" . $c['code'] . "#register-section";
-                $inviteCodesData[] = [
-                    'role' => (string) ($c['role'] ?? ''),
-                    'code' => (string) ($c['code'] ?? ''),
-                    'link' => (string) $link,
-                ];
-            }
-            ?>
-
-            <script type="application/json" id="react-invite-codes-data"><?php echo json_encode($inviteCodesData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?></script>
-
-            <div class="table-wrap">
-                <table>
-                    <tr>
-                        <th>Rolle</th>
-                        <th>Code</th>
-                        <th>Direkt-Link</th>
-                    </tr>
-                    <?php foreach ($inviteCodesData as $row): ?>
-                        <tr>
-                            <td><?php echo htmlspecialchars($row['role'], ENT_QUOTES, 'UTF-8'); ?></td>
-                            <td>
-                                <div
-                                    data-react-copy-field
-                                    data-copy-kind="code"
-                                    data-copy-value="<?php echo htmlspecialchars($row['code'], ENT_QUOTES, 'UTF-8'); ?>"
-                                    data-copy-label="Code kopieren"
-                                ></div>
-                            </td>
-                            <td>
-                                <div
-                                    data-react-copy-field
-                                    data-copy-kind="link"
-                                    data-copy-value="<?php echo htmlspecialchars($row['link'], ENT_QUOTES, 'UTF-8'); ?>"
-                                    data-copy-label="Link kopieren"
-                                ></div>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </table>
-            </div>
+            <h3>Admin</h3>
+            <p class="field-hint">
+                Einladungscodes werden jetzt im <a href="pages/admin/invite_codes.php">Admin-Bereich</a> verwaltet.
+            </p>
         </section>
     <?php endif; ?>
 </div>
