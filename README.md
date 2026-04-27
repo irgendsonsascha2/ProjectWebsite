@@ -479,6 +479,8 @@ Der Admin-Bereich liegt unter `pages/admin/` und umfasst:
 
 - `index.php`
   - Dashboard (Übersicht + effektive DB-Konfiguration)
+- `home_profile.php`
+  - Startseiten‑Profil pflegen (Name, Position, Kurztext, Langtext, Portrait)
 - `db_scripts.php`
   - Ausführung und Einsicht der Datenbankskripte aus `dbScripts/`
 - `roles.php`
@@ -486,7 +488,7 @@ Der Admin-Bereich liegt unter `pages/admin/` und umfasst:
 - `permissions.php`
   - Berechtigungen anlegen, bearbeiten und löschen
 
-Zugriff ist ausschließlich für eingeloggte Nutzer mit Rolle `admin` vorgesehen.
+Zugriff ist für eingeloggte Nutzer mit Rolle `admin` vorgesehen; `home_profile.php` ist zusätzlich für `content_manager` freigeschaltet.
 
 ### Admin: Master-Layout + Navigation
 
@@ -510,6 +512,8 @@ Die wichtigsten Initialisierungsskripte:
   - MongoDB-Custom-Roles und MongoDB-Benutzer für `viewer`, `community_member`, `content_manager` und `admin`
 - `dbScripts/04_db_users_validator_allow_laravel.php`
   - **Nicht destruktiv:** passt nur den MongoDB-Validator der Collection `users` an (`additionalProperties: true`), damit Laravel zusätzliche Felder (`remember_token` usw.) speichern kann. Einmal ausführen, wenn die Registrierung mit „Document failed validation“ fehlschlägt (bestehende DB nach älterem `00_db_init_accounts`).
+- `dbScripts/05_db_init_site_pages.php`
+  - `site_pages` (Single‑Doc‑Pages), inkl. Seed für `home_profile` der Startseite
 - `dbScripts/db_init_master.php`
   - Führt die nummerierten Skripte gesammelt aus
 
