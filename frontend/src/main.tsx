@@ -61,81 +61,49 @@ function Bootstrap() {
     });
   }, []);
 
-  // Nur als dev/demo: wenn du das nicht willst, sag Bescheid – dann entferne ich das wieder.
-  const showDemo = import.meta.env.DEV;
   return (
     <>
       <MediaLightbox />
       {/* Account-Seite: Einladungscodes React-native rendern */}
       <InviteCodes />
-      {showDemo ? (
-        <div className="fixed bottom-3 left-3 z-[9997]">
-          <Card className="flex items-center gap-2 p-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                success('Toast funktioniert', 'Das ist ein Tailwind/React-Toast.');
-              }}
-            >
-              Toast testen
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
-              Modal testen
-            </Button>
-          </Card>
-
-          <Modal
-            open={open}
-            title="React Modal"
-            onClose={() => setOpen(false)}
-            footer={
-              <>
-                <Button variant="ghost" onClick={() => setOpen(false)}>
-                  Schließen
-                </Button>
-                <Button
-                  onClick={() => {
-                    setOpen(false);
-                    success('OK', 'Modal geschlossen.');
-                  }}
-                >
-                  OK
-                </Button>
-              </>
-            }
-          >
-            Das ist ein Beispiel-Modal. Als nächstes ersetzen wir echte UI-Teile damit.
-          </Modal>
-        </div>
-      ) : null}
+      {/* Demo/Test-UI entfernt (soll in der klassischen Website nicht erscheinen). */}
     </>
   );
 }
 
 function mountReact() {
-  const bootstrapEl = document.getElementById('react-root');
-  if (bootstrapEl && !(bootstrapEl as any).__reactRoot) {
-    const root = createRoot(bootstrapEl);
-    (bootstrapEl as any).__reactRoot = root;
-    root.render(
-      <React.StrictMode>
-        <ToastProvider>
-          <Bootstrap />
-        </ToastProvider>
-      </React.StrictMode>,
-    );
-  }
-
   const themeEl = document.getElementById('react-theme-toggle');
   if (themeEl && !(themeEl as any).__reactRoot) {
-    const root = createRoot(themeEl);
-    (themeEl as any).__reactRoot = root;
-    root.render(
-      <React.StrictMode>
-        <ThemeToggle />
-      </React.StrictMode>,
-    );
+    try {
+      const root = createRoot(themeEl);
+      (themeEl as any).__reactRoot = root;
+      root.render(
+        <React.StrictMode>
+          <ThemeToggle />
+        </React.StrictMode>,
+      );
+    } catch (e) {
+      // Theme toggle should never prevent the page from working.
+      // If React fails for some reason, we keep the classic page usable.
+      console.error('ThemeToggle mount failed', e);
+    }
+  }
+
+  const bootstrapEl = document.getElementById('react-root');
+  if (bootstrapEl && !(bootstrapEl as any).__reactRoot) {
+    try {
+      const root = createRoot(bootstrapEl);
+      (bootstrapEl as any).__reactRoot = root;
+      root.render(
+        <React.StrictMode>
+          <ToastProvider>
+            <Bootstrap />
+          </ToastProvider>
+        </React.StrictMode>,
+      );
+    } catch (e) {
+      console.error('React bootstrap mount failed', e);
+    }
   }
 }
 

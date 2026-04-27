@@ -164,7 +164,7 @@ if (isset($_SESSION['user_id'])) {
             <label class="privacy-consent">
                 <input type="checkbox" name="privacy_consent_register" value="1" required>
                 <span class="privacy-consent__text">
-                    Ich habe die&nbsp;<a href="index.php?page=datenschutz" target="_blank" rel="noopener">Datenschutzerklärung</a>&nbsp;gelesen und bin mit der Verarbeitung meiner Daten für die Registrierung einverstanden.
+                    Ich habe die&nbsp;<a href="index.php?page=datenschutz">Datenschutzerklärung</a>&nbsp;gelesen und bin mit der Verarbeitung meiner Daten für die Registrierung einverstanden.
                 </span>
             </label>
             <button type="submit" name="register">Konto erstellen</button>
@@ -187,7 +187,7 @@ if (isset($_SESSION['user_id'])) {
                     <label class="privacy-consent privacy-consent--dialog">
                         <input type="checkbox" name="privacy_consent" value="1" required>
                         <span class="privacy-consent__text">
-                            Ich habe die&nbsp;<a href="index.php?page=datenschutz" target="_blank" rel="noopener">Datenschutzerklärung</a>&nbsp;gelesen und bin mit der Verarbeitung meiner Daten für diese Anfrage einverstanden.
+                            Ich habe die&nbsp;<a href="index.php?page=datenschutz">Datenschutzerklärung</a>&nbsp;gelesen und bin mit der Verarbeitung meiner Daten für diese Anfrage einverstanden.
                         </span>
                     </label>
                     <div style="display:flex; gap:0.5rem; margin-top: 1rem; align-items:center;">

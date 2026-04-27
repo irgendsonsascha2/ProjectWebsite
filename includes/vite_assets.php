@@ -172,6 +172,17 @@ function vite_react_assets(string $entry = 'src/main.tsx'): void
         if (vite_dev_server_reachable($devServer) && vite_dev_server_serves_hmr_client($devServer)) {
             vite_emit_css_links_from_manifest($entry);
             $basePath = '/react-dist';
+            // Wenn wir nicht über Vites index.html gehen (hier: PHP-Layout), fehlt das von
+            // @vitejs/plugin-react injizierte "preamble" für React Fast Refresh.
+            // Ohne dieses Preamble wirft Vite beim Import von TSX-Modulen:
+            // "@vitejs/plugin-react can't detect preamble".
+            echo '<script type="module">' . PHP_EOL;
+            echo '  import RefreshRuntime from ' . json_encode($devServer . $basePath . '/@react-refresh') . ';' . PHP_EOL;
+            echo '  RefreshRuntime.injectIntoGlobalHook(window);' . PHP_EOL;
+            echo '  window.$RefreshReg$ = () => {};' . PHP_EOL;
+            echo '  window.$RefreshSig$ = () => (type) => type;' . PHP_EOL;
+            echo '  window.__vite_plugin_react_preamble_installed__ = true;' . PHP_EOL;
+            echo '</script>' . PHP_EOL;
             echo '<script type="module" src="' . htmlspecialchars($devServer . $basePath . '/@vite/client', ENT_QUOTES, 'UTF-8') . '"></script>' . PHP_EOL;
             echo '<script type="module" src="' . htmlspecialchars($devServer . $basePath . '/' . ltrim($entry, '/'), ENT_QUOTES, 'UTF-8') . '"></script>' . PHP_EOL;
             return;
