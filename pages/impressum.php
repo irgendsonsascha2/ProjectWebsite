@@ -22,6 +22,13 @@
         Eine Haftung für Schäden materieller oder immaterieller Art, die durch die Nutzung oder Nachahmung der Inhalte entstehen, ist – soweit gesetzlich zulässig – ausgeschlossen.
     </p>
 
+    <h2>Nutzerkommentare / Inhalte Dritter</h2>
+    <p>
+        Soweit Nutzer dieser Plattform Kommentare oder sonstige Inhalte einstellen, geben diese Inhalte ausschließlich die Meinung des jeweiligen Nutzers wieder.
+        Ich distanziere mich von den von Nutzern eingestellten Inhalten und übernehme keine Verantwortung oder Haftung für Inhalte, die von anderen Nutzern veröffentlicht oder kommentiert werden.
+        Bei Bekanntwerden von Rechtsverletzungen werde ich derartige Inhalte im Rahmen der gesetzlichen Möglichkeiten prüfen und gegebenenfalls entfernen.
+    </p>
+
     <h2>Haftung für Links</h2>
     <p>
         Diese Website kann Links zu externen Websites Dritter enthalten, auf deren Inhalte ich keinen Einfluss habe.
