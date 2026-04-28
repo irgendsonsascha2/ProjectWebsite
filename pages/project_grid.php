@@ -3,6 +3,8 @@ require_once __DIR__ . '/../includes/bootstrap.php';
 
 $canDeleteProjects = can('delete_all');
 
+use MongoDB\BSON\Regex;
+
 function delete_project_files($project) {
     $gallery = normalize_gallery($project['gallery'] ?? []);
     foreach ($gallery as $item) {
@@ -43,8 +45,25 @@ if ($canDeleteProjects && isset($_POST['delete_projects']) && isset($_POST['proj
 
 $canViewProjects = can('view_projects');
 if ($canViewProjects) {
+    $q = '';
+    if (isset($_GET['q']) && is_string($_GET['q'])) {
+        $q = trim($_GET['q']);
+    }
+
+    $filter = ['is_draft' => ['$ne' => true]];
+    if ($q !== '') {
+        // Search by title OR tags (case-insensitive).
+        // In MongoDB, regex against an array field matches any element.
+        $escaped = preg_quote($q, '/');
+        $rx = new Regex($escaped, 'i');
+        $filter['$or'] = [
+            ['title' => $rx],
+            ['tags' => $rx],
+        ];
+    }
+
     $projectsCursor = $db->projects->find(
-        ['is_draft' => ['$ne' => true]],
+        $filter,
         ['sort' => ['created_at' => -1]]
     );
 } else {

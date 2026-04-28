@@ -79,6 +79,33 @@ if ($isAjax) {
             <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
                 <a href="pages/admin/index.php" style="color: red;">Admin</a>
             <?php endif; ?>
+
+            <?php
+                $navQ = '';
+                if (isset($_GET['q']) && is_string($_GET['q'])) {
+                    $navQ = trim($_GET['q']);
+                }
+            ?>
+            <form class="nav-search" action="index.php" method="GET" role="search" aria-label="Projekte suchen">
+                <input type="hidden" name="page" value="project_grid">
+                <label class="nav-search-label" for="nav-search-input">Suche</label>
+                <button type="button" class="nav-search-toggle" aria-label="Suche öffnen" aria-expanded="false" aria-controls="nav-search-input">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                        <circle cx="11" cy="11" r="7"></circle>
+                        <path d="M20 20l-3.5-3.5"></path>
+                    </svg>
+                </button>
+                <input
+                    id="nav-search-input"
+                    class="nav-search-input"
+                    type="search"
+                    name="q"
+                    value="<?php echo htmlspecialchars($navQ, ENT_QUOTES, 'UTF-8'); ?>"
+                    placeholder="Projektname oder Tag…"
+                    autocomplete="off"
+                    inputmode="search"
+                >
+            </form>
         </div>
         <div class="nav-actions">
             <div id="react-theme-toggle"></div>
@@ -116,6 +143,7 @@ if ($isAjax) {
     </footer>
 
     <script src="<?php echo $asset('js/media-skeleton.js'); ?>" defer></script>
+    <script src="<?php echo $asset('js/nav-search.js'); ?>" defer></script>
 </body>
 
 </html>
