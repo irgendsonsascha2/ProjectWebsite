@@ -1,9 +1,19 @@
 @layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
   html,
   body {
     height: 100%;
     margin: 0;
     padding: 0;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
@@ -20,6 +30,18 @@
 
   a:hover {
     color: var(--primary-hover);
+  }
+
+  img,
+  video,
+  canvas,
+  svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  video {
+    height: auto;
   }
 
   /* Default buttons should not explode in legacy CSS contexts */

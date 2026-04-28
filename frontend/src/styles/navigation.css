@@ -7,7 +7,8 @@
     background-color: var(--card-bg);
     border-bottom: 1px solid var(--border-subtle);
     /* Kein seitlicher "Rand" – Navigation soll bündig bis zum Viewport laufen */
-    padding: 0.5rem 0.75rem;
+    padding: 0.5rem calc(0.75rem + env(safe-area-inset-right)) 0.5rem
+      calc(0.75rem + env(safe-area-inset-left));
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
@@ -85,10 +86,15 @@
     }
     .nav-main {
       @apply justify-start overflow-x-auto;
+      -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
     }
     .nav-main::-webkit-scrollbar {
       display: none;
+    }
+
+    .nav-main a {
+      @apply px-2.5 py-2 text-sm;
     }
   }
 }

@@ -36,6 +36,7 @@ if ($isAjax) {
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Mein Portfolio</title>
     <?php
         $asset = static function (string $path): string {
