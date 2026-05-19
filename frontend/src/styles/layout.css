@@ -112,5 +112,13 @@
     background: var(--surface-hover);
     color: var(--primary-color);
   }
+
+  @media (max-width: 40rem) {
+    /* Leave room for the mobile bottom navigation */
+    .main-content,
+    .container {
+      padding-bottom: calc(clamp(1rem, 2.5vw, 1.5rem) + 4.75rem + env(safe-area-inset-bottom));
+    }
+  }
 }
 

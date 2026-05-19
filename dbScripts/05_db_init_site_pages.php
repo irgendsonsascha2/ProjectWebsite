@@ -1,6 +1,7 @@
 <?php
 require __DIR__ . '/_guard.php';
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/site_pages.php';
 
 use MongoDB\BSON\UTCDateTime;
 
@@ -12,29 +13,11 @@ try {
         echo "<i>(Master-Modus: Bestehende Verbindung wird genutzt)</i><br>";
     }
 
-    echo "<h1>Initialisierung: Site Pages</h1>";
+    echo "<h1>Initialisierung: Site Pages (Collection + Startseite)</h1>";
 
-    // Site content is "single-doc per key" (e.g. _id = home_profile)
     $db->dropCollection("site_pages");
     $db->createCollection("site_pages", [
-        'validator' => [
-            '$jsonSchema' => [
-                'bsonType' => 'object',
-                'required' => ['display_name', 'kicker', 'lead', 'body', 'created_at', 'updated_at'],
-                'properties' => [
-                    '_id' => ['bsonType' => 'string'],
-                    'display_name' => ['bsonType' => 'string'],
-                    'kicker' => ['bsonType' => 'string'],
-                    'lead' => ['bsonType' => 'string'],
-                    'body' => ['bsonType' => 'string'],
-                    'portrait_url' => ['bsonType' => 'string'],
-                    'created_at' => ['bsonType' => 'date'],
-                    'updated_at' => ['bsonType' => 'date'],
-                    'updated_by' => ['bsonType' => 'string'],
-                ],
-                'additionalProperties' => true,
-            ]
-        ]
+        'validator' => site_page_collection_validator(),
     ]);
     echo "✅ site_pages-Collection erstellt.<br>";
 
@@ -42,6 +25,7 @@ try {
 
     $db->site_pages->insertOne([
         '_id' => 'home_profile',
+        'page_kind' => 'home_profile',
         'display_name' => 'Dein Name',
         'kicker' => 'Deine Position / Spezialisierung',
         'lead' => "Kurze Beschreibung.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
@@ -49,10 +33,10 @@ try {
         'portrait_url' => '',
         'created_at' => $now,
         'updated_at' => $now,
-        'updated_by' => ''
+        'updated_by' => '',
     ]);
     echo "✅ home_profile eingefügt.<br>";
+    echo "<i>Rechtstexte separat: 06 (Impressum), 07 (Datenschutz), 08 (Nutzungsbedingungen).</i><br>";
 } catch (Exception $e) {
     echo "❌ Fehler in " . basename(__FILE__) . ": " . $e->getMessage() . "<br>";
 }
-

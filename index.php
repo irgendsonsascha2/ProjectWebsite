@@ -17,8 +17,7 @@ $safe_page = preg_replace('/[^a-zA-Z0-9_-]/', '', $page);
 if ($safe_page === '') {
     $safe_page = 'home';
 }
-$isAjax = (isset($_POST['ajax']) && $_POST['ajax'] === '1')
-    || (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && in_array(strtolower($_SERVER['HTTP_X_REQUESTED_WITH']), ['xmlhttprequest', 'fetch'], true));
+$isAjax = request_is_ajax();
 
 if ($isAjax) {
     $file_path = "pages/" . $safe_page . ".php";
@@ -71,7 +70,7 @@ if ($isAjax) {
 
 <body class="<?php echo $safe_page === 'home' ? 'page-is-home' : ''; ?>">
 
-    <nav>
+    <nav class="top-nav">
         <div class="nav-spacer" aria-hidden="true"></div>
         <div class="nav-main">
             <a href="index.php">Start</a>
@@ -132,6 +131,66 @@ if ($isAjax) {
 
     <div id="react-root" data-page="<?php echo htmlspecialchars($safe_page, ENT_QUOTES, 'UTF-8'); ?>"></div>
 
+    <?php
+        $isProjectArea = in_array($safe_page, ['project_grid', 'project_detail', 'create_project', 'edit_project'], true);
+        $isHome = $safe_page === 'home';
+        $isAdmin = isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
+    ?>
+    <nav class="bottom-nav" aria-label="Bottom Navigation">
+        <a
+            class="bottom-nav__item <?php echo $isHome ? 'is-active' : ''; ?>"
+            href="index.php"
+            <?php echo $isHome ? 'aria-current="page"' : ''; ?>
+        >
+            <span class="bottom-nav__icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 11.5 12 4l9 7.5" />
+                    <path d="M5 10.5V20h14v-9.5" />
+                </svg>
+            </span>
+            <span class="bottom-nav__label">Start</span>
+        </a>
+
+        <a
+            class="bottom-nav__item <?php echo $isProjectArea ? 'is-active' : ''; ?>"
+            href="index.php?page=project_grid"
+            <?php echo $isProjectArea ? 'aria-current="page"' : ''; ?>
+        >
+            <span class="bottom-nav__icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 4h7v7H4z" />
+                    <path d="M13 4h7v7h-7z" />
+                    <path d="M4 13h7v7H4z" />
+                    <path d="M13 13h7v7h-7z" />
+                </svg>
+            </span>
+            <span class="bottom-nav__label">Projekte</span>
+        </a>
+
+        <button class="bottom-nav__item bottom-nav__item--button" type="button" data-nav-search-toggle aria-label="Suche">
+            <span class="bottom-nav__icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="7"></circle>
+                    <path d="M20 20l-3.5-3.5"></path>
+                </svg>
+            </span>
+            <span class="bottom-nav__label">Suche</span>
+        </button>
+
+        <?php if ($isAdmin): ?>
+            <a class="bottom-nav__item" href="pages/admin/index.php">
+                <span class="bottom-nav__icon" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V6l7-4z" />
+                        <path d="M12 7v6" />
+                        <path d="M9.5 10H14.5" />
+                    </svg>
+                </span>
+                <span class="bottom-nav__label">Admin</span>
+            </a>
+        <?php endif; ?>
+    </nav>
+
     <footer class="site-footer" role="contentinfo">
         <div class="site-footer__inner">
             <a href="index.php?page=impressum">Impressum</a>
@@ -143,6 +202,7 @@ if ($isAjax) {
     </footer>
 
     <script src="<?php echo $asset('js/media-skeleton.js'); ?>" defer></script>
+    <script src="<?php echo $asset('js/video-hover-preview.js'); ?>" defer></script>
     <script src="<?php echo $asset('js/nav-search.js'); ?>" defer></script>
 </body>
 

@@ -79,14 +79,15 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_home_profile') {
     if ($nextDisplayName === '' || $nextKicker === '' || $nextLead === '' || $nextBody === '') {
         $error = 'Bitte alle Felder ausfüllen.';
     } else {
-        $set = [
-            'display_name' => $nextDisplayName,
-            'kicker' => $nextKicker,
-            'lead' => $nextLead,
-            'body' => $nextBody,
-            'updated_at' => new UTCDateTime(),
-            'updated_by' => (string)($_SESSION['user_id'] ?? ''),
-        ];
+            $set = [
+                'page_kind' => 'home_profile',
+                'display_name' => $nextDisplayName,
+                'kicker' => $nextKicker,
+                'lead' => $nextLead,
+                'body' => $nextBody,
+                'updated_at' => new UTCDateTime(),
+                'updated_by' => (string)($_SESSION['user_id'] ?? ''),
+            ];
 
         $newPortraitUrl = null;
         $portraitDeleted = false;
@@ -144,6 +145,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_home_profile') {
                 $set['portrait_url'] = $newPortraitUrl;
             }
             $setOnInsert = [
+                'page_kind' => 'home_profile',
                 'created_at' => new UTCDateTime(),
             ];
 

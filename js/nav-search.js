@@ -1,5 +1,5 @@
 (() => {
-  const nav = document.querySelector('nav');
+  const nav = document.querySelector('.top-nav');
   if (!nav) return;
 
   const form = nav.querySelector('.nav-search');
@@ -34,6 +34,19 @@
   }
 
   toggle.addEventListener('click', () => {
+    if (isOpen()) {
+      close();
+    } else {
+      open();
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    const target = e.target;
+    if (!(target instanceof Element)) return;
+    const external = target.closest('[data-nav-search-toggle]');
+    if (!external) return;
+    e.preventDefault();
     if (isOpen()) {
       close();
     } else {

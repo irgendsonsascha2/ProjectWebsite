@@ -514,5 +514,54 @@
   body.admin-page .role-selector-all input {
     width: auto;
   }
+
+  body.admin-page .admin-link-list {
+    @apply m-0 list-none p-0;
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  body.admin-page .admin-link-list a {
+    @apply inline-flex rounded-xl px-3 py-2 text-sm font-semibold no-underline;
+    background: var(--card-bg);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-main);
+  }
+
+  body.admin-page .admin-link-list a:hover {
+    border-color: var(--accent, #2563eb);
+  }
+
+  body.admin-page .admin-fieldset {
+    @apply mb-4 rounded-xl border p-4;
+    border-color: var(--border-subtle);
+  }
+
+  body.admin-page .admin-fieldset legend {
+    @apply px-1 text-sm font-semibold;
+    color: var(--text-main);
+  }
+
+  body.admin-page .legal-section-block {
+    @apply mb-4 rounded-xl border p-3;
+    border-color: var(--border-subtle);
+  }
+
+  body.admin-page .legal-section-block hr {
+    @apply mt-3 border-0 border-t;
+    border-color: var(--border-subtle);
+  }
+
+  body.admin-page .button-secondary {
+    @apply inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold no-underline;
+    background: var(--card-bg);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-main);
+    cursor: pointer;
+  }
+
+  body.admin-page .button-secondary:hover {
+    border-color: var(--accent, #2563eb);
+  }
 }
 

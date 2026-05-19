@@ -121,6 +121,9 @@
     font-size: 1rem;
     backdrop-filter: var(--glass-blur) var(--glass-saturate) !important;
     -webkit-backdrop-filter: var(--glass-blur) var(--glass-saturate) !important;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    z-index: 2;
   }
 
   .page-project_detail .media-hover-comments .hover-comment.is-active {
@@ -178,6 +181,7 @@
   }
 
   .page-project_detail .media-item {
+    position: relative;
     border: none;
     padding: 0;
     background: var(--card-bg);
@@ -205,6 +209,16 @@
     object-fit: cover;
     display: block;
     transform: translateZ(1.25rem);
+    pointer-events: none;
+  }
+
+  .page-project_detail .media-item video {
+    position: absolute;
+    inset: 0;
+  }
+
+  .page-project_detail .media-item.is-video-previewing .media-play {
+    opacity: 0;
   }
 
   .page-project_detail .media-item:hover {

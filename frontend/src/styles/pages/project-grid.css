@@ -115,6 +115,7 @@
     position: relative;
     aspect-ratio: 1 / 1;
     transform: translateZ(1rem);
+    overflow: hidden;
   }
 
   .page-project_grid .thumbnail {
@@ -122,6 +123,12 @@
     height: 100%;
     object-fit: cover;
     display: block;
+    pointer-events: none;
+  }
+
+  .page-project_grid .thumb-wrap video.thumbnail {
+    position: absolute;
+    inset: 0;
   }
 
   .page-project_grid .thumb-play {
@@ -139,6 +146,12 @@
     justify-content: center;
     font-size: 1rem;
     z-index: 3;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+  }
+
+  .page-project_grid .thumb-wrap.is-video-previewing .thumb-play {
+    opacity: 0;
   }
 
   .page-project_grid .content {

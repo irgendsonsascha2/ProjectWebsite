@@ -179,17 +179,130 @@ if (!function_exists('detect_media_type')) {
     }
 }
 
+if (!defined('MEDIA_UPLOAD_MAX_IMAGE_BYTES')) {
+    define('MEDIA_UPLOAD_MAX_IMAGE_BYTES', 50 * 1024 * 1024);
+}
+if (!defined('MEDIA_UPLOAD_MAX_IMAGE_WIDTH')) {
+    define('MEDIA_UPLOAD_MAX_IMAGE_WIDTH', 3840);
+}
+if (!defined('MEDIA_UPLOAD_MAX_IMAGE_HEIGHT')) {
+    define('MEDIA_UPLOAD_MAX_IMAGE_HEIGHT', 2160);
+}
+if (!defined('MEDIA_UPLOAD_MAX_VIDEO_BYTES')) {
+    /** ~2 GiB — ausreichend für ca. 10 min 1080p (typ. H.264/HEVC-Bitraten). */
+    define('MEDIA_UPLOAD_MAX_VIDEO_BYTES', 2 * 1024 * 1024 * 1024);
+}
+
+if (!function_exists('media_upload_limit_label')) {
+    function media_upload_limit_label(int $bytes): string {
+        if ($bytes >= 1024 * 1024 * 1024) {
+            $gb = $bytes / (1024 * 1024 * 1024);
+            return ((int) $gb === $gb) ? ((int) $gb . ' GB') : (round($gb, 1) . ' GB');
+        }
+        return (int) ($bytes / 1024 / 1024) . ' MB';
+    }
+}
+
+if (!function_exists('media_upload_ini_to_bytes')) {
+    function media_upload_ini_to_bytes(string $value): int {
+        $value = trim($value);
+        if ($value === '') {
+            return 0;
+        }
+        $unit = strtolower(substr($value, -1));
+        $number = (float) $value;
+        if ($unit === 'g') {
+            return (int) ($number * 1024 * 1024 * 1024);
+        }
+        if ($unit === 'm') {
+            return (int) ($number * 1024 * 1024);
+        }
+        if ($unit === 'k') {
+            return (int) ($number * 1024);
+        }
+        return (int) $number;
+    }
+}
+
+if (!function_exists('request_is_ajax')) {
+    function request_is_ajax(): bool {
+        return (isset($_POST['ajax']) && $_POST['ajax'] === '1')
+            || (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && in_array(
+                strtolower((string) $_SERVER['HTTP_X_REQUESTED_WITH']),
+                ['xmlhttprequest', 'fetch'],
+                true
+            ));
+    }
+}
+
+if (!function_exists('media_upload_request_body_too_large')) {
+    /**
+     * Wenn post_max_size überschritten wird, verwirft PHP $_POST und $_FILES — der Upload „verschwindet“ still.
+     */
+    function media_upload_request_body_too_large(): ?string {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            return null;
+        }
+        $length = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+        if ($length <= 0) {
+            return null;
+        }
+        $postMax = media_upload_ini_to_bytes((string) ini_get('post_max_size'));
+        if ($postMax > 0 && $length > $postMax) {
+            return 'Die Anfrage ist für PHP zu groß (post_max_size '
+                . ini_get('post_max_size')
+                . ', gesendet ca. '
+                . media_upload_limit_label($length)
+                . '). Server mit „make php“ oder ./serve-php.sh starten.';
+        }
+        return null;
+    }
+}
+
+if (!function_exists('validate_image_resolution')) {
+    /**
+     * UHD 4K: längere Seite max. 3840 px, kürzere max. 2160 px (Hoch- und Querformat).
+     * Keine Prüfung, wenn die Auflösung nicht ermittelbar ist (z. B. manche SVG).
+     */
+    function validate_image_resolution($tmpPath) {
+        if (!function_exists('getimagesize')) {
+            return null;
+        }
+        $info = @getimagesize($tmpPath);
+        if ($info === false || !isset($info[0], $info[1])) {
+            return null;
+        }
+        $w = (int) $info[0];
+        $h = (int) $info[1];
+        if ($w < 1 || $h < 1) {
+            return null;
+        }
+        $maxW = MEDIA_UPLOAD_MAX_IMAGE_WIDTH;
+        $maxH = MEDIA_UPLOAD_MAX_IMAGE_HEIGHT;
+        if (max($w, $h) > $maxW || min($w, $h) > $maxH) {
+            return "Bildauflösung zu hoch (max. 4K / {$maxW}×{$maxH} px, aktuell {$w}×{$h} px).";
+        }
+        return null;
+    }
+}
+
 if (!function_exists('validate_media_upload')) {
     function validate_media_upload($tmpPath, $sizeBytes, $type) {
         $limits = [
-            'image' => 10 * 1024 * 1024,
-            'video' => 50 * 1024 * 1024
+            'image' => MEDIA_UPLOAD_MAX_IMAGE_BYTES,
+            'video' => MEDIA_UPLOAD_MAX_VIDEO_BYTES,
         ];
         if (!isset($limits[$type])) {
             return "Ungültiger Medientyp.";
         }
         if ($sizeBytes > $limits[$type]) {
-            return "Datei zu groß (max. " . ($limits[$type] / 1024 / 1024) . "MB).";
+            return "Datei zu groß (max. " . media_upload_limit_label($limits[$type]) . ").";
+        }
+        if ($type === 'image') {
+            $resolutionError = validate_image_resolution($tmpPath);
+            if ($resolutionError !== null) {
+                return $resolutionError;
+            }
         }
         if (!is_uploaded_file($tmpPath)) {
             return "Ungültiger Upload.";

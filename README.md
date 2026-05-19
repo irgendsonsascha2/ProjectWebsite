@@ -104,7 +104,7 @@ MongoDB ohne Replica Set unterstützt keine DB-Transaktionen wie Laravels `Refre
 ├── pages/
 │   ├── home.php              # Startseite / Kurzvorstellung
 │   ├── account.php           # Login, Registrierung, Invite-Codes
-│   ├── impressum.php         # Impressum (Platzhalter zum Ausfüllen)
+│   ├── impressum.php         # Impressum (Inhalt aus site_pages)
 │   ├── project_grid.php      # Projektübersicht
 │   ├── project_detail.php    # Detailseite, Likes, Dislikes, Kommentare
 │   ├── create_project.php    # Projekt anlegen, Entwürfe, Uploads
@@ -453,8 +453,10 @@ Uploads werden lokal gespeichert:
 Upload-Regeln in `includes/bootstrap.php`:
 
 - maximal 50 Dateien pro Upload-Vorgang
-- Bilder bis 10 MB
-- Videos bis 50 MB
+- Bilder bis **50 MB**, Auflösung max. **4K** (3840×2160 px; längere Seite ≤ 3840, kürzere ≤ 2160)
+- Videos bis **2 GB** (für ca. 10 min 1080p bei üblichen Codecs/Bitraten)
+
+**PHP-Server-Limits:** Die Anwendung lehnt größere Dateien ab, aber PHP muss sie zuerst annehmen. Standard-`php.ini` erlaubt oft nur wenige MB (`upload_max_filesize` / `post_max_size`) — dann erscheint im Netzwerk-Tab zwar **POST**, aber PHP verwirft den Body still. Lokal **`make php`** oder **`./serve-php.sh`** (beides **2048M / 2100M**). Bei barem `php -S` dieselben `-d`-Werte setzen oder Apache/nginx mit `.user.ini` im Projektroot. Es gibt **kein** separates Gesamt-Limit pro Projekt (nur pro Datei und max. 50 Dateien pro Upload-Vorgang). Nach Änderung den Webserver neu starten.
 
 `pages/create_project.php` unterstützt Entwürfe. Bereits hochgeladene Medien können also zwischengespeichert, sortiert und einzeln gelöscht werden, bevor das Projekt final gespeichert wird.
 
@@ -481,6 +483,8 @@ Der Admin-Bereich liegt unter `pages/admin/` und umfasst:
   - Dashboard (Übersicht + effektive DB-Konfiguration)
 - `home_profile.php`
   - Startseiten‑Profil pflegen (Name, Position, Kurztext, Langtext, Portrait)
+- `legal_page_edit.php?key=…`
+  - Impressum, Datenschutz oder Nutzungsbedingungen einzeln bearbeiten (eigene Admin-Menüpunkte; Datensätze in `site_pages`)
 - `db_scripts.php`
   - Ausführung und Einsicht der Datenbankskripte aus `dbScripts/`
 - `roles.php`
@@ -488,7 +492,7 @@ Der Admin-Bereich liegt unter `pages/admin/` und umfasst:
 - `permissions.php`
   - Berechtigungen anlegen, bearbeiten und löschen
 
-Zugriff ist für eingeloggte Nutzer mit Rolle `admin` vorgesehen; `home_profile.php` ist zusätzlich für `content_manager` freigeschaltet.
+Zugriff ist für eingeloggte Nutzer mit Rolle `admin` vorgesehen; `home_profile.php` und die Rechtstexte sind zusätzlich für `content_manager` freigeschaltet.
 
 ### Admin: Master-Layout + Navigation
 
@@ -513,7 +517,13 @@ Die wichtigsten Initialisierungsskripte:
 - `dbScripts/04_db_users_validator_allow_laravel.php`
   - **Nicht destruktiv:** passt nur den MongoDB-Validator der Collection `users` an (`additionalProperties: true`), damit Laravel zusätzliche Felder (`remember_token` usw.) speichern kann. Einmal ausführen, wenn die Registrierung mit „Document failed validation“ fehlschlägt (bestehende DB nach älterem `00_db_init_accounts`).
 - `dbScripts/05_db_init_site_pages.php`
-  - `site_pages` (Single‑Doc‑Pages), inkl. Seed für `home_profile` der Startseite
+  - `site_pages`-Collection + Seed `home_profile` (destruktiv: droppt die Collection)
+- `dbScripts/06_db_init_site_impressum.php`
+  - Impressum in `site_pages` (Platzhalter-Daten; ersetzt nur diesen Datensatz)
+- `dbScripts/07_db_init_site_datenschutz.php`
+  - Datenschutz in `site_pages` (ersetzt nur diesen Datensatz)
+- `dbScripts/08_db_init_site_nutzungsbedingungen.php`
+  - Nutzungsbedingungen in `site_pages` (ersetzt nur diesen Datensatz)
 - `dbScripts/db_init_master.php`
   - Führt die nummerierten Skripte gesammelt aus
 

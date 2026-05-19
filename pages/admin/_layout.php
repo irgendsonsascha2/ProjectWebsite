@@ -76,6 +76,12 @@ if (!function_exists('admin_nav_html')) {
 
         // Content
         $items['home_profile'] = ['href' => 'home_profile.php', 'label' => 'Startseite'];
+        $items['legal_impressum'] = ['href' => 'legal_page_edit.php?key=impressum', 'label' => 'Impressum'];
+        $items['legal_datenschutz'] = ['href' => 'legal_page_edit.php?key=datenschutz', 'label' => 'Datenschutz'];
+        $items['legal_nutzungsbedingungen'] = [
+            'href' => 'legal_page_edit.php?key=nutzungsbedingungen',
+            'label' => 'Nutzungsbedingungen',
+        ];
 
         if ($isAdmin && function_exists('can') && can('generate_codes')) {
             $items['invite_codes'] = ['href' => 'invite_codes.php', 'label' => 'Einladungscodes'];

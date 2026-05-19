@@ -5,6 +5,8 @@ PHP_PORT ?= 8080
 VITE_PORT ?= 5173
 MAILHOG_UI_PORT ?= 8025
 MAILHOG_SMTP_PORT ?= 1025
+PHP_UPLOAD_MAX ?= 2048M
+PHP_POST_MAX ?= 2100M
 
 help:
 	@echo ""
@@ -32,8 +34,9 @@ dev: frontend-build php
 php:
 	@echo ""
 	@echo "PHP: http://$(HOST):$(PHP_PORT)/"
+	@echo "Upload-Limits: upload_max_filesize=$(PHP_UPLOAD_MAX) post_max_size=$(PHP_POST_MAX)"
 	@echo ""
-	php -S $(HOST):$(PHP_PORT) -t .
+	php -d upload_max_filesize=$(PHP_UPLOAD_MAX) -d post_max_size=$(PHP_POST_MAX) -d max_execution_time=600 -d max_input_time=600 -S $(HOST):$(PHP_PORT) -t .
 
 frontend-build:
 	cd frontend && npm install && npm run build

@@ -184,6 +184,12 @@ if (!isset($_SESSION[$sessionGalleryKey])) {
 $workingGallery = ensure_media_ids($_SESSION[$sessionGalleryKey] ?? []);
 $_SESSION[$sessionGalleryKey] = $workingGallery;
 
+$isAjax = request_is_ajax();
+$postBodyError = media_upload_request_body_too_large();
+if ($postBodyError !== null) {
+    $message = '❌ ' . $postBodyError;
+}
+
 // --- LOGIK: MEDIA LÖSCHEN ---
 if (isset($_POST['delete_media']) && isset($_POST['media_index'])) {
     $index = (int)$_POST['media_index'];
@@ -291,8 +297,6 @@ if (isset($_POST['upload_media']) && isset($_FILES['gallery_files'])) {
         $message .= "<br>" . implode("<br>", $uploadErrors);
     }
 }
-
-$isAjax = isset($_POST['ajax']) && $_POST['ajax'] === '1';
 
 // --- LOGIK: PROJEKT AKTUALISIEREN ---
 if (isset($_POST['update_project'])) {
@@ -498,21 +502,33 @@ if ($isAjax) {
         if (!mediaSection) return;
         const mediaActionUrl = <?php echo json_encode($editActionUrl); ?>;
 
+        function showMediaUploadError(text) {
+            mediaSection.innerHTML = '<div class="alert media-alert">❌ ' + text + '</div>';
+        }
+
         async function submitMediaForm(form, submitter) {
             const formData = new FormData(form);
             formData.set('ajax', '1');
             if (submitter && submitter.name) {
                 formData.set(submitter.name, submitter.value || '1');
             }
-            const response = await fetch(form.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'fetch'
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'fetch'
+                    }
+                });
+                if (!response.ok) {
+                    showMediaUploadError('Upload fehlgeschlagen (HTTP ' + response.status + ').');
+                    return;
                 }
-            });
-            const html = await response.text();
-            mediaSection.innerHTML = html;
+                const html = await response.text();
+                mediaSection.innerHTML = html;
+            } catch (err) {
+                showMediaUploadError('Upload fehlgeschlagen (Netzwerk oder Zeitüberschreitung).');
+            }
         }
 
         mediaSection.addEventListener('submit', function (event) {
@@ -521,7 +537,7 @@ if ($isAjax) {
                 return;
             }
             event.preventDefault();
-            submitMediaForm(form, event.submitter).catch(() => {});
+            submitMediaForm(form, event.submitter);
         });
 
         mediaSection.addEventListener('change', function (event) {
@@ -536,7 +552,7 @@ if ($isAjax) {
             if (!target.files || target.files.length === 0) {
                 return;
             }
-            submitMediaForm(form).catch(() => {});
+            submitMediaForm(form);
         });
 
         function sendReorder(grid) {
