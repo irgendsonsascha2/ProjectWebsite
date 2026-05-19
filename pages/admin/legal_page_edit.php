@@ -86,7 +86,6 @@ admin_render_page($pageLabel, $navKey, function () use ($notice, $error, $pageKe
     ?>
     <div class="page-header">
         <h1><?php echo htmlspecialchars($pageLabel, ENT_QUOTES, 'UTF-8'); ?></h1>
-        <p><a href="index.php">← Admin-Dashboard</a></p>
     </div>
 
     <?php if ($error): ?>

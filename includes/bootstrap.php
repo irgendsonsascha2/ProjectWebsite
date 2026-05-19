@@ -37,6 +37,7 @@ if (isset($_GET['debug']) && $_GET['debug'] === '1') {
 }
 
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/site_settings.php';
 require_once __DIR__ . '/svg_icons.php';
 
 $sessionActive = session_status() === PHP_SESSION_ACTIVE;
@@ -46,6 +47,8 @@ $effectivePermissions = [];
 if (!isset($db)) {
     [$client, $db] = get_request_mongo_connection($effectiveRole);
 }
+
+site_settings_apply($db);
 
 if ($sessionActive && isset($_SESSION['user_id']) && (
     !isset($_SESSION['permissions']) ||
@@ -177,20 +180,6 @@ if (!function_exists('detect_media_type')) {
 
         return null;
     }
-}
-
-if (!defined('MEDIA_UPLOAD_MAX_IMAGE_BYTES')) {
-    define('MEDIA_UPLOAD_MAX_IMAGE_BYTES', 50 * 1024 * 1024);
-}
-if (!defined('MEDIA_UPLOAD_MAX_IMAGE_WIDTH')) {
-    define('MEDIA_UPLOAD_MAX_IMAGE_WIDTH', 3840);
-}
-if (!defined('MEDIA_UPLOAD_MAX_IMAGE_HEIGHT')) {
-    define('MEDIA_UPLOAD_MAX_IMAGE_HEIGHT', 2160);
-}
-if (!defined('MEDIA_UPLOAD_MAX_VIDEO_BYTES')) {
-    /** ~2 GiB — ausreichend für ca. 10 min 1080p (typ. H.264/HEVC-Bitraten). */
-    define('MEDIA_UPLOAD_MAX_VIDEO_BYTES', 2 * 1024 * 1024 * 1024);
 }
 
 if (!function_exists('media_upload_limit_label')) {
@@ -330,10 +319,6 @@ if (!function_exists('upload_error_message')) {
                 return "Unbekannter Upload-Fehler.";
         }
     }
-}
-
-if (!defined('MEDIA_UPLOAD_MAX_FILES')) {
-    define('MEDIA_UPLOAD_MAX_FILES', 50);
 }
 
 if (!function_exists('normalize_gallery')) {

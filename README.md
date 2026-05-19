@@ -450,7 +450,7 @@ Uploads werden lokal gespeichert:
 - Bilder unter `content/images`
 - Videos unter `content/videos`
 
-Upload-Regeln in `includes/bootstrap.php`:
+Upload-Regeln (Standardwerte, im Admin unter **Einstellungen** anpassbar; technisch `includes/site_settings.php` → Konstanten in `includes/bootstrap.php`):
 
 - maximal 50 Dateien pro Upload-Vorgang
 - Bilder bis **50 MB**, Auflösung max. **4K** (3840×2160 px; längere Seite ≤ 3840, kürzere ≤ 2160)
@@ -485,6 +485,8 @@ Der Admin-Bereich liegt unter `pages/admin/` und umfasst:
   - Startseiten‑Profil pflegen (Name, Position, Kurztext, Langtext, Portrait)
 - `legal_page_edit.php?key=…`
   - Impressum, Datenschutz oder Nutzungsbedingungen einzeln bearbeiten (eigene Admin-Menüpunkte; Datensätze in `site_pages`)
+- `settings.php`
+  - Allgemeine Einstellungen (Medien-Limits, Galerie-Paging, Kommentarlänge; Datensatz `site_settings` in `site_pages`, nur Admin)
 - `db_scripts.php`
   - Ausführung und Einsicht der Datenbankskripte aus `dbScripts/`
 - `roles.php`
@@ -524,6 +526,8 @@ Die wichtigsten Initialisierungsskripte:
   - Datenschutz in `site_pages` (ersetzt nur diesen Datensatz)
 - `dbScripts/08_db_init_site_nutzungsbedingungen.php`
   - Nutzungsbedingungen in `site_pages` (ersetzt nur diesen Datensatz)
+- `dbScripts/09_db_init_site_settings.php`
+  - Allgemeine Einstellungen (`site_settings` in `site_pages`; ersetzt nur diesen Datensatz)
 - `dbScripts/db_init_master.php`
   - Führt die nummerierten Skripte gesammelt aus
 

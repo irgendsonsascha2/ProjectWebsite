@@ -140,7 +140,7 @@ if (!function_exists('site_page_collection_validator')) {
                 'required' => ['_id', 'page_kind', 'created_at', 'updated_at'],
                 'properties' => [
                     '_id' => ['bsonType' => 'string'],
-                    'page_kind' => ['enum' => ['home_profile', 'legal']],
+                    'page_kind' => ['enum' => ['home_profile', 'legal', 'settings']],
                     'display_name' => ['bsonType' => 'string'],
                     'kicker' => ['bsonType' => 'string'],
                     'lead' => ['bsonType' => 'string'],

@@ -93,6 +93,7 @@ if (!function_exists('admin_nav_html')) {
 
         // Access management + maintenance (admin only)
         if ($isAdmin) {
+            $items['settings'] = ['href' => 'settings.php', 'label' => 'Einstellungen'];
             $items['roles'] = ['href' => 'roles.php', 'label' => 'Rollen'];
             $items['permissions'] = ['href' => 'permissions.php', 'label' => 'Berechtigungen'];
             $items['db_scripts'] = ['href' => 'db_scripts.php', 'label' => 'DB-Skripte'];

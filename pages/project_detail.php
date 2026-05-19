@@ -4,6 +4,8 @@ if (!headers_sent()) {
 }
 require_once __DIR__ . '/../includes/bootstrap.php';
 
+$commentTextMaxLength = defined('COMMENT_TEXT_MAX_LENGTH') ? (int) COMMENT_TEXT_MAX_LENGTH : 400;
+
 $isLoggedIn = isset($_SESSION['user_id']);
 
 // --- DATENBANK & PROJEKT LADEN ---
@@ -132,6 +134,10 @@ function sort_comments_by_created_at_asc(&$comments) {
 }
 
 function render_comment_items($comments, $commentLimitReached, $commentLimit, $ajaxActionUrl, $currentUserId, $currentUserRole, $deleteRolesAllowed, $canDeleteOthers, $canComment, $mediaIdStr) {
+    global $commentTextMaxLength;
+    if (!isset($commentTextMaxLength)) {
+        $commentTextMaxLength = defined('COMMENT_TEXT_MAX_LENGTH') ? (int) COMMENT_TEXT_MAX_LENGTH : 400;
+    }
     $tree = build_comment_tree($comments);
     $topLevel = $tree[null] ?? [];
     sort_comments_by_created_at_desc($topLevel);
@@ -162,7 +168,7 @@ function render_comment_items($comments, $commentLimitReached, $commentLimit, $a
                     <input type="hidden" name="media_id" value="<?php echo htmlspecialchars($mediaIdStr); ?>">
                     <input type="hidden" name="parent_comment_id" value="<?php echo htmlspecialchars($commentId); ?>">
                     <div class="comment-form-row">
-                        <textarea name="comment_text" placeholder="Antwort schreiben..." maxlength="400" data-maxlength="400" <?php echo $commentLimitReached ? 'disabled' : ''; ?> rows="1"></textarea>
+                        <textarea name="comment_text" placeholder="Antwort schreiben..." maxlength="<?php echo (int) $commentTextMaxLength; ?>" data-maxlength="<?php echo (int) $commentTextMaxLength; ?>" <?php echo $commentLimitReached ? 'disabled' : ''; ?> rows="1"></textarea>
                         <input type="hidden" name="submit_comment" value="1">
                         <button type="submit" name="submit_comment" aria-label="Antworten" <?php echo $commentLimitReached ? 'disabled' : ''; ?>>
                             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
@@ -476,7 +482,7 @@ if ($isLoggedIn && isset($_POST['delete_comment'])) {
 if ($isLoggedIn && can('comment') && isset($_POST['submit_comment'])) {
     $userId = new ObjectId($_SESSION['user_id']);
     $commentText = trim($_POST['comment_text']);
-    $commentLimit = 400;
+    $commentLimit = defined('COMMENT_TEXT_MAX_LENGTH') ? COMMENT_TEXT_MAX_LENGTH : 400;
     $parentCommentIdRaw = trim($_POST['parent_comment_id'] ?? '');
     $mediaObjectId = parse_media_id($_POST['media_id'] ?? '');
     if (!$mediaObjectId) {
@@ -765,11 +771,12 @@ if ($isLoggedIn) {
 }
 
 $gallery = normalize_gallery($project['gallery'] ?? []);
-$mediaLimit = isset($_GET['media_limit']) ? (int)$_GET['media_limit'] : 30;
-$mediaLimit = max(0, min($mediaLimit, 120));
-if ($mediaLimit === 0) {
-    $mediaLimit = 30;
+$defaultMediaLimit = defined('PROJECT_DETAIL_MEDIA_LIMIT') ? (int) PROJECT_DETAIL_MEDIA_LIMIT : 30;
+$mediaLimit = isset($_GET['media_limit']) ? (int) $_GET['media_limit'] : $defaultMediaLimit;
+if ($mediaLimit < 1) {
+    $mediaLimit = $defaultMediaLimit;
 }
+$mediaLimit = min($mediaLimit, 200);
 $gallerySlice = array_slice($gallery, 0, $mediaLimit);
 $hasMore = count($gallery) > $mediaLimit;
 
@@ -1019,7 +1026,7 @@ if ($canViewComments && !empty($mediaIds)) {
                         <input type="hidden" name="ajax" value="1">
                         <input type="hidden" name="media_id" value="">
                         <div class="comment-form-row">
-                            <textarea name="comment_text" placeholder="Schreibe einen Kommentar..." maxlength="400" data-maxlength="400" rows="1"></textarea>
+                            <textarea name="comment_text" placeholder="Schreibe einen Kommentar..." maxlength="<?php echo (int) $commentTextMaxLength; ?>" data-maxlength="<?php echo (int) $commentTextMaxLength; ?>" rows="1"></textarea>
                             <input type="hidden" name="submit_comment" value="1">
                             <button type="submit" name="submit_comment" aria-label="Kommentieren">
                                 <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
