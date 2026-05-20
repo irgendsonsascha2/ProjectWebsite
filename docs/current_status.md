@@ -53,12 +53,18 @@ Umgesetzt in der Codebasis (lokal testbar):
 
 ## Sprint 3 Sicherheit (2026-05, Repo)
 
-- `includes/authz.php`: Login-/Rechte-Guards, Projekt- und Kommentar-Regeln, E-Mail-Verifikations-Gate (Legacy → Laravel `/verify-email`).
-- Session wird pro Request aus der DB synchronisiert (Rolle/Rechte/`email_verified_at`).
+- `includes/authz.php`: Login-/Rechte-Guards, Projekt- und Kommentar-Regeln, Session-Sync aus DB (Rolle/Rechte/`email_verified_at`).
 - `includes/rate_limit.php`: IP-Limit für Registrierungscode-Anfragen (5/h).
 - POST-Guards in `create_project`, `edit_project`, `project_grid`, `project_detail`.
+- **Kein Laravel-E-Mail-Gate** mehr; Account-Seite ohne `/verify-email`-Hinweis.
+- Invite-Registrierung: `email_verified_at` in `RegisterInvitedUser`.
+- Admin: CSRF auf Einladungscodes/Freigaben; CSRF-Redirect zurück auf Admin-URL.
 
-Offen: 2FA (Sprint 4), Admin-Re-Auth — `docs/security_roadmap.md`.
+Offen: optionales TOTP-2FA, `email_verified_at` aus Anfrage-Flow beim Register, CSRF auf restlichen Admin-Formularen — **`docs/next_session_plan.md`**.
+
+## Session-Handoff (neue Cursor-Session)
+
+**Start hier:** `docs/next_session_plan.md` (Zielbild Auth, erledigt, P1–P4, lokaler Test).
 
 ## Bereits umgesetzte Änderungen
 

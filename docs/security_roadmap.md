@@ -4,13 +4,13 @@
 
 **Stand 2026:** **Schritt 1** (kein direkter öffentlicher Webzugriff auf `dbScripts/`, Laufzeit-Guards) und **Schritt 2** (getrennte Mongo-URIs pro Rolle, Admin-Skripte nur über `ADMIN_DB_URI` / Admin-Pfad) sind in der laufenden App umgesetzt. Details: `docs/current_status.md`.
 
-Offen bzw. nur teilweise erfüllt bleiben u. a. **Schritt 3** (zentrale Autorisierung bei allen relevanten Datenzugriffen), **2FA** und weiteres harte Maßnahmen laut Zielbild unten.
+Offen: **Schritt 4** (optionales TOTP-2FA in PHP), fehlende CSRF-Felder in weiteren Admin-Formularen, `email_verified_at` beim Anfrage-Flow beim Register, Admin-Re-Auth, Deployment. Einstieg neue Session: `docs/next_session_plan.md`.
 
 **Ergänzung (Sprint 1, 2026-05):** CSRF für Legacy-POSTs, gehärtete Session-Cookies, Handoff `session_regenerate`, POST-Logout, eingeschränktes `?debug=1`, keine stillen Mongo-Default-URIs ohne `APP_ALLOW_DEV_DB_DEFAULTS` — Details `docs/current_status.md`.
 
 **Ergänzung (Sprint 2, 2026-05):** Mongo-RBAC ohne `users`/`registration_codes` für App-Rollen; `registration_code_requests` für Gäste; `includes/user_db.php`; `10_db_init_projects_indexes.php` — Details `docs/current_status.md`. Schritt 2 (URIs) war bereits umgesetzt; RBAC-Verfeinerung ist der Sprint-2-Teil.
 
-**Ergänzung (Sprint 3, 2026-05):** Zentrale Legacy-Autorisierung (`includes/authz.php`), Session-Sync aus DB, E-Mail-Verifikations-Gate, IP-Rate-Limit für Code-Anfragen — Schritt 3 der Roadmap teilweise umgesetzt (2FA folgt).
+**Ergänzung (Sprint 3, 2026-05):** Zentrale Legacy-Autorisierung (`includes/authz.php`), Session-Sync aus DB, POST-Guards auf Projektseiten, IP-Rate-Limit für Code-Anfragen. **Kein** Laravel-`/verify-email`-Zwang mehr; Invite-Registrierung setzt `email_verified_at`. Schritt 3 weitgehend umgesetzt; optional 2FA = Schritt 4 (neu, siehe unten).
 
 ## Ausgangslage (früherer Ist-Stand, teilweise inzwischen adressiert)
 
@@ -31,8 +31,9 @@ Am Ende der Umsetzung soll gelten:
 - Destruktive oder administrative Datenbankaktionen sind nur nach echter Administrator-Authentifizierung möglich.
 - Die Anwendungsdatenbank läuft mit technisch eingeschränkten Rechten.
 - Allgemeine Nutzerrechte werden nicht nur in der Oberfläche, sondern in der zentralen Datenzugriffslogik erzwungen.
-- Benutzerkonten müssen verpflichtend 2FA verwenden.
-- Für sicherheitskritische Admin-Aktionen kann eine frische Authentifizierung verlangt werden.
+- Benutzer können **optional** TOTP-2FA in der klassischen PHP-App aktivieren (nicht verpflichtend).
+- E-Mail-Nachweis nur im **Registrierungs-Anfrage-Flow**, nicht als Laravel-Login-Gate.
+- Für sicherheitskritische Admin-Aktionen kann eine frische Authentifizierung verlangt werden (noch offen).
 
 ## Architekturentscheidung
 
@@ -41,7 +42,7 @@ Die Umsetzung wird in zwei Ebenen getrennt:
 ### 1. Website- und Anwendungsebene
 
 - Session- und Rollenprüfung
-- E-Mail-Verifikation, 2FA-Loginfluss und Recovery
+- Registrierungs-E-Mail (Anfrage-Flow), optionales TOTP-2FA und Recovery
 - zentrale Autorisierungs- und Datenzugriffsschicht
 - Admin-Oberflächen
 
@@ -106,6 +107,8 @@ Was danach testbar ist:
 
 ## Schritt 3: Zentrale Autorisierungs- und Datenzugriffsschicht einführen
 
+**Status: weitgehend umgesetzt** (Guards + Session-Sync; nicht jede Seite vollständig migriert).
+
 Ziel:
 
 - Rechte nicht nur im UI, sondern bei allen relevanten Datenzugriffen zentral erzwingen
@@ -132,83 +135,47 @@ Was danach testbar ist:
 - UI-Hiding allein reicht nicht mehr aus, direkte Requests werden serverseitig korrekt blockiert
 - Rechteverletzungen schlagen auch bei manuell manipulierten Formularen fehl
 
-## Schritt 4: Datenmodell für E-Mail-Verifikation und 2FA vorbereiten
+## Schritt 4: Optionales TOTP-2FA (klassische PHP-App)
+
+**Status: offen** (ersetzt frühere Schritte 4–6 mit verpflichtender E-Mail-/Laravel-Verifikation).
 
 Ziel:
 
-- Accounts können E-Mail-Verifikation und verpflichtende 2FA technisch speichern und verwalten
+- Nutzer können freiwillig TOTP (Authenticator-App) aktivieren; ohne 2FA bleibt Login wie heute (Passwort + Handoff).
 
 Umsetzung:
 
-- User-Dokumente um Verifikations- und 2FA-Felder erweitern, z. B.:
-  - `email_verified`
-  - `email_verification_token`
-  - `email_verification_expires_at`
-  - `two_factor_enabled`
-  - `two_factor_method`
-  - `two_factor_totp_secret`
-  - `two_factor_email_enabled`
-  - `two_factor_backup_codes`
-  - `two_factor_confirmed_at`
-- Initialisierungsskripte und Seed-Strukturen anpassen
-- zentrale Helper für Verifikationsstatus, 2FA-Status und Recovery vorbereiten
-
-Bevorzugte Faktoren:
-
-- TOTP-basierte 2FA mit Authenticator-App
-- E-Mail-basierter Faktor an die bestätigte Anmelde-E-Mail
-- Backup-Codes als Recovery-Pfad
+- User-Felder z. B. `two_factor_enabled`, `two_factor_totp_secret`, `two_factor_backup_codes`, `two_factor_confirmed_at`
+- Account-UI in `pages/account.php`: Setup (QR), Bestätigung, Deaktivierung, Backup-Codes anzeigen
+- Login: nach erfolgreichem Passwort optional zweite Phase nur wenn `two_factor_enabled`
+- **Nicht:** Laravel `/verify-email`, E-Mail als Login-2FA, verpflichtende 2FA für alle
 
 Was danach testbar ist:
 
-- neue und bestehende Accounts unterstützen die neuen Verifikations- und 2FA-Felder
-- Datenbankstruktur ist für E-Mail-Verifikation und 2FA vorbereitet
+- Account ohne 2FA: Login unverändert
+- Mit 2FA: Login ohne TOTP scheitert; Backup-Code einmalig nutzbar
 
-## Schritt 5: E-Mail-Verifikation und 2FA-Einrichtung im Accountbereich aktivieren
+## Schritt 5: Registrierung — `email_verified_at` aus Anfrage-Flow
+
+**Status: teilweise** (Invite-Code setzt `email_verified_at` bereits in `RegisterInvitedUser`).
 
 Ziel:
 
-- neue Benutzer müssen ihre E-Mail bei der ersten Anmeldung bestätigen
-- Benutzer richten verpflichtend mindestens einen zweiten Faktor ein
+- Wer sich mit Code registriert und dessen E-Mail zu einer **verifizierten** `registration_code_requests`-Zeile passt, erhält konsistent `email_verified_at` (für spätere Auswertung/Anzeige, nicht für Login-Sperre).
 
 Umsetzung:
 
-- Registrierungsfluss um E-Mail-Bestätigung erweitern
-- nach erstem Passwort-Login in einen Onboarding-Zustand leiten
-- TOTP-Secret erzeugen und QR-/Setup-Daten anzeigen
-- E-Mail-Faktor vorbereiten und Testcode an die bestätigte Adresse senden
-- Benutzer mindestens einen 2FA-Faktor bestätigen lassen
-- Backup-Codes erzeugen und speichern
+- In `RegisterInvitedUser` oder Legacy-Bridge: Match E-Mail ↔ `verified_at` in `registration_code_requests`
+- Dokumentation in README/`current_status.md`
 
-Was danach testbar ist:
-
-- Anmeldung ist vor bestätigter E-Mail nicht vollständig freigeschaltet
-- TOTP kann eingerichtet werden
-- E-Mail-Faktor kann eingerichtet werden
-- falsche TOTP-Codes werden abgewiesen
-- Backup-Codes werden erzeugt und angezeigt
-
-## Schritt 6: Loginfluss um 2FA-Challenge erweitern
+## Schritt 6: Admin-CSRF und Re-Auth
 
 Ziel:
 
-- alle Accounts benötigen nach Passwortprüfung einen verpflichtenden zweiten Faktor
+- Alle Admin-POST-Formulare mit `csrf_field()`; CSRF-Fehler bleiben auf derselben Admin-Seite
+- Vor destruktiven DB-Aktionen frische Passwort-(+ optional 2FA-)Bestätigung
 
-Umsetzung:
-
-- Login in zwei Phasen aufteilen:
-  - Passwortprüfung
-  - 2FA-Challenge
-- Session erst nach erfolgreicher E-Mail-Verifikation und 2FA vollständig freischalten
-- TOTP und E-Mail als Challenge-Optionen unterstützen
-- Backup-Codes als Fallback zulassen
-
-Was danach testbar ist:
-
-- Login mit Passwort allein reicht nie aus
-- Login verlangt einen gültigen zweiten Faktor
-- falscher Code verhindert den Abschluss des Logins
-- Backup-Code funktioniert einmalig als Recovery
+**Status: teilweise** (`invite_codes`, `registration_requests`, `db_scripts` — Rest offen).
 
 ## Schritt 7: Frische Admin-Authentifizierung für sensible Aktionen
 
@@ -250,21 +217,24 @@ Was danach testbar ist:
 1. Öffentliche DB-Skriptausführung schließen
 2. Technische Datenbankrechte trennen
 3. Zentrale Autorisierungs- und Datenzugriffsschicht einführen
-4. Datenmodell für E-Mail-Verifikation und 2FA vorbereiten
-5. E-Mail-Verifikation und 2FA-Einrichtung im Accountbereich aktivieren
-6. Loginfluss um E-Mail-Verifikation und 2FA ergänzen
-7. Frische Admin-Authentifizierung ergänzen
+4. Optionales TOTP-2FA (PHP)
+5. `email_verified_at` aus Anfrage-Flow beim Register
+6. Admin-CSRF vollständig + Re-Auth
+7. Frische Admin-Authentifizierung für DB-Destructive (Detail Schritt 7 unten)
 8. Dokumentation vervollständigen
 
 ## Offene fachliche Entscheidungen
 
-Bestätigte Entscheidungen:
+Bestätigte Entscheidungen (Stand 2026-05, Zielbild):
 
-- TOTP-Apps werden unterstützt.
-- E-Mail-basierte Bestätigung und E-Mail-Faktor werden unterstützt.
-- Bei der ersten Anmeldung ist eine E-Mail-Bestätigung erforderlich.
-- Backup-Codes sind verpflichtender Teil der Recovery-Strategie.
-- 2FA ist für alle Benutzer verpflichtend und nicht optional.
+- **Keine Laravel-E-Mail-Verifikation** für die klassische Site; Laravel bleibt **vorerst** nur für Login, Registrierung mit Invite-Code (`bridge_*`) und Passwort-Reset.
+- **E-Mail-Nachweis bei Registrierung** nur über den bestehenden Flow: Nutzer bestätigt die **Anfrage-E-Mail** per Link (`verify_registration_request`), danach **manuelle Admin-Freigabe** (`registration_requests`), erst dann Invite-Code und Kontoanlage.
+- **Kein separater Laravel-`/verify-email`-Zwang** für Legacy-Nutzer; `email_verified_at` am User wird aus dem Registrierungsflow (passende, verifizierte Anfrage) oder expliziter Legacy-Logik gesetzt — nicht über Laravel Dashboard.
+- **2FA optional** (nicht verpflichtend): TOTP per Authenticator-App in der **klassischen PHP-App** (`pages/account.php` o. ä.), nicht in Laravel.
+- Backup-Codes als Recovery, wenn 2FA aktiv ist (empfohlen, nicht für alle Accounts Pflicht).
+- E-Mail als **zweiter Faktor beim Login** ist **nicht** vorgesehen (nur TOTP optional); E-Mail dient dem Nachweis vor Registrierung und dem Versand des Invite-Codes.
+
+Abweichung vom früheren Plan: Schritt 5–6 der Roadmap (verpflichtende 2FA + Laravel-Verify) werden durch obiges Zielbild ersetzt.
 
 ## Einordnung: Code-Aufräumen vor Security-Fixing
 
