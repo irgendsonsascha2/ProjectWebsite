@@ -61,10 +61,18 @@ if (!function_exists('csrf_verify')) {
 if (!function_exists('csrf_failure_redirect_url')) {
     function csrf_failure_redirect_url(): string
     {
+        if (! function_exists('legacy_index_url')) {
+            require_once __DIR__.'/app_env.php';
+        }
+
         $page = (string) ($_GET['page'] ?? 'home');
         $page = preg_replace('/[^a-zA-Z0-9_-]/', '', $page) ?: 'home';
 
-        return 'index.php?page='.$page.'&err=csrf';
+        if (legacy_is_admin_script_request()) {
+            return legacy_index_url(['page' => 'home', 'err' => 'csrf']);
+        }
+
+        return legacy_index_url(['page' => $page, 'err' => 'csrf']);
     }
 }
 

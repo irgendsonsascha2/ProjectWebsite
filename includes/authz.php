@@ -134,7 +134,10 @@ if (!function_exists('authz_denied_redirect')) {
             exit;
         }
 
-        header('Location: index.php?page=login&err='.rawurlencode($reason));
+        if (! function_exists('legacy_index_url')) {
+            require_once __DIR__.'/app_env.php';
+        }
+        header('Location: '.legacy_index_url(['page' => 'login', 'err' => $reason]));
         exit;
     }
 }
@@ -177,7 +180,10 @@ if (!function_exists('authz_require_verified_email')) {
             ]);
             exit;
         }
-        header('Location: index.php?page=account&err=verify_email');
+        if (! function_exists('legacy_index_url')) {
+            require_once __DIR__.'/app_env.php';
+        }
+        header('Location: '.legacy_index_url(['page' => 'account', 'err' => 'verify_email']));
         exit;
     }
 }
@@ -207,8 +213,14 @@ if (!function_exists('authz_apply_email_verification_gate')) {
         if (strpos($script, 'bridge_') !== false || basename($script) === 'laravel_handoff.php') {
             return;
         }
+        if (function_exists('legacy_is_admin_script_request') && legacy_is_admin_script_request()) {
+            return;
+        }
 
-        header('Location: index.php?page=account&err=verify_email');
+        if (! function_exists('legacy_index_url')) {
+            require_once __DIR__.'/app_env.php';
+        }
+        header('Location: '.legacy_index_url(['page' => 'account', 'err' => 'verify_email']));
         exit;
     }
 }

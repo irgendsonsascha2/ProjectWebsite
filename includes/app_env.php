@@ -102,6 +102,70 @@ if (!function_exists('configure_session_cookie_params')) {
     }
 }
 
+if (!function_exists('legacy_site_base_url')) {
+    /**
+     * Basis-URL der klassischen PHP-Site (ohne trailing slash), z. B. http://127.0.0.1:8080
+     */
+    function legacy_site_base_url(): string
+    {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $fromEnv = getenv('LEGACY_SITE_URL');
+        if (is_string($fromEnv) && trim($fromEnv) !== '') {
+            return $cached = rtrim(trim($fromEnv), '/');
+        }
+
+        $laravelEnv = dirname(__DIR__).'/laravel/.env';
+        if (is_readable($laravelEnv)) {
+            foreach (file($laravelEnv, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $line) {
+                $line = trim((string) $line);
+                if ($line === '' || str_starts_with($line, '#')) {
+                    continue;
+                }
+                if (preg_match('/^LEGACY_SITE_URL=(.+)$/', $line, $m)) {
+                    $url = trim($m[1], " \t\n\r\0\x0B\"'");
+
+                    if ($url !== '') {
+                        return $cached = rtrim($url, '/');
+                    }
+                }
+            }
+        }
+
+        $scheme = (! empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host = (string) ($_SERVER['HTTP_HOST'] ?? '127.0.0.1:8080');
+
+        return $cached = $scheme.'://'.$host;
+    }
+}
+
+if (!function_exists('legacy_index_url')) {
+    /**
+     * URL zu index.php der klassischen Site — funktioniert auch von pages/admin/ aus.
+     *
+     * @param array<string, string> $query
+     */
+    function legacy_index_url(array $query = []): string
+    {
+        $base = legacy_site_base_url();
+        $qs = $query !== [] ? '?'.http_build_query($query) : '';
+
+        return $base.'/index.php'.$qs;
+    }
+}
+
+if (!function_exists('legacy_is_admin_script_request')) {
+    function legacy_is_admin_script_request(): bool
+    {
+        $script = (string) ($_SERVER['SCRIPT_NAME'] ?? '');
+
+        return str_contains($script, '/pages/admin/');
+    }
+}
+
 if (!function_exists('trusted_proxy_client_ip')) {
     /**
      * X-Forwarded-For nur wenn REMOTE_ADDR in TRUSTED_PROXY_IPS (kommagetrennt).

@@ -194,6 +194,7 @@ admin_render_page('DB-Skripte', 'db_scripts', function () use ($availableScripts
                         <button type="button" data-dialog-open="script-run-<?php echo htmlspecialchars($scriptName); ?>">Ausführen</button>
                     <?php else: ?>
                         <form method="POST" onsubmit="return confirm('Achtung! Sind Sie sicher, dass Sie das Skript <?php echo htmlspecialchars($scriptName); ?> ausführen möchten? Dies kann Daten löschen.');">
+                            <?php echo csrf_field(); ?>
                             <input type="hidden" name="script_name" value="<?php echo htmlspecialchars($scriptName); ?>">
                             <button type="submit" name="run_script">Ausführen</button>
                         </form>
@@ -218,6 +219,7 @@ admin_render_page('DB-Skripte', 'db_scripts', function () use ($availableScripts
                                 <button type="button" class="close-button" data-dialog-close>Schließen</button>
                             </div>
                             <form method="POST" onsubmit="return confirm('Achtung! Sind Sie sicher, dass Sie das Skript <?php echo htmlspecialchars($scriptName); ?> ausführen möchten? Dies kann Daten löschen.');">
+                                <?php echo csrf_field(); ?>
                                 <input type="hidden" name="script_name" value="<?php echo htmlspecialchars($scriptName); ?>">
                                 <?php foreach ($scriptFields as $field): ?>
                                     <p>
