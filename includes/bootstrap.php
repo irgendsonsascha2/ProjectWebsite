@@ -206,8 +206,6 @@ if (!function_exists('request_is_ajax')) {
     }
 }
 
-authz_apply_email_verification_gate();
-
 if ($isPost) {
     csrf_verify_or_exit();
 }

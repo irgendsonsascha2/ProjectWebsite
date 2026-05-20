@@ -56,6 +56,7 @@ class RegisterInvitedUser
             'password' => $validated['password'],
             'role' => $validCode->role,
             'created_at' => now(),
+            'email_verified_at' => now(),
             'content_responsibility_consent_at' => now(),
         ]);
 

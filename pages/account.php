@@ -32,13 +32,6 @@ if (! isset($_SESSION['user_id'])) {
 $message = '';
 $messageClass = 'alert';
 
-if (isset($_GET['err']) && (string) $_GET['err'] === 'verify_email') {
-    $verifyUrl = authz_laravel_verify_email_url();
-    $message = '❌ Bitte bestätige deine E-Mail-Adresse, bevor du die Website nutzt. '
-        .'<a href="'.htmlspecialchars($verifyUrl, ENT_QUOTES, 'UTF-8').'">Zur E-Mail-Bestätigung (Laravel)</a>';
-    $messageClass = 'alert alert--error';
-}
-
 // Hinweise aus Session (z. B. nach Redirects)
 if (! empty($_SESSION['register_validation_errors'])) {
     unset($_SESSION['register_validation_errors']);

@@ -162,66 +162,20 @@ if (!function_exists('authz_require_can')) {
 }
 
 if (!function_exists('authz_require_verified_email')) {
+    /**
+     * E-Mail-Bestätigung läuft über den Registrierungsflow (Anfrage-Link / Einladungscode),
+     * nicht über Laravel /verify-email.
+     */
     function authz_require_verified_email(): void
     {
         authz_require_login();
-        if (authz_session_email_is_verified()) {
-            return;
-        }
-        if (function_exists('request_is_ajax') && request_is_ajax()) {
-            if (! headers_sent()) {
-                http_response_code(403);
-                header('Content-Type: application/json; charset=UTF-8');
-            }
-            echo json_encode([
-                'ok' => false,
-                'error' => 'verify_email',
-                'message' => 'Bitte bestätige zuerst deine E-Mail-Adresse.',
-            ]);
-            exit;
-        }
-        if (! function_exists('legacy_index_url')) {
-            require_once __DIR__.'/app_env.php';
-        }
-        header('Location: '.legacy_index_url(['page' => 'account', 'err' => 'verify_email']));
-        exit;
     }
 }
 
 if (!function_exists('authz_apply_email_verification_gate')) {
+    /** @deprecated Kein Laravel-/verify-email-Zwang mehr; Gate ist deaktiviert. */
     function authz_apply_email_verification_gate(): void
     {
-        if (! authz_is_logged_in() || authz_session_email_is_verified()) {
-            return;
-        }
-
-        $page = authz_current_page_key();
-        $allowedPages = [
-            'login',
-            'register',
-            'account',
-            'verify_registration_request',
-            'impressum',
-            'datenschutz',
-            'nutzungsbedingungen',
-        ];
-        if (in_array($page, $allowedPages, true)) {
-            return;
-        }
-
-        $script = (string) ($_SERVER['SCRIPT_NAME'] ?? '');
-        if (strpos($script, 'bridge_') !== false || basename($script) === 'laravel_handoff.php') {
-            return;
-        }
-        if (function_exists('legacy_is_admin_script_request') && legacy_is_admin_script_request()) {
-            return;
-        }
-
-        if (! function_exists('legacy_index_url')) {
-            require_once __DIR__.'/app_env.php';
-        }
-        header('Location: '.legacy_index_url(['page' => 'account', 'err' => 'verify_email']));
-        exit;
     }
 }
 
