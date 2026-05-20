@@ -44,6 +44,8 @@ if (app_debug_enabled()) {
 
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/user_db.php';
+require_once __DIR__ . '/authz.php';
+require_once __DIR__ . '/rate_limit.php';
 require_once __DIR__ . '/site_settings.php';
 require_once __DIR__ . '/svg_icons.php';
 
@@ -57,39 +59,18 @@ if (!isset($db)) {
 
 site_settings_apply($db);
 
-if ($sessionActive && isset($_SESSION['user_id']) && (
-    !isset($_SESSION['permissions']) ||
-    !is_array($_SESSION['permissions']) ||
-    !isset($_SESSION['role']) ||
-    !isset($_SESSION['email'])
-)) {
-    try {
-        $userId = new \MongoDB\BSON\ObjectId($_SESSION['user_id']);
-        // Nutzer anhand der ID laden: nicht die rollenbeschränkte $db-Connection nutzen —
-        // sonst schlägt findOne fehl, Session wird geleert, wirken wie „abgemeldet“ (z. B. Admin-URL).
-        [, $dbForUserRead] = get_admin_mongo_connection();
-        $user = user_find_public_by_id($dbForUserRead, $userId);
-        if ($user) {
-            $sessionUser = user_session_from_document($user);
-            $_SESSION['email'] = $sessionUser['email'];
-            $_SESSION['username'] = $sessionUser['username'];
-            $_SESSION['role'] = $sessionUser['role'];
-            [$client, $db] = get_request_mongo_connection($_SESSION['role']);
-            if ($_SESSION['role']) {
-                $roleData = $db->roles_config->findOne(['role' => $_SESSION['role']]);
-                if ($roleData && isset($roleData['permissions'])) {
-                    $_SESSION['permissions'] = iterator_to_array($roleData['permissions']);
-                }
-            }
-        } else {
-            $_SESSION = [];
-        }
-    } catch (Exception $e) {
-        $_SESSION = [];
+if ($sessionActive && isset($_SESSION['user_id'])) {
+    authz_sync_session_from_db();
+    if (! isset($_SESSION['user_id'])) {
+        $sessionActive = false;
+    } else {
+        $effectiveRole = (string) ($_SESSION['role'] ?? 'viewer');
+        $effectivePermissions = (array) ($_SESSION['permissions'] ?? []);
+        [$client, $db] = get_request_mongo_connection($effectiveRole);
     }
 }
 
-if (!$sessionActive || !isset($_SESSION['user_id'])) {
+if (! $sessionActive || ! isset($_SESSION['user_id'])) {
     if ($sessionActive) {
         if (!isset($_SESSION['role'])) {
             $_SESSION['role'] = 'viewer';
@@ -97,7 +78,8 @@ if (!$sessionActive || !isset($_SESSION['user_id'])) {
         if (!isset($_SESSION['permissions']) || !is_array($_SESSION['permissions'])) {
             $roleData = $db->roles_config->findOne(['role' => $_SESSION['role']]);
             if ($roleData && isset($roleData['permissions'])) {
-                $_SESSION['permissions'] = iterator_to_array($roleData['permissions']);
+                $perms = $roleData['permissions'];
+                $_SESSION['permissions'] = is_array($perms) ? $perms : iterator_to_array($perms);
             } else {
                 $_SESSION['permissions'] = [];
             }
@@ -109,7 +91,8 @@ if (!$sessionActive || !isset($_SESSION['user_id'])) {
         // No session: act as viewer, but still load permissions for can()
         $roleData = $db->roles_config->findOne(['role' => 'viewer']);
         if ($roleData && isset($roleData['permissions'])) {
-            $effectivePermissions = iterator_to_array($roleData['permissions']);
+            $perms = $roleData['permissions'];
+            $effectivePermissions = is_array($perms) ? $perms : iterator_to_array($perms);
         } else {
             $effectivePermissions = [];
         }
@@ -133,16 +116,7 @@ $GLOBALS['effective_permissions'] = $effectivePermissions;
 
 if (!function_exists('can_edit_project')) {
     function can_edit_project($project) {
-        if (!isset($_SESSION['user_id'])) {
-            return false;
-        }
-        if (can('edit_all')) {
-            return true;
-        }
-        if (can('edit_own') && isset($project['author_id'])) {
-            return (string)$project['author_id'] === $_SESSION['user_id'];
-        }
-        return false;
+        return authz_can_edit_project($project);
     }
 }
 
@@ -231,6 +205,8 @@ if (!function_exists('request_is_ajax')) {
             ));
     }
 }
+
+authz_apply_email_verification_gate();
 
 if ($isPost) {
     csrf_verify_or_exit();

@@ -18,7 +18,9 @@ function delete_project_files($project) {
     }
 }
 
-if ($canDeleteProjects && isset($_POST['delete_projects']) && isset($_POST['project_ids']) && is_array($_POST['project_ids'])) {
+if (isset($_POST['delete_projects']) && isset($_POST['project_ids']) && is_array($_POST['project_ids'])) {
+    authz_require_can('delete_all');
+    authz_require_verified_email();
     $ids = array_values(array_filter($_POST['project_ids'], function ($id) {
         return is_string($id) && $id !== '';
     }));

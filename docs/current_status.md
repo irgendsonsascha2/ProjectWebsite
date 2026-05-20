@@ -51,7 +51,14 @@ Umgesetzt in der Codebasis (lokal testbar):
 
 **Nach Pull:** `03_db_init_mongo_roles.php` im Admin-Panel ausführen (oder Master), optional `10_db_init_projects_indexes.php`.
 
-Offen (nächste Sprints): zentrale Autorisierung (Schritt 3), 2FA — `docs/security_roadmap.md`.
+## Sprint 3 Sicherheit (2026-05, Repo)
+
+- `includes/authz.php`: Login-/Rechte-Guards, Projekt- und Kommentar-Regeln, E-Mail-Verifikations-Gate (Legacy → Laravel `/verify-email`).
+- Session wird pro Request aus der DB synchronisiert (Rolle/Rechte/`email_verified_at`).
+- `includes/rate_limit.php`: IP-Limit für Registrierungscode-Anfragen (5/h).
+- POST-Guards in `create_project`, `edit_project`, `project_grid`, `project_detail`.
+
+Offen: 2FA (Sprint 4), Admin-Re-Auth — `docs/security_roadmap.md`.
 
 ## Bereits umgesetzte Änderungen
 

@@ -72,6 +72,7 @@ if (! hash_equals($expected, $sig)) {
 try {
     require_once __DIR__ . '/includes/db.php';
     require_once __DIR__ . '/includes/user_db.php';
+    require_once __DIR__ . '/includes/authz.php';
 
     /** @var MongoDB\Database $db */
     [, $db] = get_admin_mongo_connection();
@@ -86,21 +87,7 @@ try {
         session_regenerate_id(true);
     }
 
-    $sessionUser = user_session_from_document($user);
-    $_SESSION['user_id'] = (string) ($user['_id'] ?? '');
-    $_SESSION['email'] = $sessionUser['email'];
-    $_SESSION['username'] = $sessionUser['username'];
-    $_SESSION['role'] = $sessionUser['role'];
-
-    $roleData = $db->roles_config->findOne(['role' => $_SESSION['role']]);
-    if ($roleData && isset($roleData['permissions'])) {
-        $perms = $roleData['permissions'];
-        $_SESSION['permissions'] = is_array($perms)
-            ? $perms
-            : iterator_to_array($perms);
-    } else {
-        $_SESSION['permissions'] = [];
-    }
+    authz_apply_user_to_session($user, $db);
 
     $page = (string) ($_ENV['LEGACY_AFTER_LOGIN_PAGE'] ?? getenv('LEGACY_AFTER_LOGIN_PAGE') ?: 'home');
     $page = preg_replace('/[^a-zA-Z0-9_-]/', '', $page) ?: 'home';

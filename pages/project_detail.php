@@ -27,12 +27,9 @@ try {
         echo "Projekt existiert nicht.";
         return;
     }
-    if (($project['is_draft'] ?? false) === true) {
-        $isOwner = $isLoggedIn && isset($project['author_id']) && (string)$project['author_id'] === $_SESSION['user_id'];
-        if (!$isOwner) {
-            echo "Projekt existiert nicht.";
-            return;
-        }
+    if (! authz_can_view_project($project)) {
+        echo 'Projekt existiert nicht.';
+        return;
     }
 } catch (Exception $e) {
     echo "Ungültige Projekt-ID.";
@@ -47,8 +44,8 @@ $canViewLikes = can('view_likes');
 $canComment = $isLoggedIn && can('comment');
 $canCommentLimit = $isLoggedIn && can('comment_limit');
 $isAjax = false;
-if (!$canViewProjects) {
-    echo "Du hast keine Berechtigung, dieses Projekt anzusehen.";
+if (! authz_can_view_project($project)) {
+    echo 'Du hast keine Berechtigung, dieses Projekt anzusehen.';
     return;
 }
 if (isset($_POST['ajax']) && $_POST['ajax'] === '1') {
@@ -239,7 +236,9 @@ function delete_project_files($project) {
     }
 }
 
-if ($canDeleteProjects && isset($_POST['delete_project'])) {
+if (isset($_POST['delete_project'])) {
+    authz_require_can('delete_all');
+    authz_require_verified_email();
     delete_project_files($project);
     $db->projects->deleteOne(['_id' => $projectObjectId]);
     $db->likes->deleteMany(['project_id' => $projectObjectId]);
@@ -249,7 +248,9 @@ if ($canDeleteProjects && isset($_POST['delete_project'])) {
 }
 
 // --- LOGIK: LIKE / DISLIKE ---
-if ($isLoggedIn && can('like_dislike') && isset($_POST['interaction'])) {
+if (isset($_POST['interaction'])) {
+    authz_require_can('like_dislike');
+    authz_require_verified_email();
     $userId = new ObjectId($_SESSION['user_id']);
     $type = $_POST['interaction']; // 'like' or 'dislike'
     $mediaObjectId = parse_media_id($_POST['media_id'] ?? '');
@@ -317,7 +318,8 @@ if ($isLoggedIn && can('like_dislike') && isset($_POST['interaction'])) {
 }
 
 // --- LOGIK: KOMMENTAR ---
-if ($isLoggedIn && isset($_POST['delete_comment'])) {
+if (isset($_POST['delete_comment'])) {
+    authz_require_verified_email();
     $userId = new ObjectId($_SESSION['user_id']);
     $commentIdRaw = trim($_POST['comment_id'] ?? '');
     $mediaObjectId = parse_media_id($_POST['media_id'] ?? '');
@@ -378,39 +380,24 @@ if ($isLoggedIn && isset($_POST['delete_comment'])) {
         exit();
     }
 
-    $canDeleteOwn = can('comment') && (string)$comment['user_id'] === (string)$userId;
-    $canDeleteOthers = can('delete_comments');
     $deleteRolesAllowed = [];
     $roleData = null;
     if (isset($_SESSION['role'])) {
         $roleData = $db->roles_config->findOne(['role' => $_SESSION['role']]);
-        if ($canDeleteOthers && $roleData && isset($roleData['comment_delete_roles'])) {
-            $deleteRolesAllowed = is_array($roleData['comment_delete_roles']) ? $roleData['comment_delete_roles'] : iterator_to_array($roleData['comment_delete_roles']);
+        if ($roleData && isset($roleData['comment_delete_roles'])) {
+            $deleteRolesAllowed = is_array($roleData['comment_delete_roles'])
+                ? $roleData['comment_delete_roles']
+                : iterator_to_array($roleData['comment_delete_roles']);
         }
     }
-    $allowed = $canDeleteOwn;
-    if (!$allowed && $canDeleteOthers) {
-        $authorRole = (string) ($comment['author_role'] ?? '');
-        if ($authorRole === '') {
-            $author = user_find_public_by_id($db, $comment['user_id']);
-            if ($author === null) {
-                try {
-                    [, $adminDb] = get_admin_mongo_connection();
-                    $author = user_find_public_by_id($adminDb, $comment['user_id']);
-                } catch (Throwable $e) {
-                    $author = null;
-                }
-            }
-            if ($author !== null) {
-                $authorRole = user_session_from_document($author)['role'];
-            }
-        }
-        if ($deleteRolesAllowed === ['*'] || in_array($authorRole, $deleteRolesAllowed, true)) {
-            $allowed = true;
-        }
-    }
+    $allowed = authz_can_delete_comment(
+        (array) $comment,
+        (string) $userId,
+        $deleteRolesAllowed,
+        can('delete_comments')
+    );
 
-    if (!$allowed) {
+    if (! $allowed) {
         if ($isAjax) {
             if (ob_get_length()) {
                 ob_clean();
@@ -481,7 +468,9 @@ if ($isLoggedIn && isset($_POST['delete_comment'])) {
     exit();
 }
 
-if ($isLoggedIn && can('comment') && isset($_POST['submit_comment'])) {
+if (isset($_POST['submit_comment'])) {
+    authz_require_can('comment');
+    authz_require_verified_email();
     $userId = new ObjectId($_SESSION['user_id']);
     $commentText = trim($_POST['comment_text']);
     $commentLimit = defined('COMMENT_TEXT_MAX_LENGTH') ? COMMENT_TEXT_MAX_LENGTH : 400;

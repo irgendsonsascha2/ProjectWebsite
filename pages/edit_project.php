@@ -1,13 +1,7 @@
 <?php
 require_once __DIR__ . '/../includes/bootstrap.php';
-// --- HILFSFUNKTIONEN ---
-if (!function_exists('can')) {
-    function can($permission)
-    {
-        return isset($_SESSION['permissions']) && in_array($permission, $_SESSION['permissions']);
-    }
-}
-$isLoggedIn = isset($_SESSION['user_id']);
+
+$isLoggedIn = authz_is_logged_in();
 
 // --- DATENBANK & PROJEKT LADEN ---
 use MongoDB\BSON\ObjectId;
@@ -47,18 +41,8 @@ try {
     die("Ungültige Projekt-ID.");
 }
 
-// --- BERECHTIGUNGS-CHECK ---
-$canEdit = false;
-if ($isLoggedIn) {
-    if (can('edit_all')) {
-        $canEdit = true;
-    } elseif (can('edit_own') && isset($project['author_id']) && (string)$project['author_id'] === $_SESSION['user_id']) {
-        $canEdit = true;
-    }
-}
-if (!$canEdit) {
-    die("<h1>Zugriff verweigert</h1><p>Sie haben nicht die nötigen Rechte, um dieses Projekt zu bearbeiten.</p>");
-}
+authz_require_project_edit($project);
+$canEdit = true;
 
 $message = "";
 $contentBaseDir = __DIR__ . '/../content';

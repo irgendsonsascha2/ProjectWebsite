@@ -10,6 +10,8 @@ Offen bzw. nur teilweise erfüllt bleiben u. a. **Schritt 3** (zentrale Autorisi
 
 **Ergänzung (Sprint 2, 2026-05):** Mongo-RBAC ohne `users`/`registration_codes` für App-Rollen; `registration_code_requests` für Gäste; `includes/user_db.php`; `10_db_init_projects_indexes.php` — Details `docs/current_status.md`. Schritt 2 (URIs) war bereits umgesetzt; RBAC-Verfeinerung ist der Sprint-2-Teil.
 
+**Ergänzung (Sprint 3, 2026-05):** Zentrale Legacy-Autorisierung (`includes/authz.php`), Session-Sync aus DB, E-Mail-Verifikations-Gate, IP-Rate-Limit für Code-Anfragen — Schritt 3 der Roadmap teilweise umgesetzt (2FA folgt).
+
 ## Ausgangslage (früherer Ist-Stand, teilweise inzwischen adressiert)
 
 Folgendes war zu verschiedenen Zeiten sichtbar; die ersten Punkte betreffen die jetzige Codebasis **nicht mehr** in derselben Form:

@@ -86,6 +86,9 @@ if (isset($_POST['request_registration_code'])) {
         } elseif ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $message = '❌ Bitte eine gültige E-Mail-Adresse angeben.';
             $messageClass = 'alert alert--error';
+        } elseif (! rate_limit_registration_code_request_allow()) {
+            $message = '❌ Zu viele Anfragen von dieser Adresse — bitte später erneut versuchen.';
+            $messageClass = 'alert alert--error';
         } else {
             $now = time();
             $last = (int)($_SESSION['registration_code_request_last_at'] ?? 0);

@@ -252,6 +252,7 @@ Empfohlene Zielarchitektur:
 - Alle mutierenden POST-Requests der klassischen Website benötigen ein CSRF-Token (`includes/csrf.php`, `js/csrf-forms.js`). Logout nur per POST.
 - Optional: `SESSION_SECURE=1`, `TRUSTED_PROXY_IPS` (kommagetrennt) für Betrieb hinter HTTPS/Reverse-Proxy — siehe `.env.example` im Projektroot.
 - Mongo-RBAC: App-Rollen (`viewer` usw.) lesen **keine** `users`- oder `registration_codes`-Collections mehr; Einladungen/Admin über `admin`. Nach Änderung an `03_db_init_mongo_roles.php` Skript im Admin ausführen. Kommentar-Anzeigenamen: `includes/user_db.php`.
+- Autorisierung: `includes/authz.php` erzwingt Rechte serverseitig; unverifizierte E-Mails werden auf die Account-Seite mit Link zu Laravel `/verify-email` umgeleitet (Admin ausgenommen).
 
 ### Erste Initialisierung, wenn MongoDB noch keine Projektbenutzer hat
 

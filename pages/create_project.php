@@ -1,17 +1,8 @@
 <?php
 require_once __DIR__ . '/../includes/bootstrap.php';
-// --- HILFSFUNKTION FÜR RECHTE ---
-if (!function_exists('can')) {
-    function can($permission)
-    {
-        return isset($_SESSION['permissions']) && in_array($permission, $_SESSION['permissions']);
-    }
-}
 
-// --- BERECHTIGUNGS-CHECK ---
-if (!can('create_project')) {
-    die("<h1>Zugriff verweigert</h1><p>Sie haben nicht die nötigen Rechte, um Projekte zu erstellen.</p>");
-}
+authz_require_can('create_project');
+authz_require_verified_email();
 
 use MongoDB\BSON\UTCDateTime;
 use MongoDB\BSON\ObjectId;
