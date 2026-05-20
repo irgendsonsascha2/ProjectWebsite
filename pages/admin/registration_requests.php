@@ -139,7 +139,8 @@ $verifiedPending = iterator_to_array(
                         <td><?php echo htmlspecialchars($ver, ENT_QUOTES, 'UTF-8'); ?></td>
                         <td><?php echo htmlspecialchars($ip, ENT_QUOTES, 'UTF-8'); ?></td>
                         <td>
-                            <form method="POST" onsubmit="return confirm('Anfrage freigeben und Code senden?');">
+                            <form method="POST" action="registration_requests.php" onsubmit="return confirm('Anfrage freigeben und Code senden?');">
+                                <?php echo csrf_field(); ?>
                                 <input type="hidden" name="approve_request_id" value="<?php echo htmlspecialchars($rid, ENT_QUOTES, 'UTF-8'); ?>">
                                 <button type="submit">Freigeben + Code senden</button>
                             </form>

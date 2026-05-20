@@ -12,6 +12,11 @@ if (!can('generate_codes')) {
 $message = '';
 $messageClass = 'alert';
 
+if (isset($_GET['err']) && (string) $_GET['err'] === 'csrf') {
+    $message = '❌ Formular abgelaufen — bitte erneut versuchen.';
+    $messageClass = 'alert alert--error';
+}
+
 // --- LOGIK: CODE GENERIEREN ---
 if (isset($_POST['generate_code'])) {
     $targetRole = (string)($_POST['target_role'] ?? '');
@@ -115,7 +120,8 @@ admin_render_page('Einladungscodes', 'invite_codes', function () use ($message, 
 
     <div class="admin-card admin-card--spaced">
         <h2>Neuen Code generieren</h2>
-        <form method="POST" class="code-form">
+        <form method="POST" class="code-form" action="invite_codes.php">
+            <?php echo csrf_field(); ?>
             <select id="target_role" name="target_role" aria-label="Rolle">
                 <?php foreach ($roleOptions as $roleOption): ?>
                     <?php

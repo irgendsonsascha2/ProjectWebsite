@@ -69,7 +69,10 @@ if (!function_exists('csrf_failure_redirect_url')) {
         $page = preg_replace('/[^a-zA-Z0-9_-]/', '', $page) ?: 'home';
 
         if (legacy_is_admin_script_request()) {
-            return legacy_index_url(['page' => 'home', 'err' => 'csrf']);
+            $script = (string) ($_SERVER['SCRIPT_NAME'] ?? '/pages/admin/index.php');
+            $query = http_build_query(['err' => 'csrf']);
+
+            return $script.'?'.$query;
         }
 
         return legacy_index_url(['page' => $page, 'err' => 'csrf']);
