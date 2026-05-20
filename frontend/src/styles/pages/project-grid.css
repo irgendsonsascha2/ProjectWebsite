@@ -131,7 +131,9 @@
     inset: 0;
   }
 
-  .page-project_grid .thumb-play {
+  /* Shared video play overlay (grid thumb + detail gallery) */
+  .page-project_grid .thumb-play,
+  .page-project_detail .media-play {
     position: absolute;
     top: 50%;
     left: 50%;

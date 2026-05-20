@@ -859,8 +859,7 @@ if ($canViewComments && !empty($mediaIds)) {
                             <button class="media-item skeleton-host" data-skeleton-media data-type="<?php echo htmlspecialchars($type); ?>" data-src="<?php echo htmlspecialchars($url); ?>" data-media-id="<?php echo htmlspecialchars($mediaIdStr); ?>">
                                 <span class="skeleton-panel skeleton-panel--tile" aria-hidden="true"></span>
                                 <?php if ($type === 'video'): ?>
-                                    <video src="<?php echo htmlspecialchars($url); ?>" preload="metadata" muted playsinline></video>
-                                    <span class="media-badge">Video</span>
+                                    <video src="<?php echo htmlspecialchars($url); ?>" preload="metadata" muted playsinline disablepictureinpicture></video>
                                     <span class="media-play">▶</span>
                                 <?php else: ?>
                                     <img src="<?php echo htmlspecialchars($url); ?>" alt="Bild" loading="lazy">
@@ -1123,7 +1122,6 @@ if ($canViewComments && !empty($mediaIds)) {
     const lightboxMedia = lightbox ? lightbox.querySelector('.lightbox-media') : null;
     const lightboxPanel = lightbox ? lightbox.querySelector('.lightbox-panel') : null;
     const closeBtn = lightbox ? lightbox.querySelector('.lightbox-close') : null;
-
     const statusEl = document.getElementById('interaction-status');
     const commentItems = document.getElementById('lightbox-comment-items');
     const likeCountEl = lightboxPanel ? lightboxPanel.querySelector('.like-count') : null;
@@ -1566,6 +1564,78 @@ if ($canViewComments && !empty($mediaIds)) {
         delete body.dataset.scrollLock;
     }
 
+    function getLightboxVideo() {
+        return lightboxMedia ? lightboxMedia.querySelector('video') : null;
+    }
+
+    function toggleLightboxMute() {
+        const video = getLightboxVideo();
+        if (!video) return;
+        video.muted = !video.muted;
+    }
+
+    function isSpaceKey(e) {
+        return e.key === ' ' || e.code === 'Space';
+    }
+
+    function isLightboxOpen() {
+        return lightbox && lightbox.classList.contains('is-open');
+    }
+
+    function toggleLightboxPlayPause() {
+        const video = getLightboxVideo();
+        if (!video) return;
+        if (video.paused) {
+            const playPromise = video.play();
+            if (playPromise && typeof playPromise.catch === 'function') {
+                playPromise.catch(() => {});
+            }
+        } else {
+            video.pause();
+        }
+    }
+
+    function stopGalleryTilePreview() {
+        document.querySelectorAll('.page-project_detail .media-item.is-video-previewing').forEach((el) => {
+            el.classList.remove('is-video-previewing');
+            const tileVideo = el.querySelector('video');
+            if (!tileVideo) return;
+            tileVideo.pause();
+            try {
+                tileVideo.currentTime = 0;
+            } catch (e) {
+                /* ignore */
+            }
+        });
+    }
+
+    function blurLightboxTriggerFocus() {
+        const active = document.activeElement;
+        if (active instanceof HTMLElement && active.closest('.media-item')) {
+            active.blur();
+        }
+    }
+
+    function shouldHandleLightboxSpace(e) {
+        const target = e.target;
+        const isFormField = target instanceof Element
+            && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable);
+        return isLightboxOpen() && !isFormField && isSpaceKey(e) && !!getLightboxVideo();
+    }
+
+    function handleLightboxSpaceKeydown(e) {
+        if (!shouldHandleLightboxSpace(e)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        toggleLightboxPlayPause();
+    }
+
+    function handleLightboxSpaceKeyup(e) {
+        if (!shouldHandleLightboxSpace(e)) return;
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
     function openLightbox(type, src, mediaId) {
         if (!lightbox || !lightboxMedia) {
             return;
@@ -1573,10 +1643,12 @@ if ($canViewComments && !empty($mediaIds)) {
         lightboxMedia.innerHTML = '';
         if (type === 'video') {
             const video = document.createElement('video');
+            video.disablePictureInPicture = true;
             video.src = src;
             video.controls = true;
             video.autoplay = true;
             video.playsInline = true;
+            video.muted = true;
             lightboxMedia.appendChild(video);
         } else {
             const img = document.createElement('img');
@@ -1589,6 +1661,8 @@ if ($canViewComments && !empty($mediaIds)) {
         lightbox.classList.add('is-open');
         lightbox.setAttribute('aria-hidden', 'false');
         lockBodyScroll();
+        stopGalleryTilePreview();
+        blurLightboxTriggerFocus();
         if (mediaId) {
             loadMediaData(mediaId).catch(() => {});
         }
@@ -1633,8 +1707,9 @@ if ($canViewComments && !empty($mediaIds)) {
         });
     });
 
-    const mediaItems = Array.from(document.querySelectorAll('.media-item'));
-    mediaItems.forEach((card) => {
+    document.querySelectorAll('.media-card').forEach((card) => {
+        if (!card.querySelector('.media-item[data-src]')) return;
+
         let rafId = 0;
         let lastEvent = null;
 
@@ -1711,7 +1786,9 @@ if ($canViewComments && !empty($mediaIds)) {
     }
     if (lightboxMedia) {
         lightboxMedia.addEventListener('click', (e) => {
-            if (e.target && (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO')) {
+            const target = e.target;
+            if (!(target instanceof Element)) return;
+            if (target.tagName === 'IMG') {
                 closeLightbox();
             }
         });
@@ -1724,6 +1801,9 @@ if ($canViewComments && !empty($mediaIds)) {
         });
     }
 
+    document.addEventListener('keydown', handleLightboxSpaceKeydown, true);
+    document.addEventListener('keyup', handleLightboxSpaceKeyup, true);
+
     document.addEventListener('keydown', (e) => {
         const target = e.target;
         const isFormField = target instanceof Element
@@ -1734,6 +1814,17 @@ if ($canViewComments && !empty($mediaIds)) {
             } else {
                 window.location.href = 'index.php?page=project_grid';
             }
+            return;
+        }
+        if (
+            lightbox
+            && lightbox.classList.contains('is-open')
+            && !isFormField
+            && (e.key === 'm' || e.key === 'M')
+            && getLightboxVideo()
+        ) {
+            e.preventDefault();
+            toggleLightboxMute();
             return;
         }
         const isDesktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches;

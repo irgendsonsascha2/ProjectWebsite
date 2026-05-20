@@ -114,7 +114,7 @@ if ($canViewProjects) {
                     <div class="thumb-wrap skeleton-host" data-skeleton-media>
                         <span class="skeleton-panel" aria-hidden="true"></span>
                         <?php if ($thumbType === 'video'): ?>
-                            <video class="thumbnail" src="<?php echo htmlspecialchars($thumb); ?>" muted playsinline preload="metadata"></video>
+                            <video class="thumbnail" src="<?php echo htmlspecialchars($thumb); ?>" muted playsinline preload="metadata" disablepictureinpicture></video>
                             <span class="thumb-play">▶</span>
                         <?php else: ?>
                             <img src="<?php echo htmlspecialchars($thumb); ?>" alt="Vorschau" class="thumbnail" loading="lazy">

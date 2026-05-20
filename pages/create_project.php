@@ -139,7 +139,7 @@ function render_media_manager($draftProject, $createActionUrl, $message, $showMe
                     <?php if ($url): ?>
                         <div class="media-tile" data-index="<?php echo (int)$index; ?>">
                             <?php if ($type === 'video'): ?>
-                                <video src="<?php echo htmlspecialchars($url); ?>" preload="metadata" muted playsinline draggable="false"></video>
+                                <video src="<?php echo htmlspecialchars($url); ?>" preload="metadata" muted playsinline draggable="false" disablepictureinpicture></video>
                                 <span class="media-badge">Video</span>
                             <?php else: ?>
                                 <img src="<?php echo htmlspecialchars($url); ?>" alt="Bild" loading="lazy" draggable="false">
