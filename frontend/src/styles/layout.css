@@ -30,6 +30,62 @@
     border-top: 1px solid var(--border-subtle);
   }
 
+  .account-2fa-qr canvas {
+    display: block;
+    margin: 0.75rem 0;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    background: #fff;
+  }
+
+  .account-2fa-manual-secret {
+    margin-top: 0.75rem;
+  }
+
+  .two-factor-page .two-factor-panel {
+    @apply mb-6 rounded-xl px-5 py-4;
+    background: var(--surface-muted);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .two-factor-page .two-factor-intro h2,
+  .two-factor-page .two-factor-actions h2 {
+    @apply mt-0 mb-3 text-lg font-semibold;
+  }
+
+  .two-factor-page .two-factor-intro h3 {
+    @apply mt-4 mb-2 text-base font-semibold;
+  }
+
+  .two-factor-steps {
+    @apply my-2 list-decimal pl-6;
+    color: var(--text-main);
+  }
+
+  .two-factor-disable-form {
+    @apply mt-6 pt-6;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .two-factor-status--on {
+    color: #10b981;
+  }
+
+  .two-factor-status--off {
+    color: var(--secondary-color);
+  }
+
+  .account-2fa-summary .button-link {
+    @apply inline-block mt-2 rounded-lg px-4 py-2 text-sm font-medium no-underline;
+    background: var(--surface-muted);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-main);
+  }
+
+  .account-2fa-summary .button-link:hover {
+    border-color: var(--border-strong, var(--border-subtle));
+  }
+
   .alert {
     @apply mb-4 rounded-xl px-4 py-3 text-sm;
     background: var(--surface-muted);
