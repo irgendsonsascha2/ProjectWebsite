@@ -9,7 +9,19 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
 use MongoDB\Laravel\Auth\User as MongoUser;
 
-#[Fillable(['username', 'email', 'password', 'role', 'created_at', 'email_verified_at', 'remember_token'])]
+#[Fillable([
+    'username',
+    'email',
+    'password',
+    'role',
+    'created_at',
+    'email_verified_at',
+    'remember_token',
+    'two_factor_enabled',
+    'two_factor_totp_secret',
+    'two_factor_backup_codes',
+    'two_factor_confirmed_at',
+])]
 #[Hidden(['password', 'remember_token'])]
 /**
  * Legacy-Auth nutzt keine Laravel-E-Mail-Verifikation.
@@ -57,6 +69,8 @@ class User extends MongoUser
             'password' => 'hashed',
             'created_at' => 'datetime',
             'email_verified_at' => 'datetime',
+            'two_factor_enabled' => 'boolean',
+            'two_factor_confirmed_at' => 'datetime',
         ];
     }
 }

@@ -32,6 +32,10 @@ if (isset($_GET['err']) && $_GET['err'] === 'forbidden') {
         $message .= ' <a href="'.$safeNext.'">Zurück</a>';
     }
 }
+if (isset($_GET['err']) && $_GET['err'] === '2fa') {
+    $message = '❌ Ungültiger Authenticator- oder Backup-Code.';
+    $messageClass = 'alert alert--error';
+}
 if (isset($_GET['err']) && $_GET['err'] === 'throttle') {
     $w = isset($_GET['wait']) ? (int) $_GET['wait'] : 0;
     $message = $w > 0
@@ -55,7 +59,11 @@ if (isset($_GET['handoff_err'])) {
     $messageClass = 'alert alert--error';
 }
 
-if (isset($_SESSION['user_id']) && (!isset($_GET['err']) || $_GET['err'] !== 'forbidden')) {
+require_once __DIR__ . '/../includes/two_factor.php';
+
+$show2faStep = isset($_GET['step']) && (string) $_GET['step'] === '2fa' && two_factor_login_pending_valid();
+
+if (isset($_SESSION['user_id']) && ! $show2faStep && (! isset($_GET['err']) || $_GET['err'] !== 'forbidden')) {
     header('Location: index.php?page=account');
     exit;
 }
@@ -68,6 +76,24 @@ if (isset($_SESSION['user_id']) && (!isset($_GET['err']) || $_GET['err'] !== 'fo
         <div class="<?php echo htmlspecialchars($messageClass, ENT_QUOTES, 'UTF-8'); ?>"><?php echo $message; ?></div>
     <?php endif; ?>
 
+    <?php if ($show2faStep): ?>
+    <section>
+        <p class="field-hint" style="margin-bottom:1rem;">Passwort OK — gib den 6-stelligen Code aus deiner Authenticator-App ein oder einen Backup-Code.</p>
+        <form method="POST" id="login-2fa-form" action="bridge_auth_2fa.php">
+            <?php echo csrf_field(); ?>
+            <div class="field">
+                <label for="totp_code">Authenticator-Code</label>
+                <input type="text" id="totp_code" name="totp_code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="123456" autocomplete="one-time-code">
+            </div>
+            <div class="field">
+                <label for="backup_code">oder Backup-Code</label>
+                <input type="text" id="backup_code" name="backup_code" placeholder="XXXXXXXXXX" autocomplete="off">
+            </div>
+            <button type="submit">Anmeldung abschließen</button>
+        </form>
+        <p class="field-hint" style="margin-top:1rem;"><a href="index.php?page=login">Abbrechen und neu anmelden</a></p>
+    </section>
+    <?php else: ?>
     <section>
         <p class="field-hint" style="margin-bottom:1rem;">Hier meldest du dich mit Nutzerdaten und Passwort aus der Datenbank an (technisch dieselbe Prüfung wie bei der geschützten Login-Routine).</p>
         <?php if (laravel_app_reachable()): ?>
@@ -89,6 +115,7 @@ if (isset($_SESSION['user_id']) && (!isset($_GET['err']) || $_GET['err'] !== 'fo
             <button type="submit">Login</button>
         </form>
     </section>
+    <?php endif; ?>
 
     <hr class="account-divider">
 

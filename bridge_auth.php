@@ -20,6 +20,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 require_once __DIR__ . '/includes/csrf.php';
+require_once __DIR__ . '/includes/two_factor.php';
 
 require_once __DIR__ . '/laravel/vendor/autoload.php';
 
@@ -46,6 +47,12 @@ $user = App\Models\User::query()
 
 if ($user === null || ! Illuminate\Support\Facades\Hash::check($password, $user->password)) {
     header('Location: index.php?page=login&login_err=1');
+    exit;
+}
+
+if (two_factor_user_enabled($user)) {
+    two_factor_set_login_pending((string) $user->getAuthIdentifier());
+    header('Location: index.php?page=login&step=2fa');
     exit;
 }
 

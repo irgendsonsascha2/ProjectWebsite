@@ -4,7 +4,7 @@
 
 **Stand 2026:** **Schritt 1** (kein direkter öffentlicher Webzugriff auf `dbScripts/`, Laufzeit-Guards) und **Schritt 2** (getrennte Mongo-URIs pro Rolle, Admin-Skripte nur über `ADMIN_DB_URI` / Admin-Pfad) sind in der laufenden App umgesetzt. Details: `docs/current_status.md`.
 
-Offen: **Schritt 4** (optionales TOTP-2FA in PHP), Admin-Re-Auth, Deployment. Einstieg neue Session: `docs/next_session_plan.md`.
+Offen: Admin-Re-Auth, Deployment. Einstieg neue Session: `docs/next_session_plan.md`.
 
 **Ergänzung (Sprint 1, 2026-05):** CSRF für Legacy-POSTs, gehärtete Session-Cookies, Handoff `session_regenerate`, POST-Logout, eingeschränktes `?debug=1`, keine stillen Mongo-Default-URIs ohne `APP_ALLOW_DEV_DB_DEFAULTS` — Details `docs/current_status.md`.
 
@@ -137,7 +137,7 @@ Was danach testbar ist:
 
 ## Schritt 4: Optionales TOTP-2FA (klassische PHP-App)
 
-**Status: offen** (ersetzt frühere Schritte 4–6 mit verpflichtender E-Mail-/Laravel-Verifikation).
+**Status: umgesetzt** (`includes/two_factor.php`, `bridge_auth_2fa.php`, `pages/account.php`).
 
 Ziel:
 
