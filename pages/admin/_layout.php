@@ -132,6 +132,7 @@ if (!function_exists('admin_render_page')) {
         echo "        <hr>\n";
         $renderContent();
         echo "    </div>\n";
+        echo "    <div id=\"react-root\" data-page=\"admin\"></div>\n";
         echo "</body>\n</html>\n";
     }
 }

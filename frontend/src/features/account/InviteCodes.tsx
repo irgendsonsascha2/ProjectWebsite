@@ -23,13 +23,14 @@ function readInviteCodesFromDom(): InviteCodeItem[] {
 export function InviteCodes() {
   const [items] = React.useState(() => readInviteCodesFromDom());
 
-  if (!items.length) return null;
-
   // Fallback-Tabelle ausblenden, sobald React rendert.
   React.useEffect(() => {
-    const tableWrap = document.querySelector('.admin-panel .table-wrap') as HTMLElement | null;
+    if (!items.length) return;
+    const tableWrap = document.getElementById('invite-codes-table-wrap');
     if (tableWrap) tableWrap.style.display = 'none';
-  }, []);
+  }, [items.length]);
+
+  if (!items.length) return null;
 
   return (
     <div className="mt-3 space-y-3">

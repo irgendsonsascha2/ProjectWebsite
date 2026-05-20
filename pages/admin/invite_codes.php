@@ -87,7 +87,10 @@ function site_base_url_from_request(): string
 
 $inviteCodesData = [];
 try {
-    $activeCodes = $db->registration_codes->find(['is_used' => false]);
+    $activeCodes = $db->registration_codes->find(
+        ['is_used' => false],
+        ['sort' => ['created_at' => -1]]
+    );
     foreach ($activeCodes as $c) {
         $base = site_base_url_from_request();
         $link = $base . '/index.php?page=register&reg_token=' . rawurlencode((string)($c['code'] ?? '')) . '#register-section';
@@ -134,7 +137,7 @@ admin_render_page('Einladungscodes', 'invite_codes', function () use ($message, 
 
         <script type="application/json" id="react-invite-codes-data"><?php echo json_encode($inviteCodesData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?></script>
 
-        <div class="table-wrap">
+        <div class="table-wrap" id="invite-codes-table-wrap">
             <table>
                 <tr>
                     <th>Rolle</th>
