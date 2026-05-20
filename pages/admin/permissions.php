@@ -121,6 +121,7 @@ try {
                 <button type="button" class="close-button" data-dialog-close>Schließen</button>
             </div>
             <form method="POST" class="permission-form">
+                <?php echo csrf_field(); ?>
                 <input type="hidden" name="action" value="create_permission">
                 <div class="field">
                     <label for="perm_key">Berechtigungs-Schlüssel</label>
@@ -166,6 +167,7 @@ try {
                     <button type="button" class="icon-button" data-dialog-open="edit-permission-<?php echo htmlspecialchars($permKey); ?>" aria-label="Berechtigung bearbeiten" title="Berechtigung bearbeiten"><?php echo svg_icon_pencil(18); ?></button>
                     <button type="button" class="icon-button" data-dialog-open="info-permission-<?php echo htmlspecialchars($permKey); ?>" aria-label="Berechtigung anzeigen" title="Berechtigung anzeigen">ℹ</button>
                     <form method="POST" onsubmit="return confirm('Berechtigung wirklich löschen?');">
+                        <?php echo csrf_field(); ?>
                         <input type="hidden" name="action" value="delete_permission">
                         <input type="hidden" name="perm_key" value="<?php echo htmlspecialchars($permKey); ?>">
                         <button type="submit" class="icon-button danger" aria-label="Berechtigung löschen" title="Berechtigung löschen">🗑</button>
@@ -192,6 +194,7 @@ try {
                         <button type="button" class="close-button" data-dialog-close>Schließen</button>
                     </div>
                     <form method="POST" class="permission-form">
+                        <?php echo csrf_field(); ?>
                         <input type="hidden" name="action" value="update_permission">
                         <input type="hidden" name="perm_key" value="<?php echo htmlspecialchars($permKey); ?>">
                         <div class="field">

@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Database\Factories\UserFactory;
-use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,7 +11,12 @@ use MongoDB\Laravel\Auth\User as MongoUser;
 
 #[Fillable(['username', 'email', 'password', 'role', 'created_at', 'email_verified_at', 'remember_token'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends MongoUser implements MustVerifyEmailContract
+/**
+ * Legacy-Auth nutzt keine Laravel-E-Mail-Verifikation.
+ * `email_verified_at` wird bei Registrierung gesetzt (Invite-Code / Anfrage-Flow).
+ * Laravel `/dashboard` und `/profile` nutzen weiterhin das `verified`-Middleware (Feld am User).
+ */
+class User extends MongoUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;

@@ -235,6 +235,7 @@ try {
                 <button type="button" class="close-button" data-dialog-close>Schließen</button>
             </div>
             <form method="POST" class="role-form">
+                <?php echo csrf_field(); ?>
                 <input type="hidden" name="action" value="create_role">
                 <div class="field">
                     <label for="role_key">Rollen-Schlüssel</label>
@@ -338,6 +339,7 @@ try {
                     <button type="button" class="icon-button" data-dialog-open="edit-role-<?php echo htmlspecialchars($roleKey); ?>" aria-label="Rolle bearbeiten" title="Rolle bearbeiten"><?php echo svg_icon_pencil(18); ?></button>
                     <button type="button" class="icon-button" data-dialog-open="info-role-<?php echo htmlspecialchars($roleKey); ?>" aria-label="Berechtigungen anzeigen" title="Berechtigungen anzeigen">ℹ</button>
                     <form method="POST" onsubmit="return confirm('Rolle wirklich löschen?');">
+                    <?php echo csrf_field(); ?>
                     <input type="hidden" name="action" value="delete_role">
                     <input type="hidden" name="role_key" value="<?php echo htmlspecialchars($roleKey); ?>">
                         <button type="submit" class="icon-button danger" aria-label="Rolle löschen" title="Rolle löschen">🗑</button>
@@ -398,6 +400,7 @@ try {
                         <button type="button" class="close-button" data-dialog-close>Schließen</button>
                     </div>
                     <form method="POST" class="role-form" data-role="<?php echo htmlspecialchars($roleKey); ?>">
+                        <?php echo csrf_field(); ?>
                         <input type="hidden" name="action" value="update_role">
                         <input type="hidden" name="role_key" value="<?php echo htmlspecialchars($roleKey); ?>">
                         <div class="field">

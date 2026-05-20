@@ -31,10 +31,10 @@ Kurzüberblick zum Weitermachen — Zielbild, erledigt, offen, Test.
 
 ## Offen (priorisiert)
 
-### P1 — Auth/Registrierung konsistent
-1. **`email_verified_at` bei Anfrage-Flow:** Beim Register mit Code prüfen, ob E-Mail zu einer **verifizierten** `registration_code_requests`-Zeile passt → dann `email_verified_at` setzen (zusätzlich zu reinem Invite-Code).
-2. **Admin-POSTs:** Weitere Formulare in `pages/admin/*` mit `csrf_field()` (roles, permissions, settings, home_profile, legal_page_edit) — gleiches Muster wie `invite_codes`.
-3. **Laravel `User`:** `MustVerifyEmail` optional entfernen oder dokumentieren, dass nur Laravel-Dashboard betroffen wäre (Legacy nutzt es nicht).
+### P1 — Auth/Registrierung konsistent ✅ (2026-05-20)
+1. **`email_verified_at` bei Anfrage-Flow:** `RegisterInvitedUser::resolveEmailVerifiedAt()` — reiner Admin-Code → `now()`; Code aus Anfrage-Flow nur bei passender, verifizierter `registration_code_requests`-E-Mail.
+2. **Admin-POSTs:** `csrf_field()` in `roles`, `permissions`, `settings`, `home_profile`, `legal_page_edit` (wie `invite_codes`).
+3. **Laravel `User`:** `MustVerifyEmail` entfernt; Docblock: Legacy ohne Laravel-Verify; `/dashboard` nutzt weiter `verified`-Middleware über `email_verified_at`.
 
 ### P2 — Optional 2FA (früher „Sprint 4“)
 - User-Felder: `two_factor_enabled`, `two_factor_totp_secret`, `two_factor_backup_codes`, …

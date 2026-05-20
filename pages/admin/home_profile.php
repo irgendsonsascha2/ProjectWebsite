@@ -187,6 +187,7 @@ admin_render_page('Startseite', 'home_profile', function () use ($notice, $error
     <div class="admin-card admin-card--spaced">
         <h2>Bearbeiten</h2>
         <form method="POST" enctype="multipart/form-data">
+            <?php echo csrf_field(); ?>
             <input type="hidden" name="action" value="save_home_profile">
 
             <div class="field">

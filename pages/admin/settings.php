@@ -69,6 +69,7 @@ admin_render_page('Einstellungen', 'settings', function () use ($notice, $error,
     <div class="admin-card admin-card--spaced">
         <h2>Medien-Uploads</h2>
         <form method="POST">
+            <?php echo csrf_field(); ?>
             <input type="hidden" name="action" value="save_site_settings">
 
             <div class="field">

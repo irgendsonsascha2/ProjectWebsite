@@ -98,6 +98,7 @@ admin_render_page($pageLabel, $navKey, function () use ($notice, $error, $pageKe
     <div class="admin-card admin-card--spaced">
         <h2>Inhalt bearbeiten</h2>
         <form method="POST" id="legal-page-form">
+            <?php echo csrf_field(); ?>
             <input type="hidden" name="action" value="save_legal_page">
             <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey, ENT_QUOTES, 'UTF-8'); ?>">
 

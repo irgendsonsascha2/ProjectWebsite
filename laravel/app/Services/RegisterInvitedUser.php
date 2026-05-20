@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\RegistrationCode;
+use App\Models\RegistrationCodeRequest;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Validator;
@@ -50,13 +51,18 @@ class RegisterInvitedUser
             ]);
         }
 
+        $emailVerifiedAt = $this->resolveEmailVerifiedAt(
+            (string) $validated['email'],
+            $code
+        );
+
         $user = User::create([
             'username' => $username,
             'email' => $validated['email'],
             'password' => $validated['password'],
             'role' => $validCode->role,
             'created_at' => now(),
-            'email_verified_at' => now(),
+            'email_verified_at' => $emailVerifiedAt,
             'content_responsibility_consent_at' => now(),
         ]);
 
@@ -65,5 +71,36 @@ class RegisterInvitedUser
         event(new Registered($user));
 
         return $user;
+    }
+
+    /**
+     * Setzt den E-Mail-Nachweis-Zeitstempel für die klassische Site (kein Login-Gate).
+     *
+     * - Reiner Admin-/Invite-Code (nicht an eine Anfrage gebunden): immer gesetzt.
+     * - Code aus dem Anfrage-Flow: nur wenn E-Mail zu einer verifizierten Anfrage passt.
+     */
+    private function resolveEmailVerifiedAt(string $email, string $code): ?\Illuminate\Support\Carbon
+    {
+        $email = strtolower(trim($email));
+        $code = strtoupper(trim($code));
+
+        $request = RegistrationCodeRequest::query()
+            ->where('code', $code)
+            ->first();
+
+        if ($request === null) {
+            return now();
+        }
+
+        if ($request->verified_at === null) {
+            return null;
+        }
+
+        $requestEmail = strtolower(trim((string) ($request->email ?? '')));
+        if ($requestEmail === '' || $requestEmail !== $email) {
+            return null;
+        }
+
+        return now();
     }
 }

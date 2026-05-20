@@ -4,7 +4,7 @@
 
 **Stand 2026:** **Schritt 1** (kein direkter öffentlicher Webzugriff auf `dbScripts/`, Laufzeit-Guards) und **Schritt 2** (getrennte Mongo-URIs pro Rolle, Admin-Skripte nur über `ADMIN_DB_URI` / Admin-Pfad) sind in der laufenden App umgesetzt. Details: `docs/current_status.md`.
 
-Offen: **Schritt 4** (optionales TOTP-2FA in PHP), fehlende CSRF-Felder in weiteren Admin-Formularen, `email_verified_at` beim Anfrage-Flow beim Register, Admin-Re-Auth, Deployment. Einstieg neue Session: `docs/next_session_plan.md`.
+Offen: **Schritt 4** (optionales TOTP-2FA in PHP), Admin-Re-Auth, Deployment. Einstieg neue Session: `docs/next_session_plan.md`.
 
 **Ergänzung (Sprint 1, 2026-05):** CSRF für Legacy-POSTs, gehärtete Session-Cookies, Handoff `session_regenerate`, POST-Logout, eingeschränktes `?debug=1`, keine stillen Mongo-Default-URIs ohne `APP_ALLOW_DEV_DB_DEFAULTS` — Details `docs/current_status.md`.
 
@@ -157,7 +157,7 @@ Was danach testbar ist:
 
 ## Schritt 5: Registrierung — `email_verified_at` aus Anfrage-Flow
 
-**Status: teilweise** (Invite-Code setzt `email_verified_at` bereits in `RegisterInvitedUser`).
+**Status: umgesetzt** (`RegisterInvitedUser::resolveEmailVerifiedAt()`).
 
 Ziel:
 
@@ -175,7 +175,7 @@ Ziel:
 - Alle Admin-POST-Formulare mit `csrf_field()`; CSRF-Fehler bleiben auf derselben Admin-Seite
 - Vor destruktiven DB-Aktionen frische Passwort-(+ optional 2FA-)Bestätigung
 
-**Status: teilweise** (`invite_codes`, `registration_requests`, `db_scripts` — Rest offen).
+**Status: CSRF-Felder umgesetzt** (alle genannten Admin-Formulare); Re-Auth vor destruktiven DB-Aktionen offen.
 
 ## Schritt 7: Frische Admin-Authentifizierung für sensible Aktionen
 

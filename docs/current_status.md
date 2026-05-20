@@ -57,10 +57,11 @@ Umgesetzt in der Codebasis (lokal testbar):
 - `includes/rate_limit.php`: IP-Limit für Registrierungscode-Anfragen (5/h).
 - POST-Guards in `create_project`, `edit_project`, `project_grid`, `project_detail`.
 - **Kein Laravel-E-Mail-Gate** mehr; Account-Seite ohne `/verify-email`-Hinweis.
-- Invite-Registrierung: `email_verified_at` in `RegisterInvitedUser`.
-- Admin: CSRF auf Einladungscodes/Freigaben; CSRF-Redirect zurück auf Admin-URL.
+- Invite-Registrierung: `email_verified_at` via `RegisterInvitedUser::resolveEmailVerifiedAt()` (Admin-Code oder Anfrage-Flow mit verifizierter E-Mail).
+- Admin: CSRF auf allen POST-Formularen (inkl. Rollen, Berechtigungen, Einstellungen, Home-Profil, Legal); CSRF-Redirect zurück auf Admin-URL.
+- Laravel `User`: kein `MustVerifyEmail`; `email_verified_at` wird bei Registrierung gesetzt.
 
-Offen: optionales TOTP-2FA, `email_verified_at` aus Anfrage-Flow beim Register, CSRF auf restlichen Admin-Formularen — **`docs/next_session_plan.md`**.
+Offen: optionales TOTP-2FA, Admin-Re-Auth — **`docs/next_session_plan.md`**.
 
 ## Session-Handoff (neue Cursor-Session)
 
