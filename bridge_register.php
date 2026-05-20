@@ -15,9 +15,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+require_once __DIR__ . '/includes/app_env.php';
+
 if (session_status() === PHP_SESSION_NONE) {
+    configure_session_cookie_params();
     session_start();
 }
+
+require_once __DIR__ . '/includes/csrf.php';
 
 require_once __DIR__ . '/laravel/vendor/autoload.php';
 
@@ -27,9 +32,7 @@ $kernel->bootstrap();
 
 App\Services\BridgeRateLimiter::enforceOrRedirect('register');
 
-$sessionToken = $_SESSION['csrf_bridge'] ?? '';
-$postToken = (string) ($_POST['_token'] ?? '');
-if ($sessionToken === '' || ! hash_equals($sessionToken, $postToken)) {
+if (! csrf_verify()) {
     header('Location: index.php?page=register&err=csrf');
     exit;
 }

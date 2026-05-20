@@ -31,11 +31,23 @@ class BridgeRateLimiter
 
     private static function clientIp(): string
     {
+        $trusted = getenv('TRUSTED_PROXY_IPS');
+        $remote = (string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+
+        if ($trusted === false || trim((string) $trusted) === '') {
+            return $remote;
+        }
+
+        $allowed = array_map('trim', explode(',', (string) $trusted));
+        if (! in_array($remote, $allowed, true)) {
+            return $remote;
+        }
+
         $xff = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '';
         if (is_string($xff) && $xff !== '') {
             return trim(explode(',', $xff)[0]);
         }
 
-        return (string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+        return $remote;
     }
 }

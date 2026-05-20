@@ -247,8 +247,11 @@ Empfohlene Zielarchitektur:
 - `COMMUNITY_DB_URI` wird für `community_member` verwendet.
 - `CONTENT_MANAGER_DB_URI` wird für `content_manager` verwendet.
 - `ADMIN_DB_URI` wird für `admin` sowie DB-Initialisierung und Wartung verwendet.
-- Wenn keine Env-Variablen gesetzt sind, nutzt das Projekt lokal standardmäßig Passwort `0` für die vier MongoDB-Benutzer `viewer`, `community_member`, `content_manager` und `admin`.
-- Diese Standardwerte sind nur für lokale Entwicklung gedacht.
+- Wenn keine Env-Variablen gesetzt sind, bricht die App ab (keine stillen Default-Passwörter mehr). Für lokale Entwicklung: `.env.local` aus `.env.example` anlegen **oder** `APP_ALLOW_DEV_DB_DEFAULTS=1` setzen (dann weiterhin `*:0` wie früher).
+- `?debug=1` zeigt Fehler nur bei `APP_ENV=local` und Zugriff von `127.0.0.1` / `::1`.
+- Alle mutierenden POST-Requests der klassischen Website benötigen ein CSRF-Token (`includes/csrf.php`, `js/csrf-forms.js`). Logout nur per POST.
+- Optional: `SESSION_SECURE=1`, `TRUSTED_PROXY_IPS` (kommagetrennt) für Betrieb hinter HTTPS/Reverse-Proxy — siehe `.env.example` im Projektroot.
+- Mongo-RBAC: App-Rollen (`viewer` usw.) lesen **keine** `users`- oder `registration_codes`-Collections mehr; Einladungen/Admin über `admin`. Nach Änderung an `03_db_init_mongo_roles.php` Skript im Admin ausführen. Kommentar-Anzeigenamen: `includes/user_db.php`.
 
 ### Erste Initialisierung, wenn MongoDB noch keine Projektbenutzer hat
 

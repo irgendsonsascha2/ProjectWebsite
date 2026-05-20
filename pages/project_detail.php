@@ -72,34 +72,23 @@ function parse_media_id($raw) {
 }
 
 function fetch_comments_with_users($db, $projectObjectId, $mediaObjectId) {
-    $commentsCursor = $db->comments->aggregate([
-        ['$match' => ['project_id' => $projectObjectId, 'media_id' => $mediaObjectId]],
-        ['$lookup' => [
-            'from' => 'users',
-            'localField' => 'user_id',
-            'foreignField' => '_id',
-            'as' => 'user_info'
-        ]],
-        ['$unwind' => '$user_info'],
-        ['$sort' => ['created_at' => 1]]
-    ]);
-    return iterator_to_array($commentsCursor);
+    $commentsCursor = $db->comments->find(
+        ['project_id' => $projectObjectId, 'media_id' => $mediaObjectId],
+        ['sort' => ['created_at' => 1]]
+    );
+    $comments = iterator_to_array($commentsCursor);
+
+    return comment_attach_user_info($comments);
 }
 
 function fetch_recent_comments_with_users($db, $projectObjectId, $mediaObjectId, $limit = 2) {
-    $cursor = $db->comments->aggregate([
-        ['$match' => ['project_id' => $projectObjectId, 'media_id' => $mediaObjectId]],
-        ['$sort' => ['created_at' => -1]],
-        ['$limit' => max(1, (int)$limit)],
-        ['$lookup' => [
-            'from' => 'users',
-            'localField' => 'user_id',
-            'foreignField' => '_id',
-            'as' => 'user_info'
-        ]],
-        ['$unwind' => '$user_info']
-    ]);
-    return iterator_to_array($cursor);
+    $cursor = $db->comments->find(
+        ['project_id' => $projectObjectId, 'media_id' => $mediaObjectId],
+        ['sort' => ['created_at' => -1], 'limit' => max(1, (int) $limit)]
+    );
+    $comments = iterator_to_array($cursor);
+
+    return comment_attach_user_info($comments);
 }
 
 function build_comment_tree($comments) {
@@ -401,8 +390,21 @@ if ($isLoggedIn && isset($_POST['delete_comment'])) {
     }
     $allowed = $canDeleteOwn;
     if (!$allowed && $canDeleteOthers) {
-        $author = $db->users->findOne(['_id' => $comment['user_id']], ['projection' => ['role' => 1]]);
-        $authorRole = $author['role'] ?? '';
+        $authorRole = (string) ($comment['author_role'] ?? '');
+        if ($authorRole === '') {
+            $author = user_find_public_by_id($db, $comment['user_id']);
+            if ($author === null) {
+                try {
+                    [, $adminDb] = get_admin_mongo_connection();
+                    $author = user_find_public_by_id($adminDb, $comment['user_id']);
+                } catch (Throwable $e) {
+                    $author = null;
+                }
+            }
+            if ($author !== null) {
+                $authorRole = user_session_from_document($author)['role'];
+            }
+        }
         if ($deleteRolesAllowed === ['*'] || in_array($authorRole, $deleteRolesAllowed, true)) {
             $allowed = true;
         }
@@ -610,14 +612,14 @@ if ($isLoggedIn && can('comment') && isset($_POST['submit_comment'])) {
         }
     }
 
-    $payload = [
+    $payload = array_merge([
         'project_id' => $projectObjectId,
         'media_id' => $mediaObjectId,
         'user_id' => $userId,
         'text' => $commentText,
         'created_at' => new UTCDateTime(),
-        'updated_at' => new UTCDateTime()
-    ];
+        'updated_at' => new UTCDateTime(),
+    ], comment_author_snapshot_from_session());
     if ($parentCommentId !== null) {
         $payload['parent_comment_id'] = $parentCommentId;
     }

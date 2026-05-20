@@ -1,13 +1,17 @@
 <?php
+
+require_once __DIR__ . '/app_env.php';
+
 // Lazy sessions: Only set a session cookie when needed.
 // - If a session cookie already exists, always resume.
 // - For login/register/account flows and POST requests, start a session.
 // - Admin pages always require a session.
+$isPost = (string) ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';
 $shouldStartSession = false;
 if (session_status() === PHP_SESSION_NONE) {
+    configure_session_cookie_params();
     $sessionCookieName = session_name();
-    $hasSessionCookie = isset($_COOKIE[$sessionCookieName]) && (string)$_COOKIE[$sessionCookieName] !== '';
-    $isPost = (string)($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';
+    $hasSessionCookie = isset($_COOKIE[$sessionCookieName]) && (string) $_COOKIE[$sessionCookieName] !== '';
     $page = (string)($_GET['page'] ?? '');
     $script = (string)($_SERVER['SCRIPT_NAME'] ?? '');
     $isAdminScript = strpos($script, '/pages/admin/') !== false;
@@ -18,7 +22,9 @@ if (session_status() === PHP_SESSION_NONE) {
     }
 }
 
-if (isset($_GET['debug']) && $_GET['debug'] === '1') {
+require_once __DIR__ . '/csrf.php';
+
+if (app_debug_enabled()) {
     ini_set('display_errors', '1');
     ini_set('display_startup_errors', '1');
     ini_set('log_errors', '1');
@@ -37,6 +43,7 @@ if (isset($_GET['debug']) && $_GET['debug'] === '1') {
 }
 
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/user_db.php';
 require_once __DIR__ . '/site_settings.php';
 require_once __DIR__ . '/svg_icons.php';
 
@@ -61,11 +68,12 @@ if ($sessionActive && isset($_SESSION['user_id']) && (
         // Nutzer anhand der ID laden: nicht die rollenbeschränkte $db-Connection nutzen —
         // sonst schlägt findOne fehl, Session wird geleert, wirken wie „abgemeldet“ (z. B. Admin-URL).
         [, $dbForUserRead] = get_admin_mongo_connection();
-        $user = $dbForUserRead->users->findOne(['_id' => $userId]);
+        $user = user_find_public_by_id($dbForUserRead, $userId);
         if ($user) {
-            $_SESSION['email'] = $user['email'] ?? '';
-            $_SESSION['username'] = $user['username'] ?? '';
-            $_SESSION['role'] = $user['role'] ?? '';
+            $sessionUser = user_session_from_document($user);
+            $_SESSION['email'] = $sessionUser['email'];
+            $_SESSION['username'] = $sessionUser['username'];
+            $_SESSION['role'] = $sessionUser['role'];
             [$client, $db] = get_request_mongo_connection($_SESSION['role']);
             if ($_SESSION['role']) {
                 $roleData = $db->roles_config->findOne(['role' => $_SESSION['role']]);
@@ -222,6 +230,10 @@ if (!function_exists('request_is_ajax')) {
                 true
             ));
     }
+}
+
+if ($isPost) {
+    csrf_verify_or_exit();
 }
 
 if (!function_exists('media_upload_request_body_too_large')) {

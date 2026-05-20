@@ -6,6 +6,10 @@
 
 Offen bzw. nur teilweise erfüllt bleiben u. a. **Schritt 3** (zentrale Autorisierung bei allen relevanten Datenzugriffen), **2FA** und weiteres harte Maßnahmen laut Zielbild unten.
 
+**Ergänzung (Sprint 1, 2026-05):** CSRF für Legacy-POSTs, gehärtete Session-Cookies, Handoff `session_regenerate`, POST-Logout, eingeschränktes `?debug=1`, keine stillen Mongo-Default-URIs ohne `APP_ALLOW_DEV_DB_DEFAULTS` — Details `docs/current_status.md`.
+
+**Ergänzung (Sprint 2, 2026-05):** Mongo-RBAC ohne `users`/`registration_codes` für App-Rollen; `registration_code_requests` für Gäste; `includes/user_db.php`; `10_db_init_projects_indexes.php` — Details `docs/current_status.md`. Schritt 2 (URIs) war bereits umgesetzt; RBAC-Verfeinerung ist der Sprint-2-Teil.
+
 ## Ausgangslage (früherer Ist-Stand, teilweise inzwischen adressiert)
 
 Folgendes war zu verschiedenen Zeiten sichtbar; die ersten Punkte betreffen die jetzige Codebasis **nicht mehr** in derselben Form:

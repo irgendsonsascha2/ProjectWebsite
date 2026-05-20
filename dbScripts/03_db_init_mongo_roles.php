@@ -87,6 +87,8 @@ try {
 
     echo "<h1>Initialisierung: MongoDB Rollen & Benutzer</h1>";
 
+    $registrationRequestGuestActions = ['find', 'insert', 'update'];
+
     $viewerPrivileges = [
         db_collection_actions('projects', ['find']),
         db_collection_actions('comments', ['find']),
@@ -94,8 +96,7 @@ try {
         db_collection_actions('site_pages', ['find']),
         db_collection_actions('roles_config', ['find']),
         db_collection_actions('permissions_config', ['find']),
-        db_collection_actions('users', ['find']),
-        db_collection_actions('registration_codes', ['find'])
+        db_collection_actions('registration_code_requests', $registrationRequestGuestActions),
     ];
 
     $communityPrivileges = [
@@ -105,8 +106,7 @@ try {
         db_collection_actions('site_pages', ['find']),
         db_collection_actions('roles_config', ['find']),
         db_collection_actions('permissions_config', ['find']),
-        db_collection_actions('users', ['find']),
-        db_collection_actions('registration_codes', ['find'])
+        db_collection_actions('registration_code_requests', $registrationRequestGuestActions),
     ];
 
     $contentManagerPrivileges = [
@@ -116,8 +116,7 @@ try {
         db_collection_actions('site_pages', ['find', 'insert', 'update', 'remove']),
         db_collection_actions('roles_config', ['find']),
         db_collection_actions('permissions_config', ['find']),
-        db_collection_actions('users', ['find']),
-        db_collection_actions('registration_codes', ['find'])
+        db_collection_actions('registration_code_requests', $registrationRequestGuestActions),
     ];
 
     ensure_mongo_role($db, 'viewerRole', $viewerPrivileges);
@@ -165,7 +164,8 @@ try {
         echo "✅ MongoDB-Benutzer {$username} erstellt/aktualisiert.<br>";
     }
 
-    echo "ℹ️ Hinweis: Ownership-Regeln wie 'nur eigene Projekte bearbeiten' bleiben weiterhin Aufgabe der Anwendung.<br>";
+    echo "ℹ️ users / registration_codes: nur über Admin-DB-User (dbOwner). Öffentliche Kommentar-Namen über author_* Snapshot oder Admin-Lesen in includes/user_db.php.<br>";
+    echo "ℹ️ Ownership-Regeln wie 'nur eigene Projekte bearbeiten' bleiben weiterhin Aufgabe der Anwendung.<br>";
 } catch (Exception $e) {
     echo "❌ Fehler in " . basename(__FILE__) . ": " . $e->getMessage() . "<br>";
 }

@@ -1,9 +1,4 @@
 <?php
-if (isset($_GET['debug']) && $_GET['debug'] === '1') {
-    ini_set('display_errors', '1');
-    ini_set('display_startup_errors', '1');
-    error_reporting(E_ALL);
-}
 
 require __DIR__ . '/includes/bootstrap.php';
 require_once __DIR__ . '/includes/vite_assets.php';
@@ -37,6 +32,7 @@ if ($isAjax) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Mein Portfolio</title>
+    <?php echo csrf_meta_script(); ?>
     <?php
         $asset = static function (string $path): string {
             $full = __DIR__ . '/' . ltrim($path, '/');
@@ -61,6 +57,7 @@ if ($isAjax) {
 
     <!-- ESC-Back: bewusst früh laden (Firefox/Safari robust) -->
     <script src="<?php echo $asset('js/esc-back.js'); ?>"></script>
+    <script src="<?php echo $asset('js/csrf-forms.js'); ?>"></script>
 
     <?php
         // React/Vite: Standard = gebautes react-dist/; HMR: .env VITE_HMR=1 + VITE_DEV_SERVER_URL

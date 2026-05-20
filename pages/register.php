@@ -16,9 +16,7 @@ function site_base_url_from_request(): string {
 
 // CSRF für bridge_register.php
 if (! isset($_SESSION['user_id'])) {
-    if (empty($_SESSION['csrf_bridge'])) {
-        $_SESSION['csrf_bridge'] = bin2hex(random_bytes(32));
-    }
+    csrf_token();
 }
 
 if (! empty($_SESSION['register_validation_errors'])) {
@@ -80,12 +78,6 @@ $hasPrefilledCode = $prefilledCode !== '';
 
 // Invite-Code anfragen (ohne reg_token Navigation)
 if (isset($_POST['request_registration_code'])) {
-    $postToken = (string)($_POST['_token'] ?? '');
-    $sessionToken = (string)($_SESSION['csrf_bridge'] ?? '');
-    if ($sessionToken === '' || $postToken === '' || !hash_equals($sessionToken, $postToken)) {
-        $message = '❌ Formular ungültig oder Sitzung abgelaufen — bitte erneut versuchen.';
-        $messageClass = 'alert alert--error';
-    } else {
         $email = trim((string)($_POST['request_email'] ?? ''));
         $privacyOk = isset($_POST['privacy_consent']) && (string)$_POST['privacy_consent'] === '1';
         if (!$privacyOk) {
@@ -134,7 +126,6 @@ if (isset($_POST['request_registration_code'])) {
                 }
             }
         }
-    }
 }
 
 if (isset($_SESSION['user_id'])) {
@@ -159,7 +150,7 @@ if (isset($_SESSION['user_id'])) {
         <?php endif; ?>
 
         <form method="POST" id="register-form" action="bridge_register.php" style="margin-top: 1rem;">
-            <input type="hidden" name="_token" value="<?php echo htmlspecialchars($_SESSION['csrf_bridge'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+            <?php echo csrf_field(); ?>
             <input type="text" id="reg_code" name="reg_code" placeholder="Registrierungscode" value="<?php echo $prefilledCode; ?>" autocomplete="one-time-code" required>
             <input type="text" id="reg_username" name="username" placeholder="Username" autocomplete="new-username" required>
             <small class="field-hint">3–20 Zeichen: a–z, 0–9, . _ -</small>
@@ -192,7 +183,7 @@ if (isset($_SESSION['user_id'])) {
                     Du bekommst zuerst eine E-Mail zum Bestätigen. Nach Freigabe durch den Admin erhältst du deinen Code per E-Mail.
                 </p>
                 <form method="POST">
-                    <input type="hidden" name="_token" value="<?php echo htmlspecialchars($_SESSION['csrf_bridge'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                    <?php echo csrf_field(); ?>
                     <input type="email" name="request_email" placeholder="E-Mail Adresse" autocomplete="email" required>
                     <label class="privacy-consent privacy-consent--dialog">
                         <input type="checkbox" name="privacy_consent" value="1" required>

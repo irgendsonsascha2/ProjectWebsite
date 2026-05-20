@@ -124,7 +124,12 @@ if (!function_exists('admin_render_page')) {
         echo "<!DOCTYPE html>\n<html lang=\"de\">\n<head>\n";
         echo "    <meta charset=\"UTF-8\">\n";
         echo "    <title>{$safeTitle}</title>\n";
+        echo csrf_meta_script();
         echo admin_theme_bootstrap_script() . "\n";
+        $csrfJs = '../../js/csrf-forms.js';
+        $csrfFull = __DIR__ . '/../../js/csrf-forms.js';
+        $csrfVer = is_file($csrfFull) ? (string) filemtime($csrfFull) : (string) time();
+        echo '    <script src="'.htmlspecialchars($csrfJs.'?v='.$csrfVer, ENT_QUOTES, 'UTF-8').'"></script>'."\n";
         vite_react_assets('src/main.tsx');
         echo "</head>\n<body class=\"admin-page\">\n";
         echo "    <div class=\"container\">\n";

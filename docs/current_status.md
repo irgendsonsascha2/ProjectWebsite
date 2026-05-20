@@ -30,6 +30,29 @@ Der genaue Endzustand ist damit:
 - Es ist noch nicht abschließend geklärt, ob der Prozess wirklich die gesetzten PowerShell-Umgebungsvariablen übernimmt.
 - `03_db_init_mongo_roles.php` konnte deshalb noch nicht erfolgreich als vollständiger Sync-Lauf bestätigt werden.
 
+## Sprint 1 Sicherheit (2026-05, Repo)
+
+Umgesetzt in der Codebasis (lokal testbar):
+
+- Zentraler CSRF-Schutz für Legacy-POSTs (`includes/csrf.php`, Prüfung in `includes/bootstrap.php`, `js/csrf-forms.js`).
+- Session-Cookies: `HttpOnly`, `SameSite=Strict`, `Secure` bei HTTPS/`SESSION_SECURE=1`.
+- `session_regenerate` nach Laravel-Handoff (`laravel_handoff.php`).
+- Logout nur POST (`pages/account.php`).
+- `?debug=1` nur `APP_ENV=local` + Loopback.
+- Mongo-URIs ohne `.env.local`: Abbruch, außer `APP_ALLOW_DEV_DB_DEFAULTS=1` (siehe `.env.example`).
+- `BridgeRateLimiter`: `X-Forwarded-For` nur mit `TRUSTED_PROXY_IPS`.
+
+## Sprint 2 Sicherheit (2026-05, Repo)
+
+- `dbScripts/03_db_init_mongo_roles.php`: kein `find` mehr auf `users` / `registration_codes` für App-Rollen; `registration_code_requests` mit find/insert/update für Gäste.
+- `includes/user_db.php`: öffentliche User-Felder, Kommentar-`author_*` Snapshot, Admin-Fallback für alte Kommentare.
+- `dbScripts/10_db_init_projects_indexes.php`: Indizes auf `projects`.
+- Handoff lädt User nur über `ADMIN_DB_URI`.
+
+**Nach Pull:** `03_db_init_mongo_roles.php` im Admin-Panel ausführen (oder Master), optional `10_db_init_projects_indexes.php`.
+
+Offen (nächste Sprints): zentrale Autorisierung (Schritt 3), 2FA — `docs/security_roadmap.md`.
+
 ## Bereits umgesetzte Änderungen
 
 - Direkter Browserzugriff auf `dbScripts/` ist gesperrt.

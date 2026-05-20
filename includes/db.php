@@ -122,6 +122,37 @@ if (!function_exists('mongo_uri_with_password')) {
     }
 }
 
+if (!function_exists('mongo_default_uri')) {
+    function mongo_default_uri(string $user): string
+    {
+        $dbName = getenv('APP_DB_NAME');
+        if ($dbName === false || trim((string) $dbName) === '') {
+            $dbName = 'portfolio_db';
+        }
+
+        return 'mongodb://'.$user.':0@localhost:27017/'.$dbName.'?authSource='.$dbName;
+    }
+}
+
+if (!function_exists('mongo_resolve_uri')) {
+    function mongo_resolve_uri(string $envKey, string $defaultUser): string
+    {
+        $uri = getenv($envKey);
+        if ($uri !== false && trim((string) $uri) !== '') {
+            return (string) $uri;
+        }
+
+        if (!function_exists('app_allow_dev_db_defaults') || !app_allow_dev_db_defaults()) {
+            throw new RuntimeException(
+                $envKey.' is not set. Create .env.local in the project root (see README). '
+                .'For local dev only you may set APP_ALLOW_DEV_DB_DEFAULTS=1.'
+            );
+        }
+
+        return mongo_default_uri($defaultUser);
+    }
+}
+
 if (!function_exists('mongo_config')) {
     function mongo_config() {
         static $config = null;
@@ -130,30 +161,15 @@ if (!function_exists('mongo_config')) {
             return $config;
         }
 
-        $appUri = getenv('APP_DB_URI');
-        if ($appUri === false || trim($appUri) === '') {
-            $appUri = 'mongodb://viewer:0@localhost:27017/portfolio_db?authSource=portfolio_db';
+        if (!function_exists('app_allow_dev_db_defaults')) {
+            require_once __DIR__ . '/app_env.php';
         }
 
-        $viewerUri = getenv('VIEWER_DB_URI');
-        if ($viewerUri === false || trim($viewerUri) === '') {
-            $viewerUri = 'mongodb://viewer:0@localhost:27017/portfolio_db?authSource=portfolio_db';
-        }
-
-        $communityUri = getenv('COMMUNITY_DB_URI');
-        if ($communityUri === false || trim($communityUri) === '') {
-            $communityUri = 'mongodb://community_member:0@localhost:27017/portfolio_db?authSource=portfolio_db';
-        }
-
-        $contentManagerUri = getenv('CONTENT_MANAGER_DB_URI');
-        if ($contentManagerUri === false || trim($contentManagerUri) === '') {
-            $contentManagerUri = 'mongodb://content_manager:0@localhost:27017/portfolio_db?authSource=portfolio_db';
-        }
-
-        $adminUri = getenv('ADMIN_DB_URI');
-        if ($adminUri === false || trim($adminUri) === '') {
-            $adminUri = 'mongodb://admin:0@localhost:27017/portfolio_db?authSource=portfolio_db';
-        }
+        $appUri = mongo_resolve_uri('APP_DB_URI', 'viewer');
+        $viewerUri = mongo_resolve_uri('VIEWER_DB_URI', 'viewer');
+        $communityUri = mongo_resolve_uri('COMMUNITY_DB_URI', 'community_member');
+        $contentManagerUri = mongo_resolve_uri('CONTENT_MANAGER_DB_URI', 'content_manager');
+        $adminUri = mongo_resolve_uri('ADMIN_DB_URI', 'admin');
 
         $dbName = getenv('APP_DB_NAME');
         if ($dbName === false || trim($dbName) === '') {

@@ -6,15 +6,15 @@ require_once __DIR__.'/../includes/laravel_app_url.php';
 
 // Registrierung läuft über bridge_register.php + Laravel (RegisterInvitedUser).
 
-// --- LOGOUT ---
-if (isset($_GET['logout'])) {
+// --- LOGOUT (nur POST + CSRF; zentral in bootstrap geprüft) ---
+if (isset($_POST['logout'])) {
     $_SESSION = [];
     if (ini_get('session.use_cookies')) {
         $params = session_get_cookie_params();
         setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
     }
     session_destroy();
-    header("Location: index.php?page=login");
+    header('Location: index.php?page=login');
     exit();
 }
 
@@ -121,7 +121,11 @@ if (!empty($roleOptions)) {
 
     <div class="account-header">
         <p>Eingeloggt als: <strong><?php echo htmlspecialchars($_SESSION['username'] ?? $_SESSION['email']); ?></strong> (<?php echo htmlspecialchars($_SESSION['email']); ?>) (Rolle: <?php echo $_SESSION['role']; ?>)</p>
-        <a href="index.php?page=account&logout=1">Abmelden</a>
+        <form method="POST" action="index.php?page=account" class="account-logout-form" style="display:inline;">
+            <?php echo csrf_field(); ?>
+            <input type="hidden" name="logout" value="1">
+            <button type="submit" class="link-button">Abmelden</button>
+        </form>
     </div>
 
     <hr class="account-divider">

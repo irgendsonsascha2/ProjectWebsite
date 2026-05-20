@@ -9,7 +9,22 @@
 
 declare(strict_types=1);
 
+$handoffLog = static function (Throwable $e): void {
+    $logDir = __DIR__.'/logs';
+    if (! is_dir($logDir)) {
+        @mkdir($logDir, 0755, true);
+    }
+    @file_put_contents(
+        $logDir.'/handoff_errors.log',
+        date('c').' '.$e->getMessage().' in '.$e->getFile().':'.$e->getLine()."\n".$e->getTraceAsString()."\n\n",
+        FILE_APPEND
+    );
+};
+
+require_once __DIR__ . '/includes/app_env.php';
+
 if (session_status() === PHP_SESSION_NONE) {
+    configure_session_cookie_params();
     session_start();
 }
 
@@ -54,37 +69,45 @@ if (! hash_equals($expected, $sig)) {
     $redirectHandoffFailure('sig');
 }
 
-require_once __DIR__ . '/includes/db.php';
-
-/** @var MongoDB\Database $db */
-[$_client, $db] = get_app_mongo_connection();
-
-$user = null;
 try {
-    $oid = new MongoDB\BSON\ObjectId($uid);
-    $user = $db->users->findOne(['_id' => $oid]);
-} catch (Throwable) {
-    $user = $db->users->findOne(['_id' => $uid]);
+    require_once __DIR__ . '/includes/db.php';
+    require_once __DIR__ . '/includes/user_db.php';
+
+    /** @var MongoDB\Database $db */
+    [, $db] = get_admin_mongo_connection();
+
+    $user = user_find_public_by_id($db, $uid);
+
+    if ($user === null) {
+        $redirectHandoffFailure('user');
+    }
+
+    if (! headers_sent()) {
+        session_regenerate_id(true);
+    }
+
+    $sessionUser = user_session_from_document($user);
+    $_SESSION['user_id'] = (string) ($user['_id'] ?? '');
+    $_SESSION['email'] = $sessionUser['email'];
+    $_SESSION['username'] = $sessionUser['username'];
+    $_SESSION['role'] = $sessionUser['role'];
+
+    $roleData = $db->roles_config->findOne(['role' => $_SESSION['role']]);
+    if ($roleData && isset($roleData['permissions'])) {
+        $perms = $roleData['permissions'];
+        $_SESSION['permissions'] = is_array($perms)
+            ? $perms
+            : iterator_to_array($perms);
+    } else {
+        $_SESSION['permissions'] = [];
+    }
+
+    $page = (string) ($_ENV['LEGACY_AFTER_LOGIN_PAGE'] ?? getenv('LEGACY_AFTER_LOGIN_PAGE') ?: 'home');
+    $page = preg_replace('/[^a-zA-Z0-9_-]/', '', $page) ?: 'home';
+
+    header('Location: index.php?page='.$page);
+    exit;
+} catch (Throwable $e) {
+    $handoffLog($e);
+    $redirectHandoffFailure('error');
 }
-
-if (! $user) {
-    $redirectHandoffFailure('user');
-}
-
-$_SESSION['user_id'] = (string) $user['_id'];
-$_SESSION['email'] = $user['email'] ?? '';
-$_SESSION['username'] = $user['username'] ?? '';
-$_SESSION['role'] = $user['role'] ?? 'viewer';
-
-$roleData = $db->roles_config->findOne(['role' => $_SESSION['role']]);
-if ($roleData && isset($roleData['permissions'])) {
-    $_SESSION['permissions'] = iterator_to_array($roleData['permissions']);
-} else {
-    $_SESSION['permissions'] = [];
-}
-
-$page = (string) ($_ENV['LEGACY_AFTER_LOGIN_PAGE'] ?? getenv('LEGACY_AFTER_LOGIN_PAGE') ?: 'home');
-$page = preg_replace('/[^a-zA-Z0-9_-]/', '', $page) ?: 'home';
-
-header('Location: index.php?page='.$page);
-exit;

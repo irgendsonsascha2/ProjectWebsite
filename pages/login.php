@@ -5,11 +5,9 @@ require_once __DIR__ . '/../includes/laravel_app_url.php';
 $message = '';
 $messageClass = 'alert';
 
-// CSRF für bridge_auth.php
+// CSRF-Token für bridge_auth.php (csrf_field / csrf_token)
 if (! isset($_SESSION['user_id'])) {
-    if (empty($_SESSION['csrf_bridge'])) {
-        $_SESSION['csrf_bridge'] = bin2hex(random_bytes(32));
-    }
+    csrf_token();
 }
 
 // Rückmeldungen vom Login-Bridge
@@ -85,7 +83,7 @@ if (isset($_SESSION['user_id']) && (!isset($_GET['err']) || $_GET['err'] !== 'fo
             </p>
         <?php endif; ?>
         <form method="POST" id="login-form" action="bridge_auth.php">
-            <input type="hidden" name="_token" value="<?php echo htmlspecialchars($_SESSION['csrf_bridge'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+            <?php echo csrf_field(); ?>
             <input type="text" id="login_id" name="login_id" placeholder="E-Mail oder Username" autocomplete="username" required>
             <input type="password" id="login_password" name="password" placeholder="Passwort" autocomplete="current-password" required>
             <button type="submit">Login</button>
