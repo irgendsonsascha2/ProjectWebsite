@@ -1,4 +1,4 @@
-# Plan für neue Session (Stand 2026-05-20)
+# Plan für neue Session (Stand 2026-05-21)
 
 Kurzüberblick zum Weitermachen — Zielbild, erledigt, offen, Test.
 
@@ -30,15 +30,22 @@ Kurzüberblick zum Weitermachen — Zielbild, erledigt, offen, Test.
 - `pages/login.php`: nur Login + optional `step=2fa` (kein Setup).
 - `dbScripts/11_db_init_users_two_factor.php`; Frontend: `npm run build:qrcode`.
 
-**Branch:** `main`, **14+ Commits** vor `origin/main` (lokal nicht gepusht).
+### Sprint 5 — Nutzer-Moderation (Admin)
+- `includes/user_moderation.php`: Timeout/Ban, Gründe, öffentliche Meldung, Admin-Schutz.
+- **`pages/admin/users.php`**: Suche, Sperre setzen/aufheben, „Grund anzeigen“.
+- Durchsetzung: `bridge_auth.php`, `bridge_auth_2fa.php`, `laravel_handoff.php`, `includes/authz.php` (Session-Sync), Laravel `LoginRequest`.
+- `dbScripts/13_db_init_users_moderation.php` (sparse Index).
+- Einladungscodes: Schreibzugriff auf `registration_codes` nur über **`get_admin_mongo_connection()`** (Account-Generierung angepasst).
 
-## Nächste Session — Start hier (P3)
+**Branch:** `main`, viele Commits vor `origin/main` (lokal nicht gepusht).
 
-### P3 — Betrieb / Mongo
-- `03_db_init_mongo_roles.php` nach RBAC-Änderung im Admin ausführen; `ADMIN_DB_URI` prüfen.
-- `registration_codes`-Insert nur mit Admin-DB-User (RBAC).
-- Nach `db_init_master`: ggf. neu einloggen (Session `user_id`).
-- Optional: `11_db_init_users_two_factor.php` (Index).
+## Nächste Session — Start hier (P4)
+
+### P3 — Betrieb / Mongo (lokal geprüft 2026-05-21)
+- ✅ `ADMIN_DB_URI` / Admin-Ping OK; Custom-Rollen `viewerRole`, `communityMemberRole`, `contentManagerRole` vorhanden.
+- ✅ `11_db_init_users_two_factor.php` und `13_db_init_users_moderation.php` per CLI erfolgreich.
+- **Manuell im Admin**, wenn Passwörter geändert wurden: `03_db_init_mongo_roles.php` ausführen (Checkbox „`.env.local` aktualisieren“ optional).
+- Nach **`db_init_master`**: neu einloggen (Session `user_id` kann ungültig sein).
 
 ### P4 — Später
 - Admin Re-Auth vor destruktiven DB-Aktionen (`db_scripts.php`).
@@ -59,15 +66,20 @@ cd frontend && npm run build
 - Einrichtung abschließen → Backup-Codes auf 2FA-Seite notieren.
 - Logout → Login → Passwort → `step=2fa` → Handoff.
 
+**Checks (Moderation):**
+- Admin → **Nutzer** → Timeout/Ban setzen → Logout des Nutzers → Login zeigt Sperr-Meldung (ggf. ohne Grund, wenn `show_reason` aus).
+- Sperre aufheben → Login wieder möglich.
+
 ## Wichtige Dateien
 
 | Bereich | Dateien |
 |---------|---------|
 | Auth / 2FA | `pages/two_factor.php`, `includes/two_factor.php`, `includes/two_factor_handlers.php`, `bridge_auth.php`, `bridge_auth_2fa.php`, `pages/login.php` |
-| Account | `pages/account.php` (Link nur) |
+| Moderation | `pages/admin/users.php`, `includes/user_moderation.php`, `dbScripts/13_db_init_users_moderation.php` |
+| Account | `pages/account.php` (Link 2FA; Code-Generierung über Admin-DB) |
 | Security | `includes/authz.php`, `dbScripts/03_db_init_mongo_roles.php`, `dbScripts/11_db_init_users_two_factor.php` |
 | Doku | `docs/security_roadmap.md`, `README.md`, `AGENTS.md` |
 
 ## Referenz
 
-`docs/security_roadmap.md` — Schritte 1–5 + 2FA umgesetzt; offen: Re-Auth (6–7), Deployment, UI-Backlog.
+`docs/security_roadmap.md` — Schritte 1–5 + 2FA + Moderation umgesetzt; offen: Re-Auth (6–7), Deployment, UI-Backlog.

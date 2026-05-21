@@ -507,6 +507,7 @@ Zugriff ist für eingeloggte Nutzer mit Rolle `admin` vorgesehen; `home_profile.
 Die Admin-Seiten nutzen ein gemeinsames „Rahmen“-Layout in `pages/admin/_layout.php` (Theme-Bootstrap `data-theme`, Vite-Assets, Navigation). Inhaltseiten rendern ihren Body über `admin_render_page(...)`, damit Navigation/Grundstruktur nicht pro Datei dupliziert werden muss.
 
 - Menüpunkte: Dashboard, **Nutzer** (Suche, Timeout/Ban), **DB-Skripte**, Registrierungsanfragen, Rollen, Berechtigungen, Zur Hauptseite
+- **Nutzer-Moderation:** `pages/admin/users.php` setzt `account_moderation` auf `users` (Timeout mit Ablauf, permanenter Ban, optionaler Grund für den Nutzer). Gesperrte Konten werden beim Login (`bridge_auth.php`), bei 2FA-Handoff (`bridge_auth_2fa.php`), Laravel-Login und Session-Sync (`includes/authz.php`) abgewiesen. Admin-Konten sind geschützt. Index: `dbScripts/13_db_init_users_moderation.php`.
 - Der aktive Menüpunkt wird hervorgehoben (CSS: `.admin-nav a.is-active`)
 - `index.php` zeigt **nur im Dashboard** die effektive DB-Konfiguration (laufender PHP‑Prozess) plus ein paar simple Metriken (z. B. Anzahl `users`/`projects`)
 

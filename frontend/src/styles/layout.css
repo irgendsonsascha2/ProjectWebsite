@@ -239,6 +239,46 @@
     background: color-mix(in srgb, #ef4444 10%, var(--surface-muted) 90%);
   }
 
+  .alert q.moderation-reason {
+    quotes: '„' '"';
+    font-style: italic;
+    color: var(--text-main);
+    opacity: 0.92;
+  }
+
+  .alert q.moderation-reason::before {
+    content: open-quote;
+  }
+
+  .alert q.moderation-reason::after {
+    content: close-quote;
+  }
+
+  /* 2FA-Login: Link im Formular, aber nicht wie Submit-Button stylen */
+  .container form .login-2fa-alt-link a {
+    display: inline;
+    width: auto;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    font-weight: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    color: var(--primary-color);
+    text-decoration: underline;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  .container form .login-2fa-alt-link a:hover {
+    color: var(--primary-hover);
+    background: transparent;
+  }
+
   /* Inputs/Buttons inside main site (keine Admin-Unterseiten) */
   .container form input[type='text'],
   .container form input[type='email'],
@@ -261,7 +301,8 @@
   }
 
   .container form button[type='submit'],
-  .container form button {
+  .container form button,
+  .container #login-2fa-form button[type='submit'] {
     @apply mt-2 inline-flex items-center justify-center rounded-full px-5 py-2 text-sm font-semibold;
     background: var(--primary-color);
     color: var(--text-on-primary);
@@ -269,7 +310,8 @@
     appearance: none;
     -webkit-appearance: none;
   }
-  .container form button:hover {
+  .container form button:hover,
+  .container #login-2fa-form button[type='submit']:hover {
     background: var(--primary-hover);
   }
 

@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/_layout.php';
+require_once __DIR__ . '/../../includes/svg_icons.php';
 require_once __DIR__ . '/../../includes/user_moderation.php';
 
 use MongoDB\BSON\UTCDateTime;
@@ -157,63 +158,13 @@ try {
                             <?php if ($protected): ?>
                                 <span class="muted">Geschützt (Admin)</span>
                             <?php else: ?>
-                            <details>
-                                <summary>Bearbeiten</summary>
-                                <form method="POST" action="users.php" class="admin-card" style="margin-top: 0.5rem;">
-                                    <?php echo csrf_field(); ?>
-                                    <input type="hidden" name="user_id" value="<?php echo htmlspecialchars($uid, ENT_QUOTES, 'UTF-8'); ?>">
-                                    <input type="hidden" name="action" value="apply_moderation">
-
-                                    <label>Status</label>
-                                    <select name="moderation_status" class="js-moderation-status">
-                                        <option value="active"<?php echo $currentStatus === 'active' ? ' selected' : ''; ?>>Aktiv</option>
-                                        <option value="suspended"<?php echo $currentStatus === 'suspended' ? ' selected' : ''; ?>>Timeout</option>
-                                        <option value="banned"<?php echo $currentStatus === 'banned' ? ' selected' : ''; ?>>Ban</option>
-                                    </select>
-
-                                    <div class="js-timeout-fields" style="margin-top: 0.5rem;">
-                                        <label>Dauer (Timeout)</label>
-                                        <select name="duration_preset">
-                                            <option value="1h">1 Stunde</option>
-                                            <option value="24h">24 Stunden</option>
-                                            <option value="7d">7 Tage</option>
-                                            <option value="30d">30 Tage</option>
-                                            <option value="custom">Bis Datum/Uhrzeit</option>
-                                        </select>
-                                        <label style="margin-top: 0.5rem;">Optional: bis (lokal)</label>
-                                        <input type="datetime-local" name="until_custom" value="<?php echo htmlspecialchars($untilValue, ENT_QUOTES, 'UTF-8'); ?>">
-                                    </div>
-
-                                    <label style="margin-top: 0.5rem;">Grund</label>
-                                    <select name="reason_key" class="js-reason-key">
-                                        <?php foreach ($reasonOptions as $key => $label): ?>
-                                            <option value="<?php echo htmlspecialchars($key, ENT_QUOTES, 'UTF-8'); ?>"<?php echo $key === $reasonKey ? ' selected' : ''; ?>>
-                                                <?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-
-                                    <label class="js-custom-reason" style="margin-top: 0.5rem;<?php echo $reasonKey === 'custom' ? '' : ' display:none;'; ?>">Eigener Text</label>
-                                    <textarea name="reason_custom" rows="2" class="js-custom-reason-input" style="<?php echo $reasonKey === 'custom' ? '' : ' display:none;'; ?>"><?php echo htmlspecialchars($reasonCustom, ENT_QUOTES, 'UTF-8'); ?></textarea>
-
-                                    <label style="margin-top: 0.5rem; display: block;">
-                                        <input type="checkbox" name="show_reason" value="1"<?php echo $showReason ? ' checked' : ''; ?>>
-                                        Grund dem Nutzer anzeigen
-                                    </label>
-
-                                    <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                                        <button type="submit">Anwenden</button>
-                                    </div>
-                                </form>
-                                <?php if ($currentStatus !== 'active'): ?>
-                                <form method="POST" action="users.php" style="margin-top: 0.5rem;" onsubmit="return confirm('Sperre wirklich aufheben?');">
-                                    <?php echo csrf_field(); ?>
-                                    <input type="hidden" name="user_id" value="<?php echo htmlspecialchars($uid, ENT_QUOTES, 'UTF-8'); ?>">
-                                    <input type="hidden" name="action" value="clear_moderation">
-                                    <button type="submit" class="btn-secondary">Freigeben</button>
-                                </form>
-                                <?php endif; ?>
-                            </details>
+                                <button
+                                    type="button"
+                                    class="icon-button"
+                                    data-dialog-open="moderation-user-<?php echo htmlspecialchars($uid, ENT_QUOTES, 'UTF-8'); ?>"
+                                    aria-label="Status bearbeiten"
+                                    title="Status bearbeiten"
+                                ><?php echo svg_icon_pencil(18); ?></button>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -221,32 +172,156 @@ try {
                 </tbody>
             </table>
         </div>
+
+        <?php foreach ($users as $u): ?>
+            <?php
+            $uid = (string) ($u['_id'] ?? '');
+            if ($uid === '' || user_moderation_role_is_protected($u)) {
+                continue;
+            }
+            $username = (string) ($u['username'] ?? '');
+            $email = (string) ($u['email'] ?? '');
+            $mod = user_moderation_from_user($u);
+            $currentStatus = $mod !== null ? (string) ($mod['status'] ?? 'active') : 'active';
+            if ($currentStatus === 'suspended' && $mod !== null && user_moderation_is_expired($mod)) {
+                $currentStatus = 'active';
+            }
+            $reasonKey = $mod !== null ? (string) ($mod['reason_key'] ?? 'terms') : 'terms';
+            $reasonCustom = $mod !== null ? (string) ($mod['reason_custom'] ?? '') : '';
+            $showReason = $mod !== null && ! empty($mod['show_reason']);
+            $untilValue = '';
+            if ($mod !== null && isset($mod['until']) && $mod['until'] instanceof UTCDateTime) {
+                $untilValue = $mod['until']->toDateTime()->format('Y-m-d\TH:i');
+            }
+            $dialogId = 'moderation-user-'.$uid;
+            ?>
+            <dialog id="<?php echo htmlspecialchars($dialogId, ENT_QUOTES, 'UTF-8'); ?>">
+                <div class="dialog-card">
+                    <div class="dialog-header">
+                        <h2>Status: <?php echo htmlspecialchars($username !== '' ? $username : $email, ENT_QUOTES, 'UTF-8'); ?></h2>
+                        <button type="button" class="close-button" data-dialog-close>Schließen</button>
+                    </div>
+                    <form method="POST" action="users.php" class="moderation-form">
+                        <?php echo csrf_field(); ?>
+                        <input type="hidden" name="user_id" value="<?php echo htmlspecialchars($uid, ENT_QUOTES, 'UTF-8'); ?>">
+                        <input type="hidden" name="action" value="apply_moderation">
+
+                        <fieldset class="admin-fieldset moderation-status-fieldset">
+                            <legend>Status</legend>
+                            <div class="moderation-status-options">
+                                <label class="moderation-status-option">
+                                    <input type="radio" name="moderation_status" value="active" class="js-moderation-status"<?php echo $currentStatus === 'active' ? ' checked' : ''; ?>>
+                                    <span>Aktiv</span>
+                                </label>
+                                <label class="moderation-status-option">
+                                    <input type="radio" name="moderation_status" value="suspended" class="js-moderation-status"<?php echo $currentStatus === 'suspended' ? ' checked' : ''; ?>>
+                                    <span>Timeout</span>
+                                </label>
+                                <label class="moderation-status-option">
+                                    <input type="radio" name="moderation_status" value="banned" class="js-moderation-status"<?php echo $currentStatus === 'banned' ? ' checked' : ''; ?>>
+                                    <span>Ban</span>
+                                </label>
+                            </div>
+                        </fieldset>
+
+                        <div class="js-timeout-fields field">
+                            <label>Dauer (Timeout)</label>
+                            <select name="duration_preset">
+                                <option value="1h">1 Stunde</option>
+                                <option value="24h">24 Stunden</option>
+                                <option value="7d">7 Tage</option>
+                                <option value="30d">30 Tage</option>
+                                <option value="custom">Bis Datum/Uhrzeit</option>
+                            </select>
+                            <label class="field" style="margin-top: 0.5rem;">Optional: bis (lokal)</label>
+                            <input type="datetime-local" name="until_custom" value="<?php echo htmlspecialchars($untilValue, ENT_QUOTES, 'UTF-8'); ?>">
+                        </div>
+
+                        <div class="field">
+                            <label>Grund</label>
+                            <select name="reason_key" class="js-reason-key">
+                                <?php foreach ($reasonOptions as $key => $label): ?>
+                                    <option value="<?php echo htmlspecialchars($key, ENT_QUOTES, 'UTF-8'); ?>"<?php echo $key === $reasonKey ? ' selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <label class="js-custom-reason field"<?php echo $reasonKey === 'custom' ? '' : ' style="display:none;"'; ?>>Eigener Text</label>
+                        <textarea name="reason_custom" rows="2" class="js-custom-reason-input field"<?php echo $reasonKey === 'custom' ? '' : ' style="display:none;"'; ?>><?php echo htmlspecialchars($reasonCustom, ENT_QUOTES, 'UTF-8'); ?></textarea>
+
+                        <label class="field" style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" name="show_reason" value="1"<?php echo $showReason ? ' checked' : ''; ?>>
+                            <span>Grund dem Nutzer anzeigen</span>
+                        </label>
+
+                        <div class="actions" style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                            <button type="submit">Speichern</button>
+                            <?php if ($currentStatus !== 'active'): ?>
+                            <button type="submit" class="button-secondary" form="clear-<?php echo htmlspecialchars($dialogId, ENT_QUOTES, 'UTF-8'); ?>" onclick="return confirm('Sperre wirklich aufheben?');">Freigeben</button>
+                            <?php endif; ?>
+                        </div>
+                    </form>
+                    <?php if ($currentStatus !== 'active'): ?>
+                    <form method="POST" action="users.php" id="clear-<?php echo htmlspecialchars($dialogId, ENT_QUOTES, 'UTF-8'); ?>" hidden>
+                        <?php echo csrf_field(); ?>
+                        <input type="hidden" name="user_id" value="<?php echo htmlspecialchars($uid, ENT_QUOTES, 'UTF-8'); ?>">
+                        <input type="hidden" name="action" value="clear_moderation">
+                    </form>
+                    <?php endif; ?>
+                </div>
+            </dialog>
+        <?php endforeach; ?>
     <?php endif; ?>
 
     <script>
     (function () {
-        document.querySelectorAll('.js-moderation-status').forEach(function (sel) {
-            var form = sel.closest('form');
-            if (!form) return;
+        var openButtons = Array.from(document.querySelectorAll('[data-dialog-open]'));
+        var closeButtons = Array.from(document.querySelectorAll('[data-dialog-close]'));
+        openButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                var dialogId = button.getAttribute('data-dialog-open');
+                var dialog = dialogId ? document.getElementById(dialogId) : null;
+                if (!dialog || typeof dialog.showModal !== 'function') return;
+                dialog.showModal();
+            });
+        });
+        closeButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                var dialog = button.closest('dialog');
+                if (dialog) dialog.close();
+            });
+        });
+        document.querySelectorAll('dialog').forEach(function (dialog) {
+            dialog.addEventListener('click', function (event) {
+                if (event.target === dialog) dialog.close();
+            });
+        });
+
+        document.querySelectorAll('.moderation-form').forEach(function (form) {
+            var statusRadios = form.querySelectorAll('.js-moderation-status');
             var timeoutBlock = form.querySelector('.js-timeout-fields');
             var toggleTimeout = function () {
                 if (!timeoutBlock) return;
-                timeoutBlock.style.display = sel.value === 'suspended' ? '' : 'none';
+                var selected = form.querySelector('.js-moderation-status:checked');
+                timeoutBlock.style.display = selected && selected.value === 'suspended' ? '' : 'none';
             };
-            sel.addEventListener('change', toggleTimeout);
+            statusRadios.forEach(function (radio) {
+                radio.addEventListener('change', toggleTimeout);
+            });
             toggleTimeout();
-        });
-        document.querySelectorAll('.js-reason-key').forEach(function (sel) {
-            var form = sel.closest('form');
-            if (!form) return;
+
+            var reasonSel = form.querySelector('.js-reason-key');
+            if (!reasonSel) return;
             var customLabels = form.querySelectorAll('.js-custom-reason');
             var customInput = form.querySelector('.js-custom-reason-input');
             var toggleCustom = function () {
-                var show = sel.value === 'custom';
+                var show = reasonSel.value === 'custom';
                 customLabels.forEach(function (el) { el.style.display = show ? '' : 'none'; });
                 if (customInput) customInput.style.display = show ? '' : 'none';
             };
-            sel.addEventListener('change', toggleCustom);
+            reasonSel.addEventListener('change', toggleCustom);
         });
     })();
     </script>

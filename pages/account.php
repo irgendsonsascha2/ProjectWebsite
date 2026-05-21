@@ -49,11 +49,12 @@ if (! empty($_SESSION['register_validation_errors'])) {
 // --- LOGIK: CODE GENERIEREN (Nur Admin) ---
 if (isset($_POST['generate_code']) && can('generate_codes')) {
     $targetRole = $_POST['target_role'];
+    [, $codesDb] = get_admin_mongo_connection();
 
     // Ensure uniqueness with both DB constraint and application retry.
     // (Index exists in dbScripts/00_db_init_accounts.php, but may be missing on legacy DBs.)
     try {
-        $db->registration_codes->createIndex(['code' => 1], ['unique' => true]);
+        $codesDb->registration_codes->createIndex(['code' => 1], ['unique' => true]);
     } catch (Exception $e) {
         // ignore - generation below still handles duplicate keys
     }
@@ -64,7 +65,7 @@ if (isset($_POST['generate_code']) && can('generate_codes')) {
         // 16 hex chars (2^64 possibilities) vs old 8 chars (2^32).
         $candidate = strtoupper(bin2hex(random_bytes(8)));
         try {
-            $db->registration_codes->insertOne([
+            $codesDb->registration_codes->insertOne([
                 'code' => $candidate,
                 'role' => $targetRole,
                 'is_used' => false,

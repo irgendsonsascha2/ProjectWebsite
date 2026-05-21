@@ -12,6 +12,8 @@ Offen: Admin-Re-Auth, Deployment. Einstieg neue Session: `docs/next_session_plan
 
 **Ergänzung (Sprint 3, 2026-05):** Zentrale Legacy-Autorisierung (`includes/authz.php`), Session-Sync aus DB, POST-Guards auf Projektseiten, IP-Rate-Limit für Code-Anfragen. **Kein** Laravel-`/verify-email`-Zwang mehr; Invite-Registrierung setzt `email_verified_at`. Schritt 3 weitgehend umgesetzt; optional 2FA = Schritt 4 (neu, siehe unten).
 
+**Ergänzung (Sprint 5, 2026-05):** Admin-Nutzer-Moderation (`pages/admin/users.php`, `includes/user_moderation.php`): Timeout/Ban mit optional sichtbarem Grund; Durchsetzung über Brücken, Handoff und Session-Sync. `registration_codes`-Schreibzugriff nur über Admin-Mongo-URI.
+
 ## Ausgangslage (früherer Ist-Stand, teilweise inzwischen adressiert)
 
 Folgendes war zu verschiedenen Zeiten sichtbar; die ersten Punkte betreffen die jetzige Codebasis **nicht mehr** in derselben Form:

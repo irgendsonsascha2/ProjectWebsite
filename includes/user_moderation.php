@@ -140,34 +140,94 @@ if (!function_exists('user_moderation_reason_label')) {
     }
 }
 
+if (!function_exists('user_moderation_quote_reason')) {
+    /** Typografische Anführungszeichen (deutsch) für die öffentliche Anzeige. */
+    function user_moderation_quote_reason(string $reason): string
+    {
+        $reason = trim($reason);
+        if ($reason === '') {
+            return '';
+        }
+
+        return '„'.str_replace(['„', '"', '"', '"', '»', '«'], "'", $reason).'"';
+    }
+}
+
+if (!function_exists('user_moderation_public_message_parts')) {
+    /**
+     * @param array<string, mixed>|object|null $user
+     * @return array{lead: string, reason: string|null, until_suffix: string}
+     */
+    function user_moderation_public_message_parts($user): array
+    {
+        if (! user_moderation_is_blocked($user)) {
+            return ['lead' => '', 'reason' => null, 'until_suffix' => ''];
+        }
+        $mod = user_moderation_from_user($user);
+        if ($mod === null) {
+            return ['lead' => 'Dein Konto ist derzeit gesperrt.', 'reason' => null, 'until_suffix' => ''];
+        }
+        $status = (string) ($mod['status'] ?? '');
+        $lead = $status === 'suspended'
+            ? 'Dein Konto ist vorübergehend gesperrt (Timeout).'
+            : 'Dein Konto ist derzeit gesperrt.';
+        if (empty($mod['show_reason'])) {
+            return ['lead' => $lead, 'reason' => null, 'until_suffix' => ''];
+        }
+        $reason = user_moderation_reason_label($mod);
+        $untilSuffix = '';
+        $until = $mod['until'] ?? null;
+        if ($status === 'suspended' && $until instanceof UTCDateTime) {
+            $untilSuffix = ' Die Sperre endet voraussichtlich am '.$until->toDateTime()->format('d.m.Y H:i').' Uhr.';
+        }
+
+        return ['lead' => $lead, 'reason' => $reason, 'until_suffix' => $untilSuffix];
+    }
+}
+
 if (!function_exists('user_moderation_public_message')) {
     /**
+     * Klartext (z. B. Laravel-Validierung).
+     *
      * @param array<string, mixed>|object|null $user
      */
     function user_moderation_public_message($user): string
     {
-        if (! user_moderation_is_blocked($user)) {
+        $parts = user_moderation_public_message_parts($user);
+        if ($parts['lead'] === '') {
             return '';
         }
-        $mod = user_moderation_from_user($user);
-        if ($mod === null) {
-            return 'Dein Konto ist derzeit gesperrt.';
+        if ($parts['reason'] === null) {
+            return $parts['lead'];
         }
-        $status = (string) ($mod['status'] ?? '');
-        $generic = $status === 'suspended'
-            ? 'Dein Konto ist vorübergehend gesperrt (Timeout).'
-            : 'Dein Konto ist derzeit gesperrt.';
-        if (empty($mod['show_reason'])) {
-            return $generic;
+        $quoted = user_moderation_quote_reason($parts['reason']);
+
+        return $parts['lead'].' Grund: '.$quoted.$parts['until_suffix'];
+    }
+}
+
+if (!function_exists('user_moderation_public_message_html')) {
+    /**
+     * HTML für Login-Hinweis (Grund in <q>, serverseitig escaped).
+     *
+     * @param array<string, mixed>|object|null $user
+     */
+    function user_moderation_public_message_html($user): string
+    {
+        $parts = user_moderation_public_message_parts($user);
+        if ($parts['lead'] === '') {
+            return '';
         }
-        $reason = user_moderation_reason_label($mod);
-        $until = $mod['until'] ?? null;
-        $untilStr = '';
-        if ($status === 'suspended' && $until instanceof UTCDateTime) {
-            $untilStr = ' Die Sperre endet voraussichtlich am '.$until->toDateTime()->format('d.m.Y H:i').' Uhr.';
+        $html = htmlspecialchars($parts['lead'], ENT_QUOTES, 'UTF-8');
+        if ($parts['reason'] !== null) {
+            $reasonEsc = htmlspecialchars($parts['reason'], ENT_QUOTES, 'UTF-8');
+            $html .= ' Grund: <q class="moderation-reason">'.$reasonEsc.'</q>';
+        }
+        if ($parts['until_suffix'] !== '') {
+            $html .= htmlspecialchars($parts['until_suffix'], ENT_QUOTES, 'UTF-8');
         }
 
-        return $generic.' Grund: '.$reason.$untilStr;
+        return $html;
     }
 }
 
@@ -212,14 +272,14 @@ if (!function_exists('user_moderation_redirect_blocked')) {
     function user_moderation_redirect_blocked($user): void
     {
         if (session_status() === PHP_SESSION_ACTIVE) {
-            $msg = user_moderation_public_message($user);
             foreach ([
                 'user_id', 'email', 'username', 'role', 'permissions',
                 'email_verified', 'email_verified_at',
             ] as $key) {
                 unset($_SESSION[$key]);
             }
-            $_SESSION['moderation_message'] = $msg;
+            $_SESSION['moderation_message'] = user_moderation_public_message($user);
+            $_SESSION['moderation_message_html'] = user_moderation_public_message_html($user);
         }
         if (! function_exists('legacy_index_url')) {
             require_once __DIR__.'/app_env.php';

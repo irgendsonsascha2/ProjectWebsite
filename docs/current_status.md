@@ -15,20 +15,11 @@ Aktueller Blocker bei der Sicherheits- und MongoDB-Umstellung:
   - `dbOwner`
   - `userAdmin`
 
-## Konkretes Problem
+## Konkretes Problem (historisch / andere Umgebungen)
 
-Das Admin-Panel kann `dbScripts/03_db_init_mongo_roles.php` weiterhin nicht erfolgreich ausführen.
+Früher blockierte `03_db_init_mongo_roles.php` mit `not authorized` oder `Authentication failed` (falsche URIs, Prozess ohne `.env.local`, Windows-Env).
 
-Zuletzt beobachtete Fehler:
-
-- zunächst `not authorized on portfolio_db to execute command`
-- danach `Authentication failed`
-
-Der genaue Endzustand ist damit:
-
-- Es ist noch nicht verifiziert, dass der laufende PHP-Server tatsächlich mit den beabsichtigten MongoDB-URIs und Passwörtern gestartet wurde.
-- Es ist noch nicht abschließend geklärt, ob der Prozess wirklich die gesetzten PowerShell-Umgebungsvariablen übernimmt.
-- `03_db_init_mongo_roles.php` konnte deshalb noch nicht erfolgreich als vollständiger Sync-Lauf bestätigt werden.
+**Lokal (2026-05-21):** Admin-Ping und Custom-Rollen OK; Indizes `11`/`13` per CLI erfolgreich. Nach Passwort-Änderung weiterhin `03` im Admin ausführen und PHP-Server neu starten, damit der Prozess die URIs aus `.env.local` lädt.
 
 ## Sprint 1 Sicherheit (2026-05, Repo)
 

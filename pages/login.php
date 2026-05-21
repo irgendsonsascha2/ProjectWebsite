@@ -42,7 +42,10 @@ if (isset($_GET['err']) && $_GET['err'] === '2fa') {
 }
 if (isset($_GET['err']) && $_GET['err'] === 'moderation') {
     $message = '❌ ';
-    if (! empty($_SESSION['moderation_message'])) {
+    if (! empty($_SESSION['moderation_message_html'])) {
+        $message .= (string) $_SESSION['moderation_message_html'];
+        unset($_SESSION['moderation_message_html'], $_SESSION['moderation_message']);
+    } elseif (! empty($_SESSION['moderation_message'])) {
         $message .= htmlspecialchars((string) $_SESSION['moderation_message'], ENT_QUOTES, 'UTF-8');
         unset($_SESSION['moderation_message']);
     } else {
@@ -91,20 +94,49 @@ if (isset($_SESSION['user_id']) && ! $show2faStep && (! isset($_GET['err']) || $
     <?php endif; ?>
 
     <?php if ($show2faStep): ?>
-    <section>
-        <p class="field-hint" style="margin-bottom:1rem;">Passwort OK — gib den 6-stelligen Code aus deiner Authenticator-App ein oder einen Backup-Code.</p>
+    <section class="login-2fa-section">
+        <p class="field-hint" style="margin-bottom:1rem;">Passwort OK — gib den 6-stelligen Code aus deiner Authenticator-App ein.</p>
         <form method="POST" id="login-2fa-form" action="<?php echo htmlspecialchars($bridgeAuth2faUrl, ENT_QUOTES, 'UTF-8'); ?>">
             <?php echo csrf_field(); ?>
             <div class="field">
                 <label for="totp_code">Authenticator-Code</label>
-                <input type="text" id="totp_code" name="totp_code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="123456" autocomplete="one-time-code">
+                <input type="text" id="totp_code" name="totp_code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="123456" autocomplete="one-time-code" autofocus>
             </div>
-            <div class="field">
-                <label for="backup_code">oder Backup-Code</label>
-                <input type="text" id="backup_code" name="backup_code" placeholder="XXXXXXXXXX" autocomplete="off">
+
+            <p class="field-hint login-2fa-alt-link">
+                <a href="#" id="login-2fa-alt-toggle" aria-expanded="false" aria-controls="login-2fa-alt-panel">Andere Auth-Methoden</a>
+            </p>
+
+            <div id="login-2fa-alt-panel" class="login-2fa-alt-panel" hidden>
+                <div class="field">
+                    <label for="backup_code">Backup-Code</label>
+                    <input type="text" id="backup_code" name="backup_code" placeholder="XXXXXXXXXX" autocomplete="off" spellcheck="false">
+                </div>
             </div>
+
             <button type="submit">Anmeldung abschließen</button>
         </form>
+        <script>
+        (function () {
+            var toggle = document.getElementById('login-2fa-alt-toggle');
+            var panel = document.getElementById('login-2fa-alt-panel');
+            if (!toggle || !panel) return;
+            toggle.addEventListener('click', function (e) {
+                e.preventDefault();
+                var open = panel.hidden;
+                panel.hidden = !open;
+                toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+                if (open) {
+                    var backup = document.getElementById('backup_code');
+                    if (backup) backup.focus();
+                }
+            });
+            <?php if (isset($_GET['err']) && (string) $_GET['err'] === '2fa'): ?>
+            panel.hidden = false;
+            toggle.setAttribute('aria-expanded', 'true');
+            <?php endif; ?>
+        })();
+        </script>
         <p class="field-hint" style="margin-top:1rem;"><a href="index.php?page=login">Abbrechen und neu anmelden</a></p>
     </section>
     <?php else: ?>
