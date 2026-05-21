@@ -72,6 +72,16 @@ if ($laravelUser === null) {
     exit;
 }
 
+require_once __DIR__.'/includes/db.php';
+require_once __DIR__.'/includes/user_db.php';
+require_once __DIR__.'/includes/user_moderation.php';
+[, $modDb] = get_admin_mongo_connection();
+$modUser = user_moderation_find_by_id($modDb, $userId);
+if ($modUser !== null && user_moderation_is_blocked($modUser)) {
+    two_factor_clear_login_pending();
+    user_moderation_redirect_blocked($modUser);
+}
+
 $handoff = $app->make(App\Services\LegacySiteHandoff::class);
 if (! $handoff->isConfigured()) {
     header('Location: index.php?page=login&err=handoff');

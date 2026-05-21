@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__.'/user_db.php';
+require_once __DIR__.'/user_moderation.php';
 
 if (!function_exists('authz_is_logged_in')) {
     function authz_is_logged_in(): bool
@@ -101,9 +102,32 @@ if (!function_exists('authz_sync_session_from_db')) {
 
                 return;
             }
+            if (user_moderation_is_blocked($user)) {
+                user_moderation_redirect_blocked($user);
+            }
             authz_apply_user_to_session($user, $adminDb);
         } catch (Throwable) {
             // Session unverändert lassen
+        }
+    }
+}
+
+if (!function_exists('authz_require_active_account')) {
+    function authz_require_active_account(): void
+    {
+        authz_require_login();
+        if (($_SESSION['role'] ?? '') === 'admin') {
+            return;
+        }
+        try {
+            require_once __DIR__.'/db.php';
+            [, $adminDb] = get_admin_mongo_connection();
+            $user = user_find_public_by_id($adminDb, $_SESSION['user_id']);
+            if ($user !== null && user_moderation_is_blocked($user)) {
+                user_moderation_redirect_blocked($user);
+            }
+        } catch (Throwable) {
+            // bei DB-Fehler nicht blockieren
         }
     }
 }

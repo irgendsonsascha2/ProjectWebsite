@@ -506,7 +506,7 @@ Zugriff ist für eingeloggte Nutzer mit Rolle `admin` vorgesehen; `home_profile.
 
 Die Admin-Seiten nutzen ein gemeinsames „Rahmen“-Layout in `pages/admin/_layout.php` (Theme-Bootstrap `data-theme`, Vite-Assets, Navigation). Inhaltseiten rendern ihren Body über `admin_render_page(...)`, damit Navigation/Grundstruktur nicht pro Datei dupliziert werden muss.
 
-- Menüpunkte: Dashboard, **DB-Skripte**, Registrierungsanfragen, Rollen, Berechtigungen, Zur Hauptseite
+- Menüpunkte: Dashboard, **Nutzer** (Suche, Timeout/Ban), **DB-Skripte**, Registrierungsanfragen, Rollen, Berechtigungen, Zur Hauptseite
 - Der aktive Menüpunkt wird hervorgehoben (CSS: `.admin-nav a.is-active`)
 - `index.php` zeigt **nur im Dashboard** die effektive DB-Konfiguration (laufender PHP‑Prozess) plus ein paar simple Metriken (z. B. Anzahl `users`/`projects`)
 
@@ -536,6 +536,8 @@ Die wichtigsten Initialisierungsskripte:
   - Allgemeine Einstellungen (`site_settings` in `site_pages`; ersetzt nur diesen Datensatz)
 - `dbScripts/11_db_init_users_two_factor.php`
   - Dokumentation der optionalen `two_factor_*`-Felder auf `users` + sparse Index
+- `dbScripts/13_db_init_users_moderation.php`
+  - Dokumentation von `account_moderation` (Timeout/Ban) auf `users` + sparse Index
 - `dbScripts/db_init_master.php`
   - Führt die nummerierten Skripte gesammelt aus
 

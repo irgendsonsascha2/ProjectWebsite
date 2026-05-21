@@ -33,6 +33,7 @@ try {
 }
 
 authz_require_project_edit($project);
+authz_require_active_account();
 $canEdit = true;
 
 $message = "";

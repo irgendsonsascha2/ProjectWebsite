@@ -239,6 +239,7 @@ function delete_project_files($project) {
 if (isset($_POST['delete_project'])) {
     authz_require_can('delete_all');
     authz_require_verified_email();
+    authz_require_active_account();
     delete_project_files($project);
     $db->projects->deleteOne(['_id' => $projectObjectId]);
     $db->likes->deleteMany(['project_id' => $projectObjectId]);
@@ -251,6 +252,7 @@ if (isset($_POST['delete_project'])) {
 if (isset($_POST['interaction'])) {
     authz_require_can('like_dislike');
     authz_require_verified_email();
+    authz_require_active_account();
     $userId = new ObjectId($_SESSION['user_id']);
     $type = $_POST['interaction']; // 'like' or 'dislike'
     $mediaObjectId = parse_media_id($_POST['media_id'] ?? '');
@@ -320,6 +322,7 @@ if (isset($_POST['interaction'])) {
 // --- LOGIK: KOMMENTAR ---
 if (isset($_POST['delete_comment'])) {
     authz_require_verified_email();
+    authz_require_active_account();
     $userId = new ObjectId($_SESSION['user_id']);
     $commentIdRaw = trim($_POST['comment_id'] ?? '');
     $mediaObjectId = parse_media_id($_POST['media_id'] ?? '');
@@ -471,6 +474,7 @@ if (isset($_POST['delete_comment'])) {
 if (isset($_POST['submit_comment'])) {
     authz_require_can('comment');
     authz_require_verified_email();
+    authz_require_active_account();
     $userId = new ObjectId($_SESSION['user_id']);
     $commentText = trim($_POST['comment_text']);
     $commentLimit = defined('COMMENT_TEXT_MAX_LENGTH') ? COMMENT_TEXT_MAX_LENGTH : 400;

@@ -16,6 +16,7 @@ if (!function_exists('user_public_projection')) {
             'role' => 1,
             'created_at' => 1,
             'email_verified_at' => 1,
+            'account_moderation' => 1,
         ];
     }
 }

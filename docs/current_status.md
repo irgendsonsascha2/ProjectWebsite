@@ -63,6 +63,7 @@ Umgesetzt in der Codebasis (lokal testbar):
 
 - Optionales TOTP-2FA: `pages/two_factor.php` (Auto-Start QR-Einrichtung, Verwaltung); Login nur `step=2fa`; Account/2FA: `?`-Hilfe als Modal; Backup-Codes kopierbar.
 - Rechtstext-/Startseiten-Platzhalter (`includes/site_pages.php`): `site_page_legal_defaults()` / `site_page_home_profile_defaults()`; Init über `dbScripts/05`–`08` (Replace pro Datensatz; Master `05` droppt `site_pages`).
+- Admin **Nutzer** (`pages/admin/users.php`): Suche, Timeout/Ban mit Grund-Dropdown (+ Custom), Toggle „Grund anzeigen“; Durchsetzung Login/Handoff/Session (`account_moderation` auf `users`).
 
 Offen: Admin-Re-Auth, Betrieb/Mongo-Checks — **`docs/next_session_plan.md`**.
 

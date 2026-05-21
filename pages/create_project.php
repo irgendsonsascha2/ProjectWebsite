@@ -3,6 +3,7 @@ require_once __DIR__ . '/../includes/bootstrap.php';
 
 authz_require_can('create_project');
 authz_require_verified_email();
+authz_require_active_account();
 
 use MongoDB\BSON\UTCDateTime;
 use MongoDB\BSON\ObjectId;

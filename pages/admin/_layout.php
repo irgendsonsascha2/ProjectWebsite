@@ -91,6 +91,10 @@ if (!function_exists('admin_nav_html')) {
             $items['registration_requests'] = ['href' => 'registration_requests.php', 'label' => 'Registrierungsanfragen'];
         }
 
+        if ($isAdmin && is_file(__DIR__ . '/users.php')) {
+            $items['users'] = ['href' => 'users.php', 'label' => 'Nutzer'];
+        }
+
         // Access management + maintenance (admin only)
         if ($isAdmin) {
             $items['settings'] = ['href' => 'settings.php', 'label' => 'Einstellungen'];

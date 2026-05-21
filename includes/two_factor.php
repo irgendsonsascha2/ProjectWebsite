@@ -233,6 +233,7 @@ if (!function_exists('two_factor_find_user_by_id')) {
                     'username' => 1,
                     'password' => 1,
                     'role' => 1,
+                    'account_moderation' => 1,
                     'two_factor_enabled' => 1,
                     'two_factor_totp_secret' => 1,
                     'two_factor_backup_codes' => 1,

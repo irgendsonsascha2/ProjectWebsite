@@ -72,6 +72,7 @@ if (! hash_equals($expected, $sig)) {
 try {
     require_once __DIR__ . '/includes/db.php';
     require_once __DIR__ . '/includes/user_db.php';
+    require_once __DIR__ . '/includes/user_moderation.php';
     require_once __DIR__ . '/includes/authz.php';
 
     /** @var MongoDB\Database $db */
@@ -80,6 +81,13 @@ try {
     $user = user_find_public_by_id($db, $uid);
 
     if ($user === null) {
+        $redirectHandoffFailure('user');
+    }
+
+    if (user_moderation_is_blocked($user)) {
+        if ($legacyBase !== '') {
+            user_moderation_redirect_blocked($user);
+        }
         $redirectHandoffFailure('user');
     }
 

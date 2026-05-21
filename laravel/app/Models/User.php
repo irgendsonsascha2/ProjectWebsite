@@ -21,6 +21,7 @@ use MongoDB\Laravel\Auth\User as MongoUser;
     'two_factor_totp_secret',
     'two_factor_backup_codes',
     'two_factor_confirmed_at',
+    'account_moderation',
 ])]
 #[Hidden(['password', 'remember_token'])]
 /**

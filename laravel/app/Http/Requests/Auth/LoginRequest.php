@@ -61,6 +61,18 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        $moderationHelper = dirname(base_path()).'/includes/user_moderation.php';
+        if (is_file($moderationHelper)) {
+            require_once $moderationHelper;
+            if (user_moderation_is_blocked($user->getAttributes())) {
+                RateLimiter::hit($this->throttleKey());
+
+                throw ValidationException::withMessages([
+                    'login' => user_moderation_public_message($user->getAttributes()),
+                ]);
+            }
+        }
+
         Auth::login($user, $this->boolean('remember'));
 
         RateLimiter::clear($this->throttleKey());
