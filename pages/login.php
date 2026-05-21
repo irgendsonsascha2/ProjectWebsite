@@ -8,6 +8,7 @@ $bridgeAuth2faUrl = legacy_site_base_url().'/bridge_auth_2fa.php';
 
 $message = '';
 $messageClass = 'alert';
+$messageIsHtml = false;
 
 // CSRF-Token für bridge_auth.php (csrf_field / csrf_token)
 if (! isset($_SESSION['user_id'])) {
@@ -34,6 +35,7 @@ if (isset($_GET['err']) && $_GET['err'] === 'forbidden') {
     if ($next !== '') {
         $safeNext = htmlspecialchars($next, ENT_QUOTES, 'UTF-8');
         $message .= ' <a href="'.$safeNext.'">Zurück</a>';
+        $messageIsHtml = true;
     }
 }
 if (isset($_GET['err']) && $_GET['err'] === '2fa') {
@@ -44,6 +46,7 @@ if (isset($_GET['err']) && $_GET['err'] === 'moderation') {
     $message = '❌ ';
     if (! empty($_SESSION['moderation_message_html'])) {
         $message .= (string) $_SESSION['moderation_message_html'];
+        $messageIsHtml = true;
         unset($_SESSION['moderation_message_html'], $_SESSION['moderation_message']);
     } elseif (! empty($_SESSION['moderation_message'])) {
         $message .= htmlspecialchars((string) $_SESSION['moderation_message'], ENT_QUOTES, 'UTF-8');
@@ -68,6 +71,10 @@ if (isset($_GET['handoff_err'])) {
         $message = '❌ Anmelde-Link abgelaufen — bitte erneut anmelden.';
     } elseif ($h === 'sig') {
         $message = '❌ Anmelde-Link ungültig (Signatur) — bitte erneut anmelden.';
+    } elseif ($h === 'replay') {
+        $message = '❌ Anmelde-Link wurde bereits verwendet — bitte erneut anmelden.';
+    } elseif ($h === 'throttle') {
+        $message = '❌ Zu viele fehlgeschlagene Anmeldeversuche — bitte später erneut versuchen.';
     } elseif ($h === 'user') {
         $message = '❌ Benutzer in der Datenbank nicht gefunden.';
     } else {
@@ -90,7 +97,7 @@ if (isset($_SESSION['user_id']) && ! $show2faStep && (! isset($_GET['err']) || $
     <h1>Anmelden</h1>
 
     <?php if ($message): ?>
-        <div class="<?php echo htmlspecialchars($messageClass, ENT_QUOTES, 'UTF-8'); ?>"><?php echo $message; ?></div>
+        <div class="<?php echo htmlspecialchars($messageClass, ENT_QUOTES, 'UTF-8'); ?>"><?php echo $messageIsHtml ? $message : htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?></div>
     <?php endif; ?>
 
     <?php if ($show2faStep): ?>
@@ -107,7 +114,7 @@ if (isset($_SESSION['user_id']) && ! $show2faStep && (! isset($_GET['err']) || $
                 <a href="#" id="login-2fa-alt-toggle" aria-expanded="false" aria-controls="login-2fa-alt-panel">Andere Auth-Methoden</a>
             </p>
 
-            <div id="login-2fa-alt-panel" class="login-2fa-alt-panel" hidden>
+            <div id="login-2fa-alt-panel" class="login-2fa-alt-panel" hidden<?php echo (isset($_GET['err']) && (string) $_GET['err'] === '2fa') ? ' data-auto-open="1"' : ''; ?>>
                 <div class="field">
                     <label for="backup_code">Backup-Code</label>
                     <input type="text" id="backup_code" name="backup_code" placeholder="XXXXXXXXXX" autocomplete="off" spellcheck="false">
@@ -116,27 +123,6 @@ if (isset($_SESSION['user_id']) && ! $show2faStep && (! isset($_GET['err']) || $
 
             <button type="submit">Anmeldung abschließen</button>
         </form>
-        <script>
-        (function () {
-            var toggle = document.getElementById('login-2fa-alt-toggle');
-            var panel = document.getElementById('login-2fa-alt-panel');
-            if (!toggle || !panel) return;
-            toggle.addEventListener('click', function (e) {
-                e.preventDefault();
-                var open = panel.hidden;
-                panel.hidden = !open;
-                toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-                if (open) {
-                    var backup = document.getElementById('backup_code');
-                    if (backup) backup.focus();
-                }
-            });
-            <?php if (isset($_GET['err']) && (string) $_GET['err'] === '2fa'): ?>
-            panel.hidden = false;
-            toggle.setAttribute('aria-expanded', 'true');
-            <?php endif; ?>
-        })();
-        </script>
         <p class="field-hint" style="margin-top:1rem;"><a href="index.php?page=login">Abbrechen und neu anmelden</a></p>
     </section>
     <?php else: ?>

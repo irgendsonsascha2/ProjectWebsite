@@ -185,24 +185,6 @@ if (!function_exists('authz_require_can')) {
     }
 }
 
-if (!function_exists('authz_require_verified_email')) {
-    /**
-     * E-Mail-Bestätigung läuft über den Registrierungsflow (Anfrage-Link / Einladungscode),
-     * nicht über Laravel /verify-email.
-     */
-    function authz_require_verified_email(): void
-    {
-        authz_require_login();
-    }
-}
-
-if (!function_exists('authz_apply_email_verification_gate')) {
-    /** @deprecated Kein Laravel-/verify-email-Zwang mehr; Gate ist deaktiviert. */
-    function authz_apply_email_verification_gate(): void
-    {
-    }
-}
-
 if (!function_exists('authz_can_edit_project')) {
     function authz_can_edit_project($project): bool
     {
@@ -226,7 +208,7 @@ if (!function_exists('authz_can_edit_project')) {
 if (!function_exists('authz_require_project_edit')) {
     function authz_require_project_edit($project): void
     {
-        authz_require_verified_email();
+        authz_require_login();
         if (! authz_can_edit_project($project)) {
             authz_denied_redirect('forbidden');
         }
@@ -312,16 +294,5 @@ if (!function_exists('authz_can_delete_comment')) {
         }
 
         return $authorRole !== '' && in_array($authorRole, $allowed, true);
-    }
-}
-
-if (!function_exists('authz_laravel_verify_email_url')) {
-    function authz_laravel_verify_email_url(): string
-    {
-        if (! function_exists('laravel_app_url')) {
-            require_once __DIR__.'/laravel_app_url.php';
-        }
-
-        return rtrim(laravel_app_url(), '/').'/verify-email';
     }
 }

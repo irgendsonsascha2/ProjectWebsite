@@ -157,6 +157,21 @@
     color: var(--secondary-color);
   }
 
+  body.admin-page td:has([data-react-copy-field]) {
+    min-width: min(320px, 100%);
+  }
+
+  body.admin-page [data-react-copy-field] .copy-field,
+  body.admin-page .copy-field {
+    width: 100%;
+  }
+
+  body.admin-page [data-react-copy-field] button,
+  body.admin-page .copy-field button {
+    margin: 0 !important;
+    margin-top: 0 !important;
+  }
+
   /* Inline code-form (select + button) */
   body.admin-page .code-form {
     @apply mt-2 flex flex-wrap items-stretch gap-2;
@@ -577,6 +592,67 @@
 
   body.admin-page .button-secondary:hover {
     border-color: var(--accent, #2563eb);
+  }
+
+  @media (max-width: 40rem) {
+    body.admin-page {
+      padding: 0.5rem;
+    }
+
+    body.admin-page .container {
+      @apply rounded-xl p-4;
+      max-width: 100%;
+    }
+
+    body.admin-page .page-header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    body.admin-page .admin-nav {
+      gap: 0.35rem;
+    }
+
+    body.admin-page .admin-nav a {
+      @apply px-2.5 py-1.5 text-xs;
+    }
+
+    body.admin-page dialog {
+      width: 100vw;
+      max-width: 100vw;
+      max-height: 100dvh;
+      border-radius: 0;
+      margin: 0;
+    }
+
+    body.admin-page .dialog-card {
+      max-height: 100dvh;
+      padding: 1rem;
+    }
+
+    body.admin-page .script-list li {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    body.admin-page .script-actions {
+      justify-content: flex-start;
+    }
+
+    body.admin-page .card {
+      padding-bottom: 1rem;
+    }
+
+    body.admin-page .card-actions {
+      position: static;
+      margin-top: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    body.admin-page th,
+    body.admin-page td {
+      @apply px-2 py-1.5 text-xs;
+    }
   }
 }
 

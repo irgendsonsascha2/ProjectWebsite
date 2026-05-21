@@ -4,7 +4,7 @@
 
 **Stand 2026:** **Schritt 1** (kein direkter öffentlicher Webzugriff auf `dbScripts/`, Laufzeit-Guards) und **Schritt 2** (getrennte Mongo-URIs pro Rolle, Admin-Skripte nur über `ADMIN_DB_URI` / Admin-Pfad) sind in der laufenden App umgesetzt. Details: `docs/current_status.md`.
 
-Offen: Deployment, UI-Backlog. Einstieg neue Session: `docs/next_session_plan.md`.
+Offen: Deployment (Server). UI/CSP-Aufräumen (2026-05-21): erledigt — `docs/next_session_plan.md`.
 
 **Ergänzung (Sprint 1, 2026-05):** CSRF für Legacy-POSTs, gehärtete Session-Cookies, Handoff `session_regenerate`, POST-Logout, eingeschränktes `?debug=1`, keine stillen Mongo-Default-URIs ohne `APP_ALLOW_DEV_DB_DEFAULTS` — Details `docs/current_status.md`.
 
@@ -236,12 +236,27 @@ Bestätigte Entscheidungen (Stand 2026-05, Zielbild):
 - **Keine Laravel-E-Mail-Verifikation** für die klassische Site; Laravel bleibt **vorerst** nur für Login, Registrierung mit Invite-Code (`bridge_*`) und Passwort-Reset.
 - **E-Mail-Nachweis bei Registrierung** nur über den bestehenden Flow: Nutzer bestätigt die **Anfrage-E-Mail** per Link (`verify_registration_request`), danach **manuelle Admin-Freigabe** (`registration_requests`), erst dann Invite-Code und Kontoanlage.
 - **Kein separater Laravel-`/verify-email`-Zwang** für Legacy-Nutzer; `email_verified_at` am User wird aus dem Registrierungsflow (passende, verifizierte Anfrage) oder expliziter Legacy-Logik gesetzt — nicht über Laravel Dashboard.
-- **2FA optional** (nicht verpflichtend): TOTP per Authenticator-App in der **klassischen PHP-App** (`pages/account.php` o. ä.), nicht in Laravel.
+- **2FA optional** (nicht verpflichtend): TOTP in **`pages/two_factor.php`**, nicht in Laravel.
 - Backup-Codes als Recovery, wenn 2FA aktiv ist (empfohlen, nicht für alle Accounts Pflicht).
 - E-Mail als **zweiter Faktor beim Login** ist **nicht** vorgesehen (nur TOTP optional); E-Mail dient dem Nachweis vor Registrierung und dem Versand des Invite-Codes.
 
 Abweichung vom früheren Plan: Schritt 5–6 der Roadmap (verpflichtende 2FA + Laravel-Verify) werden durch obiges Zielbild ersetzt.
 
+## Ergänzung (Aufräumen + Security-Pass, 2026-05)
+
+Umgesetzt in einer Session (Code + Härtung):
+
+- Toter Code entfernt (`js/theme-toggle.js`, `pages/account.php` Code-Generator, ungenutzte `authz`-Stubs, React `Card`/Imports).
+- `includes/registration_codes.php`, `legacy_index_url()` für Invite-Links.
+- **SVG** aus Upload-Typen entfernt (`includes/bootstrap.php`).
+- **Handoff:** Einmal-Nonce (`handoff_tokens`, `dbScripts/14_db_init_handoff_tokens.php`, HMAC `uid|exp|nonce`).
+- **Security-Header** (`includes/security_headers.php`, Laravel `SecurityHeaders`-Middleware).
+- **Rate-Limits:** Kommentare (`comment_post`), fehlgeschlagene Handoffs (`handoff_fail`).
+- **Output:** `$message` überwiegend mit `htmlspecialchars` (Moderation-HTML nur explizit).
+- **Laravel slim:** Verify-Email, Dashboard, Profil entfernt; Hybrid behält Reset + Brücken.
+- **Docker:** Mongo/MailHog nur `127.0.0.1`.
+- Dependency-Audit: siehe `docs/current_status.md` (Abschnitt Dependency-Audit).
+
 ## Einordnung: Code-Aufräumen vor Security-Fixing
 
-**Vor** der gezielten Abarbeitung der nummerierten Security-Schritte (insbesondere bevor weitere Sicherheits- und Rechte-Logik tief in die Anwendung gezogen wird) ist vorgesehen, **Code-Aufräumen** zu betreiben: technische Schulden reduzieren, Struktur und Duplikate verkleinern, Konfiguration und Abgrenzung zwischen Laravel- und Legacy-Teil klarer ziehen, lesbare Grenzen und Tests dort festziehen, wo es Security später erleichtert. Ziel ist, die Security-Änderungen auf einer **stabileren, nachvollziehbareren Basis** zu machen und unnötige Merge-Konflikte / Seiteneffekte zu vermeiden. (Details, was genau in welcher Reihenfolge aufgeräumt wird, wird in der praktischen Planung mit dem Codebestand festgelegt; nicht zuletzt überschneidet sich das mit `docs/current_status.md` → Frontend-/CSS-Struktur.)
+**Vor** weiterer tiefer Security-Arbeit war vorgesehen, **Code-Aufräumen** zu betreiben — der obige Pass deckt den Großteil ab. Optional offen: technische Schulden reduzieren, Struktur und Duplikate verkleinern, Konfiguration und Abgrenzung zwischen Laravel- und Legacy-Teil klarer ziehen, lesbare Grenzen und Tests dort festziehen, wo es Security später erleichtert. Ziel ist, die Security-Änderungen auf einer **stabileren, nachvollziehbareren Basis** zu machen und unnötige Merge-Konflikte / Seiteneffekte zu vermeiden. (Details, was genau in welcher Reihenfolge aufgeräumt wird, wird in der praktischen Planung mit dem Codebestand festgelegt; nicht zuletzt überschneidet sich das mit `docs/current_status.md` → Frontend-/CSS-Struktur.)

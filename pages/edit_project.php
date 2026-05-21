@@ -112,7 +112,7 @@ function render_media_manager($workingGallery, $editActionUrl, $message, $showMe
         <h2>Projekt‑Medien</h2>
 
         <?php if ($showMessage && $message): ?>
-            <div class="alert media-alert"><?php echo $message; ?></div>
+            <div class="alert media-alert"><?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?></div>
         <?php endif; ?>
 
         <form method="POST" action="<?php echo htmlspecialchars($editActionUrl); ?>" enctype="multipart/form-data" class="media-upload-form" id="media-upload-form" data-ajax="true">
@@ -436,7 +436,7 @@ if ($isAjax) {
     </div>
 
     <?php if ($message): ?>
-        <div class="alert"><?php echo $message; ?></div>
+        <div class="alert"><?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?></div>
     <?php endif; ?>
 
     <form method="POST" action="<?php echo htmlspecialchars($editActionUrl); ?>" enctype="multipart/form-data" id="edit-project-form">
@@ -457,146 +457,13 @@ if ($isAjax) {
         <button type="submit" name="update_project">Änderungen speichern</button>
     </form>
 
-    <section id="media-upload" class="media-manager">
+    <section
+        id="media-upload"
+        class="media-manager"
+        data-media-action-url="<?php echo htmlspecialchars($editActionUrl, ENT_QUOTES, 'UTF-8'); ?>"
+        data-media-mode="edit"
+        data-default-return="<?php echo htmlspecialchars($defaultReturnTo, ENT_QUOTES, 'UTF-8'); ?>"
+    >
         <?php echo render_media_manager($workingGallery, $editActionUrl, $message); ?>
     </section>
 </div>
-
-<script>
-    (function () {
-        const backTarget = 'index.php';
-        const navEntries = performance.getEntriesByType('navigation');
-        const navType = navEntries && navEntries.length ? navEntries[0].type : '';
-        if (navType === 'back_forward') {
-            window.location.replace(backTarget);
-            return;
-        }
-
-        const returnToInput = document.getElementById('return_to');
-        if (returnToInput) {
-            const defaultReturn = <?php echo json_encode($defaultReturnTo); ?>;
-            returnToInput.value = document.referrer || defaultReturn || returnToInput.value || defaultReturn;
-        }
-
-        const mediaSection = document.getElementById('media-upload');
-        if (!mediaSection) return;
-        const mediaActionUrl = <?php echo json_encode($editActionUrl); ?>;
-
-        function showMediaUploadError(text) {
-            mediaSection.innerHTML = '<div class="alert media-alert">❌ ' + text + '</div>';
-        }
-
-        async function submitMediaForm(form, submitter) {
-            const formData = new FormData(form);
-            formData.set('ajax', '1');
-            if (submitter && submitter.name) {
-                formData.set(submitter.name, submitter.value || '1');
-            }
-            try {
-                const response = await fetch(form.action, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'fetch'
-                    }
-                });
-                if (!response.ok) {
-                    showMediaUploadError('Upload fehlgeschlagen (HTTP ' + response.status + ').');
-                    return;
-                }
-                const html = await response.text();
-                mediaSection.innerHTML = html;
-            } catch (err) {
-                showMediaUploadError('Upload fehlgeschlagen (Netzwerk oder Zeitüberschreitung).');
-            }
-        }
-
-        mediaSection.addEventListener('submit', function (event) {
-            const form = event.target;
-            if (!(form instanceof HTMLFormElement) || form.dataset.ajax !== 'true') {
-                return;
-            }
-            event.preventDefault();
-            submitMediaForm(form, event.submitter);
-        });
-
-        mediaSection.addEventListener('change', function (event) {
-            const target = event.target;
-            if (!target || target.id !== 'gallery_files') {
-                return;
-            }
-            const form = target.closest('form');
-            if (!form || form.dataset.ajax !== 'true') {
-                return;
-            }
-            if (!target.files || target.files.length === 0) {
-                return;
-            }
-            submitMediaForm(form);
-        });
-
-        function sendReorder(grid) {
-            const order = Array.from(grid.querySelectorAll('.media-tile')).map((tile) => tile.dataset.index);
-            const formData = new FormData();
-            order.forEach((idx) => formData.append('order[]', idx));
-            formData.set('reorder_media', '1');
-            formData.set('ajax', '1');
-            fetch(mediaActionUrl, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'fetch'
-                }
-            }).then((response) => response.text())
-              .then((html) => {
-                  mediaSection.innerHTML = html;
-              }).catch(() => {});
-        }
-
-        let pointerDrag = null;
-        mediaSection.addEventListener('pointerdown', function (event) {
-            const tile = event.target.closest('.media-tile');
-            if (!tile) return;
-            if (event.pointerType === 'mouse' && event.button !== 0) return;
-            if (event.target.closest('button, input, form')) return;
-            pointerDrag = tile;
-            tile.classList.add('is-dragging');
-            tile.setPointerCapture(event.pointerId);
-            event.preventDefault();
-        });
-
-        mediaSection.addEventListener('pointermove', function (event) {
-            if (!pointerDrag) return;
-            const el = document.elementFromPoint(event.clientX, event.clientY);
-            const tile = el ? el.closest('.media-tile') : null;
-            if (!tile || tile === pointerDrag) return;
-            const grid = tile.parentElement;
-            const tiles = Array.from(grid.querySelectorAll('.media-tile'));
-            const draggedIndex = tiles.indexOf(pointerDrag);
-            const targetIndex = tiles.indexOf(tile);
-            if (draggedIndex < targetIndex) {
-                grid.insertBefore(pointerDrag, tile.nextSibling);
-            } else {
-                grid.insertBefore(pointerDrag, tile);
-            }
-        });
-
-        function endPointerDrag(event) {
-            if (!pointerDrag) return;
-            const grid = pointerDrag.parentElement;
-            pointerDrag.classList.remove('is-dragging');
-            try {
-                pointerDrag.releasePointerCapture(event.pointerId);
-            } catch (e) {
-                // ignore
-            }
-            pointerDrag = null;
-            if (grid) {
-                sendReorder(grid);
-            }
-        }
-
-        mediaSection.addEventListener('pointerup', endPointerDrag);
-        mediaSection.addEventListener('pointercancel', endPointerDrag);
-    })();
-</script>

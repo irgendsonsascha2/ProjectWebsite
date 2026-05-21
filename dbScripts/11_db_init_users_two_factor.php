@@ -30,4 +30,4 @@ try {
     echo '⚠️ Index konnte nicht gesetzt werden: ' . htmlspecialchars($e->getMessage()) . '<br>';
 }
 
-echo '<p>Einrichtung und Login-2FA: <code>pages/account.php</code>, <code>bridge_auth.php</code>, <code>bridge_auth_2fa.php</code>.</p>';
+echo '<p>Einrichtung und Login-2FA: <code>pages/two_factor.php</code>, <code>pages/login.php</code>, <code>bridge_auth.php</code>, <code>bridge_auth_2fa.php</code>.</p>';

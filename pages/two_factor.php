@@ -42,7 +42,7 @@ $twoFactorHelpTitle = 'Was ist Zwei-Faktor-Authentifizierung?';
     <h1 class="two-factor-page-title">Zwei-Faktor-Authentifizierung (2FA)</h1>
 
     <?php if ($message): ?>
-        <div class="<?php echo htmlspecialchars($messageClass, ENT_QUOTES, 'UTF-8'); ?>"><?php echo $message; ?></div>
+        <div class="<?php echo htmlspecialchars($messageClass, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?></div>
     <?php endif; ?>
 
     <section class="two-factor-panel two-factor-actions">

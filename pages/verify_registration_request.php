@@ -42,7 +42,7 @@ if ($token === '') {
 <div class="container">
     <h1>E-Mail bestätigen</h1>
     <div class="<?php echo htmlspecialchars($messageClass, ENT_QUOTES, 'UTF-8'); ?>">
-        <?php echo $message; ?>
+        <?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?>
     </div>
     <p class="field-hint" style="margin-top: 1rem;">
         <a href="index.php?page=login">Zum Login</a>

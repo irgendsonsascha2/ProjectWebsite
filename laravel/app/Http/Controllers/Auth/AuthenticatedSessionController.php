@@ -34,7 +34,12 @@ class AuthenticatedSessionController extends Controller
             return redirect()->away($handoff->redirectUrl($request->user()));
         }
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        $legacy = rtrim((string) config('legacy.site_url', ''), '/');
+        if ($legacy !== '') {
+            return redirect()->away($legacy.'/index.php?page=home');
+        }
+
+        return redirect()->intended('/');
     }
 
     /**
@@ -47,6 +52,11 @@ class AuthenticatedSessionController extends Controller
         $request->session()->invalidate();
 
         $request->session()->regenerateToken();
+
+        $legacy = rtrim((string) config('legacy.site_url', ''), '/');
+        if ($legacy !== '') {
+            return redirect()->away($legacy.'/index.php?page=login');
+        }
 
         return redirect('/');
     }

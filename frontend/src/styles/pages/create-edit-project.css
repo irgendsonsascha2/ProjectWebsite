@@ -86,14 +86,8 @@
     position: absolute;
     top: 0.5rem;
     left: 0.5rem;
-    background: var(--glass-bg-strong);
-    color: #fff;
     font-size: 0.7rem;
     padding: 0.2rem 0.45rem;
-    border-radius: 999rem;
-    border: 1px solid var(--glass-border);
-    backdrop-filter: var(--glass-blur) var(--glass-saturate);
-    -webkit-backdrop-filter: var(--glass-blur) var(--glass-saturate);
   }
 
   .page-create_project .media-delete,

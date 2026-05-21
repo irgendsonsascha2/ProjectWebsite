@@ -6,14 +6,6 @@ require_once __DIR__ . '/../includes/mail.php';
 $message = '';
 $messageClass = 'alert';
 
-function site_base_url_from_request(): string {
-    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-    $host = (string)($_SERVER['HTTP_HOST'] ?? 'localhost');
-    $script = (string)($_SERVER['SCRIPT_NAME'] ?? '/index.php');
-    $basePath = rtrim(str_replace(basename($script), '', $script), '/');
-    return $scheme . '://' . $host . ($basePath !== '' ? $basePath : '');
-}
-
 // CSRF für bridge_register.php
 if (! isset($_SESSION['user_id'])) {
     csrf_token();
@@ -65,6 +57,10 @@ if (isset($_GET['handoff_err'])) {
         $message = '❌ Anmelde-Link abgelaufen — bitte erneut versuchen.';
     } elseif ($h === 'sig') {
         $message = '❌ Anmelde-Link ungültig (Signatur) — bitte erneut versuchen.';
+    } elseif ($h === 'replay') {
+        $message = '❌ Anmelde-Link wurde bereits verwendet — bitte erneut anmelden.';
+    } elseif ($h === 'throttle') {
+        $message = '❌ Zu viele fehlgeschlagene Anmeldeversuche — bitte später erneut versuchen.';
     } elseif ($h === 'user') {
         $message = '❌ Benutzer in der Datenbank nicht gefunden.';
     } else {
@@ -115,8 +111,10 @@ if (isset($_POST['request_registration_code'])) {
                     'user_agent' => (string)($_SERVER['HTTP_USER_AGENT'] ?? ''),
                 ]);
 
-                $base = site_base_url_from_request();
-                $verifyUrl = $base . '/index.php?page=verify_registration_request&token=' . rawurlencode($token);
+                $verifyUrl = legacy_index_url([
+                    'page' => 'verify_registration_request',
+                    'token' => $token,
+                ]);
                 $body = "Hallo!\n\nBitte bestätige deine E-Mail-Adresse, um einen Registrierungscode anzufragen:\n\n{$verifyUrl}\n\nDer Link ist 24 Stunden gültig.\n";
                 $mailOk = send_plain_mail($email, 'E-Mail bestätigen: Registrierungscode', $body);
 
@@ -135,13 +133,15 @@ if (isset($_SESSION['user_id'])) {
     header('Location: index.php?page=account');
     exit;
 }
+
+$autoOpenRequestDialog = $message !== '' && str_contains($message, 'Postfach');
 ?>
 
 <div class="container">
     <h1>Registrieren</h1>
 
     <?php if ($message): ?>
-        <div class="<?php echo htmlspecialchars($messageClass, ENT_QUOTES, 'UTF-8'); ?>"><?php echo $message; ?></div>
+        <div class="<?php echo htmlspecialchars($messageClass, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?></div>
     <?php endif; ?>
 
     <section id="register-section">
@@ -176,7 +176,7 @@ if (isset($_SESSION['user_id'])) {
     </section>
 
     <?php if (!$hasPrefilledCode): ?>
-        <dialog id="request-code-dialog">
+        <dialog id="request-code-dialog"<?php echo $autoOpenRequestDialog ? ' data-auto-open="1"' : ''; ?>>
             <div class="dialog-card">
                 <div class="dialog-header">
                     <h2>Registrierungscode anfragen</h2>
@@ -201,43 +201,6 @@ if (isset($_SESSION['user_id'])) {
                 </form>
             </div>
         </dialog>
-
-        <script>
-        (() => {
-            const dialog = document.getElementById('request-code-dialog');
-            const openBtn = document.getElementById('open-request-code-dialog');
-            if (!dialog || !openBtn) return;
-
-            function openDialog() {
-                if (typeof dialog.showModal === 'function') {
-                    dialog.showModal();
-                } else {
-                    // Fallback: wenn <dialog> nicht unterstützt wird
-                    window.location.href = 'index.php?page=register#request-code';
-                }
-            }
-
-            function closeDialog() {
-                if (typeof dialog.close === 'function') {
-                    dialog.close();
-                }
-            }
-
-            openBtn.addEventListener('click', openDialog);
-            dialog.addEventListener('click', (e) => {
-                if (e.target === dialog) closeDialog();
-            });
-            dialog.querySelectorAll('[data-dialog-close]').forEach((btn) => {
-                btn.addEventListener('click', closeDialog);
-            });
-
-            // Auto-open if server returned a message from request action (success/error)
-            const msg = document.querySelector('.<?php echo htmlspecialchars($messageClass, ENT_QUOTES, 'UTF-8'); ?>');
-            if (msg && (msg.textContent || '').includes('Postfach')) {
-                openDialog();
-            }
-        })();
-        </script>
     <?php endif; ?>
 
     <hr class="account-divider">

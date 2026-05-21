@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Nach Laravel-Login: kurzlebiger Redirect mit HMAC — setzt dieselbe PHP-Session wie pages/account.php.
+ * Nach Laravel-Login: kurzlebiger Redirect mit HMAC + Einmal-Nonce — setzt dieselbe PHP-Session wie die klassische Site.
  *
  * Konfiguration: laravel/.env → HANDOFF_SECRET, LEGACY_AFTER_LOGIN_PAGE (optional),
  * Laravel nutzt zusätzlich LEGACY_SITE_URL für den Link hierher.
@@ -22,6 +22,9 @@ $handoffLog = static function (Throwable $e): void {
 };
 
 require_once __DIR__ . '/includes/app_env.php';
+require_once __DIR__ . '/includes/security_headers.php';
+security_headers_send();
+require_once __DIR__ . '/includes/rate_limit.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     configure_session_cookie_params();
@@ -54,19 +57,27 @@ if ($secret === '') {
     $redirectHandoffFailure('config');
 }
 
+$recordHandoffFailure = static function () use ($redirectHandoffFailure): void {
+    if (! rate_limit_allow('handoff_fail', 20, 900)) {
+        $redirectHandoffFailure('throttle');
+    }
+    $redirectHandoffFailure('expired');
+};
+
 $uid = isset($_GET['uid']) ? (string) $_GET['uid'] : '';
 $exp = isset($_GET['exp']) ? (int) $_GET['exp'] : 0;
+$nonce = isset($_GET['nonce']) ? (string) $_GET['nonce'] : '';
 $sig = isset($_GET['sig']) ? (string) $_GET['sig'] : '';
 
-if ($uid === '' || $exp < time() || $sig === '') {
-    $redirectHandoffFailure('expired');
+if ($uid === '' || $exp < time() || $nonce === '' || $sig === '') {
+    $recordHandoffFailure();
 }
 
-$payload = $uid.'|'.$exp;
+$payload = $uid.'|'.$exp.'|'.$nonce;
 $expected = hash_hmac('sha256', $payload, $secret);
 
 if (! hash_equals($expected, $sig)) {
-    $redirectHandoffFailure('sig');
+    $recordHandoffFailure();
 }
 
 try {
@@ -74,9 +85,19 @@ try {
     require_once __DIR__ . '/includes/user_db.php';
     require_once __DIR__ . '/includes/user_moderation.php';
     require_once __DIR__ . '/includes/authz.php';
+    require_once __DIR__ . '/includes/handoff_tokens.php';
 
     /** @var MongoDB\Database $db */
     [, $db] = get_admin_mongo_connection();
+    handoff_token_ensure_indexes($db);
+
+    $consumedUid = handoff_token_consume($db, $nonce, $exp);
+    if ($consumedUid === null || $consumedUid !== $uid) {
+        if (! rate_limit_allow('handoff_fail', 20, 900)) {
+            $redirectHandoffFailure('throttle');
+        }
+        $redirectHandoffFailure('replay');
+    }
 
     $user = user_find_public_by_id($db, $uid);
 

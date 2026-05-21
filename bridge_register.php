@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Registrierung von der klassischen Website (pages/account.php): dieselbe Logik wie
+ * Registrierung von der klassischen Website (pages/register.php): dieselbe Logik wie
  * RegisteredUserController (RegisterInvitedUser), danach Handoff wie bridge_auth.php.
  */
 

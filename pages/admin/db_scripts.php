@@ -249,7 +249,7 @@ admin_render_page('DB-Skripte', 'db_scripts', function () use ($availableScripts
                             <h2><?php echo htmlspecialchars($scriptName); ?> ausführen</h2>
                             <button type="button" class="close-button" data-dialog-close>Schließen</button>
                         </div>
-                        <form method="POST" onsubmit="return confirm('Achtung! Sind Sie sicher, dass Sie das Skript <?php echo htmlspecialchars($scriptName); ?> ausführen möchten? Dies kann Daten löschen.');">
+                        <form method="POST" data-dialog-close-on-submit data-confirm-submit="Achtung! Sind Sie sicher, dass Sie das Skript <?php echo htmlspecialchars($scriptName, ENT_QUOTES, 'UTF-8'); ?> ausführen möchten? Dies kann Daten löschen.">
                             <?php echo csrf_field(); ?>
                             <input type="hidden" name="script_name" value="<?php echo htmlspecialchars($scriptName); ?>">
                             <?php foreach ($scriptFields as $field): ?>
@@ -292,47 +292,5 @@ admin_render_page('DB-Skripte', 'db_scripts', function () use ($availableScripts
     <?php if ($message): ?>
         <div class="output"><?php echo $message; ?></div>
     <?php endif; ?>
-
-    <script>
-    (() => {
-        const openButtons = Array.from(document.querySelectorAll('[data-dialog-open]'));
-        const closeButtons = Array.from(document.querySelectorAll('[data-dialog-close]'));
-        const dialogs = Array.from(document.querySelectorAll('dialog'));
-        const forms = Array.from(document.querySelectorAll('dialog form[method="POST"]'));
-
-        openButtons.forEach((button) => {
-            const dialogId = button.dataset.dialogOpen;
-            const dialog = dialogId ? document.getElementById(dialogId) : null;
-            if (!dialog || typeof dialog.showModal !== 'function') return;
-            button.addEventListener('click', () => {
-                dialog.showModal();
-            });
-        });
-
-        closeButtons.forEach((button) => {
-            const dialog = button.closest('dialog');
-            if (!dialog) return;
-            button.addEventListener('click', () => {
-                dialog.close();
-            });
-        });
-
-        dialogs.forEach((dialog) => {
-            dialog.addEventListener('click', (event) => {
-                if (event.target === dialog) {
-                    dialog.close();
-                }
-            });
-        });
-
-        forms.forEach((form) => {
-            form.addEventListener('submit', () => {
-                const dialog = form.closest('dialog');
-                if (!dialog) return;
-                dialog.close();
-            });
-        });
-    })();
-    </script>
 <?php });
 

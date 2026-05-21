@@ -50,7 +50,29 @@ Kurzüberblick zum Weitermachen — Zielbild, erledigt, offen, Test.
 ### P4 — Admin Re-Auth (umgesetzt 2026-05-21)
 - ✅ `includes/admin_reauth.php`: 15-Min.-Fenster nach Passwort (+ TOTP wenn 2FA aktiv).
 - ✅ `pages/admin/db_scripts.php`: CSRF-Prüfung, Re-Auth vor `run_script`, Felder in Ausführen-Dialogen.
-- **Nächstes:** Deployment Docker/DynDNS; Frontend/CSS (`current_status.md` UI-Backlog).
+
+### P5 — Infrastruktur & UI (2026-05-21, Teil)
+- ✅ `docker-compose.yml` + `make services-up` (MongoDB, MailHog).
+- ✅ `docs/deployment.md` (lokal + Entwurf Server/DynDNS).
+- ✅ Copy-UI Admin Einladungscodes (`CopyField` Abstand, `admin.css`).
+- **Nächstes:** Server-Deploy umsetzen (wenn entschieden); UI-Backlog Glass/Responsive/CSS-Split (`current_status.md`).
+
+### P6 — Aufräumen & Security-Pass (2026-05-21)
+- ✅ Toter Code (theme-toggle.js, account Code-Generator, authz-Stubs, React Card).
+- ✅ `registration_codes.php`, Handoff-Einmal-Nonce (`14_db_init_handoff_tokens.php`), SVG blockiert, Security-Header, Rate-Limits.
+- ✅ Laravel slim (kein Verify-Email/Dashboard/Profil im Hybrid).
+- ✅ CSP-Hotfix + Admin-JS: `js/admin-dialogs.js`, `js/theme-bootstrap.js` (DB-Skripte-Dialoge wieder nutzbar).
+- ✅ Experiment `?reactlb=1` / `MediaLightbox.tsx` entfernt.
+- ✅ Symfony-CVEs in `laravel/` per `composer update` behoben.
+- ✅ Admin-JS vollständig externalisiert (`admin-roles.js`, `admin-users.js`, `admin-legal-sections.js`); kaputtes `</html>` in `roles.php` entfernt.
+- ✅ Admin-Dialoge: `admin-dialogs.js` / `csrf-forms.js` am Ende des Body (nicht im `<head>`).
+- ✅ Gemeinsames `js/theme-bootstrap.js` (Site + Admin); `csrf-forms.js` mit `DOMContentLoaded`.
+- ✅ Glass-Utility `.glass-surface` / `.glass-pill` / `.glass-bar` in `frontend/src/styles/components/glass.css`; Overlays Grid/Detail/Create-Edit zentral.
+- ✅ Responsive-Pass Admin (≤40rem): volle Breite Container, Vollbild-Dialoge, Script-Liste gestapelt, Card-Actions nicht absolut.
+- ✅ Projekt-Detail: weniger `padding-right` auf Hover-Kommentaren bei schmalen Viewports.
+- ✅ Inline-Skripte nach `js/`; CSP `script-src 'self'`; CSRF nur Meta-Tag.
+- ✅ Responsive Lightbox/FABs/Account; CopyField-Abstände Account.
+- **Optional:** Admin-`onclick` entfernen (`script-src-attr` ohne `unsafe-inline`).
 
 ## Lokaler Test (kurz)
 
@@ -75,6 +97,10 @@ cd frontend && npm run build
 - Zweites Skript innerhalb des Fensters ohne erneute Passwort-Eingabe.
 - Nach Ablauf (oder neuer Tab nach Logout) wieder Passwort nötig; falsches Passwort blockiert Ausführung.
 
+**Checks (Admin mobil / Dialoge):**
+- Viewport ≤40rem oder DevTools: DB-Skripte, Rollen, Nutzer — Dialoge öffnen/schließen; kein horizontaler Scroll im Dialog.
+- Hart neu laden nach `npm run build`.
+
 ## Wichtige Dateien
 
 | Bereich | Dateien |
@@ -87,4 +113,4 @@ cd frontend && npm run build
 
 ## Referenz
 
-`docs/security_roadmap.md` — Schritte 1–7 (inkl. Re-Auth) umgesetzt; offen: Deployment, UI-Backlog.
+`docs/security_roadmap.md` — Schritte 1–7 umgesetzt. `docs/deployment.md` — lokal Docker; Server offen.

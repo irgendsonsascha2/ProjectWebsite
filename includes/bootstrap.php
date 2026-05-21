@@ -1,6 +1,8 @@
 <?php
 
 require_once __DIR__ . '/app_env.php';
+require_once __DIR__ . '/security_headers.php';
+security_headers_send();
 
 // Lazy sessions: Only set a session cookie when needed.
 // - If a session cookie already exists, always resume.
@@ -150,7 +152,7 @@ if (!function_exists('detect_media_type')) {
 
         if ($originalName) {
             $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
-            $imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'bmp', 'svg'];
+            $imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'bmp'];
             $videoExts = ['mp4', 'webm', 'ogg', 'ogv', 'mov', 'avi', 'mkv'];
             if (in_array($ext, $imageExts, true)) {
                 return 'image';

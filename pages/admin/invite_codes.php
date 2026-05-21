@@ -1,8 +1,7 @@
 <?php
 require_once __DIR__ . '/_layout.php';
 require_once __DIR__ . '/../../includes/db.php';
-
-use MongoDB\BSON\UTCDateTime;
+require_once __DIR__ . '/../../includes/registration_codes.php';
 
 // Admin layout enforces admin role. Additionally require permission for safety.
 if (!can('generate_codes')) {
@@ -19,49 +18,14 @@ if (isset($_GET['err']) && (string) $_GET['err'] === 'csrf') {
 
 // --- LOGIK: CODE GENERIEREN ---
 if (isset($_POST['generate_code'])) {
-    $targetRole = (string)($_POST['target_role'] ?? '');
-
-    try {
-        $db->registration_codes->createIndex(['code' => 1], ['unique' => true]);
-    } catch (Exception $e) {
-        // ignore - generation below still handles duplicate keys
-    }
-
-    $maxAttempts = 10;
-    $newCode = null;
-    for ($i = 0; $i < $maxAttempts; $i++) {
-        $candidate = strtoupper(bin2hex(random_bytes(8)));
-        try {
-            $db->registration_codes->insertOne([
-                'code' => $candidate,
-                'role' => $targetRole,
-                'is_used' => false,
-                'created_at' => new UTCDateTime()
-            ]);
-            $newCode = $candidate;
-            break;
-        } catch (\MongoDB\Driver\Exception\BulkWriteException $e) {
-            $writeResult = $e->getWriteResult();
-            $writeErrors = $writeResult ? $writeResult->getWriteErrors() : [];
-            $isDuplicate = false;
-            foreach ($writeErrors as $we) {
-                if (method_exists($we, 'getCode') && (int)$we->getCode() === 11000) {
-                    $isDuplicate = true;
-                    break;
-                }
-            }
-            if ($isDuplicate) {
-                continue;
-            }
-            throw $e;
-        }
-    }
+    $targetRole = (string) ($_POST['target_role'] ?? '');
+    $newCode = registration_code_create($db, $targetRole);
 
     if ($newCode === null) {
-        $message = "❌ Konnte keinen eindeutigen Code generieren (bitte erneut versuchen).";
+        $message = '❌ Konnte keinen eindeutigen Code generieren (bitte erneut versuchen).';
         $messageClass = 'alert error';
     } else {
-        $message = "✅ Neuer Code generiert: <b>" . htmlspecialchars($newCode, ENT_QUOTES, 'UTF-8') . "</b>";
+        $message = '✅ Neuer Code generiert: <code>'.htmlspecialchars($newCode, ENT_QUOTES, 'UTF-8').'</code>';
         $messageClass = 'alert success';
     }
 }
@@ -79,17 +43,6 @@ if (count($roleOptions) > 0) {
     }));
 }
 
-function site_base_url_from_request(): string
-{
-    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-    $host = (string)($_SERVER['HTTP_HOST'] ?? 'localhost');
-    $script = (string)($_SERVER['SCRIPT_NAME'] ?? '/pages/admin/index.php');
-    $basePath = rtrim(str_replace(basename($script), '', $script), '/');
-    // We are under /pages/admin/ -> need to go two levels up to the legacy index.php
-    $basePath = preg_replace('#/pages/admin$#', '', $basePath);
-    return $scheme . '://' . $host . ($basePath !== '' ? $basePath : '');
-}
-
 $inviteCodesData = [];
 try {
     $activeCodes = $db->registration_codes->find(
@@ -97,8 +50,7 @@ try {
         ['sort' => ['created_at' => -1]]
     );
     foreach ($activeCodes as $c) {
-        $base = site_base_url_from_request();
-        $link = $base . '/index.php?page=register&reg_token=' . rawurlencode((string)($c['code'] ?? '')) . '#register-section';
+        $link = registration_code_register_link((string) ($c['code'] ?? ''));
         $inviteCodesData[] = [
             'role' => (string)($c['role'] ?? ''),
             'code' => (string)($c['code'] ?? ''),
@@ -115,7 +67,7 @@ admin_render_page('Einladungscodes', 'invite_codes', function () use ($message, 
     </div>
 
     <?php if ($message): ?>
-        <div class="<?php echo htmlspecialchars($messageClass, ENT_QUOTES, 'UTF-8'); ?>"><?php echo $message; ?></div>
+        <div class="<?php echo htmlspecialchars($messageClass, ENT_QUOTES, 'UTF-8'); ?>"><?php echo $message; // enthält nur escapte <code>-Tags bei Erfolg ?></div>
     <?php endif; ?>
 
     <div class="admin-card admin-card--spaced">

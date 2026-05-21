@@ -118,7 +118,6 @@ if (!function_exists('csrf_meta_script')) {
 
         $escaped = htmlspecialchars($token, ENT_QUOTES, 'UTF-8');
 
-        return '<meta name="csrf-token" content="'.$escaped.'">'."\n"
-            .'<script>window.PORTFOLIO_CSRF="'.$escaped.'";</script>'."\n";
+        return '<meta name="csrf-token" content="'.$escaped.'">'."\n";
     }
 }

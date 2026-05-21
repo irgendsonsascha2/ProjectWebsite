@@ -49,5 +49,16 @@
     display: block;
     flex-shrink: 0;
   }
+
+  @media (max-width: 40rem) {
+    .fab {
+      bottom: calc(5.25rem + env(safe-area-inset-bottom));
+      right: calc(1rem + env(safe-area-inset-right));
+    }
+
+    .fab.fab-delete {
+      right: calc(5rem + env(safe-area-inset-right));
+    }
+  }
 }
 

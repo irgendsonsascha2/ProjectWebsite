@@ -35,7 +35,7 @@ Hauptfunktionen:
 
 ### Laravel (`laravel/`)
 
-Parallel zur klassischen PHP-App liegt eine **Laravel-13-Anwendung** mit **MongoDB** (`mongodb/laravel-mongodb`), **Laravel Breeze** (Blade-Auth) und der gleichen Nutzerlogik wie `pages/account.php`: Login mit **E-Mail oder Username**, Registrierung nur mit **Registrierungscode** aus der Collection `registration_codes`.
+Parallel zur klassischen PHP-App liegt eine **Laravel-13-Anwendung** mit **MongoDB** (`mongodb/laravel-mongodb`) für **Auth-Brücken** und **Passwort-Reset**. Login/Registrierung laufen auf der klassischen Site (`pages/login.php`, `pages/register.php`); Laravel liefert Credentials-Prüfung und Handoff.
 
 **Testprojekt — Kurzablauf (du):**
 
@@ -46,13 +46,13 @@ Parallel zur klassischen PHP-App liegt eine **Laravel-13-Anwendung** mit **Mongo
 
 **Im Repo bereits vorbereitet:** Auth-Flow (Login/Register/Profil), `resources/js/bootstrap.js`, `axios`, Migrationen mit Schon-vorhanden-Collections, PHPUnit-Anpassungen, `serve-test.sh`, Composer-Script **`serve-app`**.
 
-**Login direkt auf der klassischen Website:** Das Formular auf **`pages/account.php`** sendet an **`bridge_auth.php`** (Projektroot). Dort wird das Passwort wie in Laravel geprüft; bei Erfolg folgt derselbe Sprung wie nach Laravel-Login über **`laravel_handoff.php`**. Du bleibst optisch auf deiner bestehenden Seite.
+**Login direkt auf der klassischen Website:** Das Formular auf **`pages/login.php`** sendet an **`bridge_auth.php`** (Projektroot). Dort wird das Passwort wie in Laravel geprüft; bei Erfolg folgt derselbe Sprung wie nach Laravel-Login über **`laravel_handoff.php`** (HMAC + Einmal-Nonce).
 
 **Registrierung dort ebenfalls:** Das Register-Formular sendet an **`bridge_register.php`** (Projektroot). Dort läuft dieselbe Logik wie **`POST /register`** in Laravel (**`RegisterInvitedUser`** Service): Invite-Code, Validierung, Nutzer anlegen, danach wie beim Login der Handoff über **`laravel_handoff.php`** (automatisch eingeloggt auf der klassischen Site).
 
-**Keine zweite Login-Maske auf Port 8000:** Ist **`LEGACY_SITE_URL`** in `laravel/.env` gesetzt (Basis-URL der PHP-App), leiten **`GET /login`** und **`GET /register`** in Laravel nur noch auf **`index.php?page=account`** um (Register mit Anker **`#register-section`**). Die Breeze-Blade-Seiten erscheinen dann nur noch, wenn **`LEGACY_SITE_URL` leer** bleibt (reines Laravel ohne Anbindung an die alte Site).
+**Keine zweite Login-Maske auf Port 8000:** Ist **`LEGACY_SITE_URL`** in `laravel/.env` gesetzt, leiten **`GET /login`** und **`GET /register`** in Laravel auf **`index.php?page=login`** bzw. **`page=register`** um. Laravel behält **`forgot-password`** / **`reset-password`**; Verify-Email, Dashboard und Profil sind im Hybrid-Modus entfernt. Breeze-Login/Register (POST) nur, wenn **`LEGACY_SITE_URL` leer** ist.
 
-**Nach Laravel-Login zur klassischen Website:** Im Projektroot liegt **`laravel_handoff.php`**. Laravel leitet nach erfolgreichem Login/Register mit einem kurzlebigen HMAC-Link dorthin um; das Skript setzt dieselbe `$_SESSION` wie nach Login in `pages/account.php` und leitet auf **`index.php?page=…`** weiter (Standard: `home`, über `LEGACY_AFTER_LOGIN_PAGE` in `laravel/.env`). Dafür müssen **`HANDOFF_SECRET`** und **`LEGACY_SITE_URL`** in **`laravel/.env`** gesetzt sein (Secret ist nur in dieser Datei nötig).
+**Nach Laravel-Login zur klassischen Website:** **`laravel_handoff.php`** validiert HMAC + **Einmal-Nonce** (`handoff_tokens`, Index: `dbScripts/14_db_init_handoff_tokens.php`), setzt `$_SESSION` und leitet auf **`index.php?page=…`** weiter (Standard: `home`, `LEGACY_AFTER_LOGIN_PAGE`). **`HANDOFF_SECRET`** und **`LEGACY_SITE_URL`** in **`laravel/.env`** erforderlich.
 
 **Passwort vergessen / neues Passwort (Laravel):** Auf der Account-Seite verweist der Link **Passwort vergessen** auf **`{APP_URL}/forgot-password`** (typ. `http://127.0.0.1:8000`, Wert aus `laravel/.env`). Der Link in der E-Mail setzt das Passwort in Laravel; **nach erfolgreichem Speichern** folgt derselbe **Handoff** wie nach Login, sofern `HANDOFF_SECRET` / `LEGACY_SITE_URL` gesetzt sind. Dafür muss die Collection/ Tabelle für Reset-Tokens existieren: einmal **`cd laravel && php artisan migrate`** (u. a. `password_reset_tokens` — auf Mongo legt das die nötigen Strukturen an, sofern die Verbindung steht). **E-Mail:** in `laravel/.env` z. B. `MAIL_MAILER=log` (lokal) oder echten Mailer setzen, sonst kommt kein Link an.
 
@@ -60,7 +60,9 @@ Parallel zur klassischen PHP-App liegt eine **Laravel-13-Anwendung** mit **Mongo
 
 **Optionales TOTP-2FA (klassische Site):** Eigene Seite **`index.php?page=two_factor`** (nur eingeloggt) mit QR-Code und Verwaltung; **2FA einrichten** startet die Einrichtung dort automatisch (QR sofort). Erklärung am Account und auf der 2FA-Seite über **?** (Modal-Popup). Backup-Codes nach Einrichtung/Neuerzeugung per Button **Backup-Codes kopieren** (alle Codes zeilenweise in die Zwischenablage). Login mit 2FA: Passwort auf der Anmeldeseite, danach Code auf **`index.php?page=login&step=2fa`**. Nach Passwort-Login leitet **`bridge_auth.php`** bei aktivem 2FA auf **`index.php?page=login&step=2fa`**; die zweite Phase läuft über **`bridge_auth_2fa.php`**. Backup-Codes werden gehasht in Mongo gespeichert und sind einmalig nutzbar. Felder: `two_factor_*` auf `users` (optionaler Index: `dbScripts/11_db_init_users_two_factor.php`). QR-Bundle: `js/qrcode.bundle.js` (nach Änderung an `qrcode`: `cd frontend && npm run build:qrcode`).
 
-**E-Mail-Nachweis:** Die **klassische Site** erzwingt keine E-Mail-Verifikation beim Login. Bei Registrierung setzt **`RegisterInvitedUser`** `email_verified_at`: bei reinem Admin-Einladungscode immer; bei Code aus dem **Anfrage-Flow** nur, wenn die Registrierungs-E-Mail zu einer verifizierten `registration_code_requests`-Zeile passt. Laravel nutzt **kein** `MustVerifyEmail` für Legacy-Nutzer; Routen **`/dashboard`** und **`/profile`** prüfen weiterhin das Feld `email_verified_at` (`verified`-Middleware). E-Mail-Bestätigung vor Registrierung läuft über `verify_registration_request` und Admin-Freigabe (`docs/next_session_plan.md`).
+**E-Mail-Nachweis:** Kein Login-Gate über Laravel `/verify-email`. Registrierung setzt `email_verified_at` über **`RegisterInvitedUser`** (Invite-Code / verifizierte Anfrage). E-Mail-Bestätigung vor Code-Vergabe: `verify_registration_request` + Admin (`docs/next_session_plan.md`).
+
+**Sicherheit (Auszug):** Kein SVG-Upload; Security-Header (CSP, X-Frame-Options); Kommentar- und Handoff-Rate-Limits; Docker-Mongo/MailHog nur `127.0.0.1`. Details: `docs/security_roadmap.md`.
 
 **Wichtig beim Testen:** Laravel (`php artisan serve`, z. B. Port **8000**) und die **alte Website** sind zwei URLs. `LEGACY_SITE_URL` muss **genau** die Basis-URL sein, unter der `index.php` und `laravel_handoff.php` erreichbar sind (inkl. Port, z. B. `http://127.0.0.1:8080`, wenn die alte App mit `php -S 127.0.0.1:8080 -t .` im Projektroot läuft). Ohne laufenden Webserver auf dieser URL schlägt der Sprung nach dem Login fehl.
 
@@ -199,6 +201,10 @@ php -S 127.0.0.1:8080 -t .
 ```
 
 Dann öffnen: `http://127.0.0.1:8080/`
+
+**Makefile (Kurzbefehle):** Im Projektroot `make help` — u. a. `make dev` (Build + PHP), `make laravel`, `make mailhog`.
+
+**Docker (MongoDB + MailHog, optional):** `docker compose up -d` oder `make services-up`. MongoDB auf Port 27017, MailHog UI http://127.0.0.1:8025/. PHP/Laravel bleiben auf dem Host. Nach erstem Start DB wie gewohnt per Admin-Skripte initialisieren. Details: `docs/deployment.md`.
 
 **Variante B (HMR, optional):** `npm run dev` in `frontend` starten, in `.env.local` zusätzlich `VITE_HMR=1` **und** `VITE_DEV_SERVER_URL=http://127.0.0.1:5173` (Port wie Vite) setzen, dann `php -S` wie oben. Vite ist mit `base: '/react-dist/'` konfiguriert (`frontend/vite.config.ts`); im HMR-Modus müssen `…/react-dist/@vite/client` u. a. **vom Vite-Port** antworten.
 
@@ -586,6 +592,6 @@ Falls das Projekt weiter wächst, wären diese Ergänzungen sinnvoll:
 
 - `docs/architecture.md` für Seitenfluss und Rechtekonzept
 - `docs/database.md` für Collections und Felder
-- `docs/deployment.md` für Server-Setup
+- `docs/deployment.md` für lokale Docker-Dienste und Entwurf Server/DynDNS
 - `docs/security.md` für Invite-System, Uploads und Härtung
 - `docs/current_status.md` für aktuelle Blocker und den letzten technischen Zwischenstand

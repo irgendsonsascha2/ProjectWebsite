@@ -214,38 +214,3 @@ try {
         <?php endforeach; ?>
     </div>
 <?php }); ?>
-
-<script>
-(() => {
-    const openButtons = Array.from(document.querySelectorAll('[data-dialog-open]'));
-    const closeButtons = Array.from(document.querySelectorAll('[data-dialog-close]'));
-
-    openButtons.forEach((button) => {
-        const dialogId = button.dataset.dialogOpen;
-        const dialog = dialogId ? document.getElementById(dialogId) : null;
-        if (!dialog || typeof dialog.showModal !== 'function') return;
-        button.addEventListener('click', () => {
-            dialog.showModal();
-        });
-    });
-
-    closeButtons.forEach((button) => {
-        const dialog = button.closest('dialog');
-        if (!dialog) return;
-        button.addEventListener('click', () => {
-            dialog.close();
-        });
-    });
-
-    const dialogs = Array.from(document.querySelectorAll('dialog'));
-    dialogs.forEach((dialog) => {
-        dialog.addEventListener('click', (event) => {
-            if (event.target === dialog) {
-                dialog.close();
-            }
-        });
-    });
-})();
-</script>
-
-</html>

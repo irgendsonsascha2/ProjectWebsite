@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Login von der klassischen Website (pages/account.php): gleiche Credentials wie Laravel,
+ * Login von der klassischen Website (pages/login.php): gleiche Credentials wie Laravel,
  * Weiterleitung über laravel_handoff.php zur PHP-Session.
  */
 

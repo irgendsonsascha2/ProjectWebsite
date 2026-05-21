@@ -94,7 +94,7 @@ try {
     </div>
 
     <?php if ($message): ?>
-        <div class="<?php echo htmlspecialchars($messageClass, ENT_QUOTES, 'UTF-8'); ?>"><?php echo $message; ?></div>
+        <div class="<?php echo htmlspecialchars($messageClass, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?></div>
     <?php endif; ?>
 
     <form method="GET" action="users.php" class="admin-card" style="margin-bottom: 1rem;">
@@ -275,54 +275,4 @@ try {
         <?php endforeach; ?>
     <?php endif; ?>
 
-    <script>
-    (function () {
-        var openButtons = Array.from(document.querySelectorAll('[data-dialog-open]'));
-        var closeButtons = Array.from(document.querySelectorAll('[data-dialog-close]'));
-        openButtons.forEach(function (button) {
-            button.addEventListener('click', function () {
-                var dialogId = button.getAttribute('data-dialog-open');
-                var dialog = dialogId ? document.getElementById(dialogId) : null;
-                if (!dialog || typeof dialog.showModal !== 'function') return;
-                dialog.showModal();
-            });
-        });
-        closeButtons.forEach(function (button) {
-            button.addEventListener('click', function () {
-                var dialog = button.closest('dialog');
-                if (dialog) dialog.close();
-            });
-        });
-        document.querySelectorAll('dialog').forEach(function (dialog) {
-            dialog.addEventListener('click', function (event) {
-                if (event.target === dialog) dialog.close();
-            });
-        });
-
-        document.querySelectorAll('.moderation-form').forEach(function (form) {
-            var statusRadios = form.querySelectorAll('.js-moderation-status');
-            var timeoutBlock = form.querySelector('.js-timeout-fields');
-            var toggleTimeout = function () {
-                if (!timeoutBlock) return;
-                var selected = form.querySelector('.js-moderation-status:checked');
-                timeoutBlock.style.display = selected && selected.value === 'suspended' ? '' : 'none';
-            };
-            statusRadios.forEach(function (radio) {
-                radio.addEventListener('change', toggleTimeout);
-            });
-            toggleTimeout();
-
-            var reasonSel = form.querySelector('.js-reason-key');
-            if (!reasonSel) return;
-            var customLabels = form.querySelectorAll('.js-custom-reason');
-            var customInput = form.querySelector('.js-custom-reason-input');
-            var toggleCustom = function () {
-                var show = reasonSel.value === 'custom';
-                customLabels.forEach(function (el) { el.style.display = show ? '' : 'none'; });
-                if (customInput) customInput.style.display = show ? '' : 'none';
-            };
-            reasonSel.addEventListener('change', toggleCustom);
-        });
-    })();
-    </script>
-<?php }, ['admin']); ?>
+<?php }, ['admin'], ['admin-users.js']); ?>

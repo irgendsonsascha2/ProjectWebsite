@@ -37,25 +37,14 @@ if (!function_exists('admin_require_access')) {
     }
 }
 
-if (!function_exists('admin_theme_bootstrap_script')) {
-    function admin_theme_bootstrap_script(): string
+if (!function_exists('admin_js_src')) {
+    function admin_js_src(string $filename): string
     {
-        return <<<HTML
-<script>
-    (function () {
-        try {
-            var KEY = 'portfolio-theme';
-            var t = localStorage.getItem(KEY);
-            if (t !== 'dark' && t !== 'light') {
-                t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-            }
-            document.documentElement.setAttribute('data-theme', t);
-        } catch (e) {
-            document.documentElement.setAttribute('data-theme', 'light');
-        }
-    })();
-</script>
-HTML;
+        $relative = '../../js/'.$filename;
+        $full = __DIR__.'/../../js/'.$filename;
+        $ver = is_file($full) ? (string) filemtime($full) : (string) time();
+
+        return htmlspecialchars($relative.'?v='.$ver, ENT_QUOTES, 'UTF-8');
     }
 }
 
@@ -121,19 +110,20 @@ if (!function_exists('admin_render_page')) {
     /**
      * @param callable():void $renderContent
      */
-    function admin_render_page(string $title, string $activeNav, callable $renderContent, array $allowedRoles = ['admin']): void
-    {
+    function admin_render_page(
+        string $title,
+        string $activeNav,
+        callable $renderContent,
+        array $allowedRoles = ['admin'],
+        array $pageScripts = []
+    ): void {
         admin_require_access($allowedRoles);
         $safeTitle = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
         echo "<!DOCTYPE html>\n<html lang=\"de\">\n<head>\n";
         echo "    <meta charset=\"UTF-8\">\n";
         echo "    <title>{$safeTitle}</title>\n";
         echo csrf_meta_script();
-        echo admin_theme_bootstrap_script() . "\n";
-        $csrfJs = '../../js/csrf-forms.js';
-        $csrfFull = __DIR__ . '/../../js/csrf-forms.js';
-        $csrfVer = is_file($csrfFull) ? (string) filemtime($csrfFull) : (string) time();
-        echo '    <script src="'.htmlspecialchars($csrfJs.'?v='.$csrfVer, ENT_QUOTES, 'UTF-8').'"></script>'."\n";
+        echo '    <script src="'.admin_js_src('theme-bootstrap.js').'"></script>'."\n";
         vite_react_assets('src/main.tsx');
         echo "</head>\n<body class=\"admin-page\">\n";
         echo "    <div class=\"container\">\n";
@@ -142,6 +132,15 @@ if (!function_exists('admin_render_page')) {
         $renderContent();
         echo "    </div>\n";
         echo "    <div id=\"react-root\" data-page=\"admin\"></div>\n";
+        echo '    <script src="'.admin_js_src('admin-dialogs.js').'"></script>'."\n";
+        echo '    <script src="'.admin_js_src('csrf-forms.js').'"></script>'."\n";
+        foreach ($pageScripts as $scriptFile) {
+            $scriptFile = ltrim((string) $scriptFile, '/');
+            if ($scriptFile === '' || ! str_ends_with($scriptFile, '.js')) {
+                continue;
+            }
+            echo '    <script src="'.admin_js_src($scriptFile).'"></script>'."\n";
+        }
         echo "</body>\n</html>\n";
     }
 }

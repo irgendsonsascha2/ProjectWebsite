@@ -35,7 +35,7 @@ class RegistrationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect('/');
 
         $this->assertTrue(
             \App\Models\User::query()->where('email', 'newuser@example.com')->where('username', 'newuser')->exists()

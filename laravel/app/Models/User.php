@@ -27,7 +27,7 @@ use MongoDB\Laravel\Auth\User as MongoUser;
 /**
  * Legacy-Auth nutzt keine Laravel-E-Mail-Verifikation.
  * `email_verified_at` wird bei Registrierung gesetzt (Invite-Code / Anfrage-Flow).
- * Laravel `/dashboard` und `/profile` nutzen weiterhin das `verified`-Middleware (Feld am User).
+ * Hybrid: Login/Register laufen über die klassische PHP-Site; Laravel liefert Passwort-Reset und Brücken-Handoff.
  */
 class User extends MongoUser
 {

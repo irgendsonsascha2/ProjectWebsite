@@ -75,6 +75,20 @@ if (!function_exists('rate_limit_allow')) {
     }
 }
 
+if (! function_exists('rate_limit_comment_allow')) {
+    function rate_limit_comment_allow(): bool
+    {
+        return rate_limit_allow('comment_post', 30, 600);
+    }
+}
+
+if (! function_exists('rate_limit_handoff_fail_allow')) {
+    function rate_limit_handoff_fail_allow(): bool
+    {
+        return rate_limit_allow('handoff_fail', 20, 900);
+    }
+}
+
 if (!function_exists('rate_limit_registration_code_request_allow')) {
     function rate_limit_registration_code_request_allow(): bool
     {

@@ -43,6 +43,11 @@ class RegisteredUserController extends Controller
             return redirect()->away($handoff->redirectUrl($user));
         }
 
-        return redirect(route('dashboard', absolute: false));
+        $legacy = rtrim((string) config('legacy.site_url', ''), '/');
+        if ($legacy !== '') {
+            return redirect()->away($legacy.'/index.php?page=home');
+        }
+
+        return redirect('/');
     }
 }

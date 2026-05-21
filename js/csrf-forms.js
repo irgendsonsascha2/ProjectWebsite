@@ -1,47 +1,68 @@
 (function () {
-    var token = window.PORTFOLIO_CSRF;
-    if (!token) {
-        return;
+  function readCsrfToken() {
+    if (window.PORTFOLIO_CSRF) {
+      return window.PORTFOLIO_CSRF;
     }
-
-    function ensureFormToken(form) {
-        if (!(form instanceof HTMLFormElement)) {
-            return;
-        }
-        var method = (form.getAttribute('method') || 'get').toLowerCase();
-        if (method !== 'post') {
-            return;
-        }
-        if (form.querySelector('input[name="_token"]')) {
-            return;
-        }
-        var input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = '_token';
-        input.value = token;
-        form.prepend(input);
+    var meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta) {
+      var fromMeta = meta.getAttribute('content') || '';
+      if (fromMeta) {
+        window.PORTFOLIO_CSRF = fromMeta;
+        return fromMeta;
+      }
     }
+    return '';
+  }
 
+  var token = readCsrfToken();
+  if (!token) {
+    return;
+  }
+
+  function ensureFormToken(form) {
+    if (!(form instanceof HTMLFormElement)) {
+      return;
+    }
+    var method = (form.getAttribute('method') || 'get').toLowerCase();
+    if (method !== 'post') {
+      return;
+    }
+    if (form.querySelector('input[name="_token"]')) {
+      return;
+    }
+    var input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = '_token';
+    input.value = token;
+    form.prepend(input);
+  }
+
+  function initCsrfForms() {
     document.querySelectorAll('form').forEach(ensureFormToken);
+  }
 
-    document.addEventListener('submit', function (event) {
-        var form = event.target;
-        if (form instanceof HTMLFormElement) {
-            ensureFormToken(form);
-        }
-    }, true);
-
-    var originalFetch = window.fetch;
-    if (typeof originalFetch !== 'function') {
-        return;
+  document.addEventListener('submit', function (event) {
+    var form = event.target;
+    if (form instanceof HTMLFormElement) {
+      ensureFormToken(form);
     }
+  }, true);
 
+  var originalFetch = window.fetch;
+  if (typeof originalFetch === 'function') {
     window.fetch = function (input, init) {
-        init = init || {};
-        var method = (init.method || 'GET').toUpperCase();
-        if (method === 'POST' && init.body instanceof FormData && !init.body.has('_token')) {
-            init.body.set('_token', token);
-        }
-        return originalFetch.call(this, input, init);
+      init = init || {};
+      var method = (init.method || 'GET').toUpperCase();
+      if (method === 'POST' && init.body instanceof FormData && !init.body.has('_token')) {
+        init.body.set('_token', token);
+      }
+      return originalFetch.call(this, input, init);
     };
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCsrfForms, { once: true });
+  } else {
+    initCsrfForms();
+  }
 })();

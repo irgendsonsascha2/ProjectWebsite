@@ -72,8 +72,12 @@ Damit die klassische PHP-Seite sichtbares Styling (Tailwind/React-Bundle aus `re
   - einfacher Router über `?page=...` (Standardseite: `home`)
 - `includes/bootstrap.php`
   - Session, MongoDB-Verbindung, Rollen/Rechte, Upload-Helfer
+- `pages/login.php` / `pages/register.php`
+  - Login und Registrierung (Brücken `bridge_auth.php`, `bridge_register.php`)
 - `pages/account.php`
-  - Login, Registrierung, Invite-Codes
+  - Eingeloggt-Dashboard (2FA-Link, Logout)
+- `pages/two_factor.php`
+  - Optionales TOTP-2FA (Einrichtung, QR, Backup-Codes)
 - `pages/home.php`
   - öffentliche Startseite mit Kurzprofil
 - `pages/project_grid.php`
@@ -89,7 +93,9 @@ Damit die klassische PHP-Seite sichtbares Styling (Tailwind/React-Bundle aus `re
 - `pages/admin/db_scripts.php`
   - Ausführung der destruktiven `dbScripts/`-Skripte
 - `pages/admin/_layout.php`
-  - gemeinsames Admin-Layout (Nav, Vite-Assets, Theme)
+  - gemeinsames Admin-Layout (Nav, Vite-Assets, Theme); lädt `js/theme-bootstrap.js`, `js/admin-dialogs.js` (am Seitenende)
+- `js/theme-bootstrap.js`, `js/admin-dialogs.js`, `js/admin-*.js`
+  - Theme FOUC-Schutz; Admin-Dialoge nach DOM (nicht im `<head>`); seiten-spezifisches Admin-JS
 - `pages/admin/roles.php`
   - Rollenverwaltung
 - `pages/admin/permissions.php`

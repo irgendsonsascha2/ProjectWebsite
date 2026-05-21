@@ -40,24 +40,10 @@ if ($isAjax) {
             return htmlspecialchars($path . '?v=' . $v, ENT_QUOTES, 'UTF-8');
         };
     ?>
-    <script>
-        (function () {
-            try {
-                var KEY = 'portfolio-theme';
-                var t = localStorage.getItem(KEY);
-                if (t !== 'dark' && t !== 'light') {
-                    t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                }
-                document.documentElement.setAttribute('data-theme', t);
-            } catch (e) {
-                document.documentElement.setAttribute('data-theme', 'light');
-            }
-        })();
-    </script>
+    <script src="<?php echo $asset('js/theme-bootstrap.js'); ?>"></script>
 
     <!-- ESC-Back: bewusst früh laden (Firefox/Safari robust) -->
     <script src="<?php echo $asset('js/esc-back.js'); ?>"></script>
-    <script src="<?php echo $asset('js/csrf-forms.js'); ?>"></script>
 
     <?php
         // React/Vite: Standard = gebautes react-dist/; HMR: .env VITE_HMR=1 + VITE_DEV_SERVER_URL
@@ -198,6 +184,20 @@ if ($isAjax) {
         </div>
     </footer>
 
+    <script src="<?php echo $asset('js/csrf-forms.js'); ?>"></script>
+    <?php
+        $pageScripts = [
+            'login' => ['login-2fa-alt.js'],
+            'register' => ['register-request-dialog.js'],
+            'project_grid' => ['project-grid-delete.js', 'project-grid-tilt.js'],
+            'project_detail' => ['project-detail.js'],
+            'create_project' => ['project-media-manager.js'],
+            'edit_project' => ['project-media-manager.js'],
+        ];
+        foreach ($pageScripts[$safe_page] ?? [] as $scriptFile) {
+            echo '    <script src="'.$asset('js/'.$scriptFile).'" defer></script>'."\n";
+        }
+    ?>
     <script src="<?php echo $asset('js/media-skeleton.js'); ?>" defer></script>
     <script src="<?php echo $asset('js/video-hover-preview.js'); ?>" defer></script>
     <script src="<?php echo $asset('js/nav-search.js'); ?>" defer></script>

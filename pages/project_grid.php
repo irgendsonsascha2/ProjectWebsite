@@ -20,7 +20,7 @@ function delete_project_files($project) {
 
 if (isset($_POST['delete_projects']) && isset($_POST['project_ids']) && is_array($_POST['project_ids'])) {
     authz_require_can('delete_all');
-    authz_require_verified_email();
+    authz_require_login();
     $ids = array_values(array_filter($_POST['project_ids'], function ($id) {
         return is_string($id) && $id !== '';
     }));
@@ -154,7 +154,7 @@ if ($canViewProjects) {
 </form>
 
 <?php if (can('create_project')): ?>
-<button type="button" class="fab" title="Neues Projekt erstellen" aria-label="Neues Projekt erstellen" onclick="window.location.href='index.php?page=create_project'">+</button>
+<a href="index.php?page=create_project" class="fab" title="Neues Projekt erstellen" aria-label="Neues Projekt erstellen">+</a>
 <?php endif; ?>
 
 <?php if ($canDeleteProjects): ?>
@@ -163,103 +163,3 @@ if ($canViewProjects) {
 </button>
 <?php endif; ?>
 
-<?php if ($canDeleteProjects): ?>
-<script>
-    (function () {
-        const form = document.getElementById('grid-delete-form');
-        if (!form) return;
-        const deleteButton = document.querySelector('.fab-delete');
-        const checkboxes = Array.from(form.querySelectorAll('input[type="checkbox"][name="project_ids[]"]'));
-        if (!deleteButton || checkboxes.length === 0) return;
-
-        const grid = document.querySelector('.project-grid');
-
-        function updateDeleteButton() {
-            const anyChecked = checkboxes.some((cb) => cb.checked);
-            deleteButton.classList.toggle('is-active', anyChecked);
-            deleteButton.disabled = !anyChecked;
-            if (grid) {
-                grid.classList.toggle('has-selection', anyChecked);
-            }
-            checkboxes.forEach((cb) => {
-                const label = cb.closest('.project-select');
-                if (label) {
-                    label.classList.toggle('is-checked', cb.checked);
-                }
-            });
-        }
-
-        form.addEventListener('change', function (event) {
-            if (event.target && event.target.matches('input[type="checkbox"][name="project_ids[]"]')) {
-                updateDeleteButton();
-            }
-        });
-
-        form.addEventListener('submit', function (event) {
-            if (event.submitter !== deleteButton) {
-                return;
-            }
-            const anyChecked = checkboxes.some((cb) => cb.checked);
-            if (!anyChecked) {
-                event.preventDefault();
-                return;
-            }
-            const ok = window.confirm('Ausgewählte Projekte wirklich löschen?');
-            if (!ok) {
-                event.preventDefault();
-            }
-        });
-
-        updateDeleteButton();
-    })();
-</script>
-<?php endif; ?>
-
-<script>
-    (function () {
-        const cards = Array.from(document.querySelectorAll('.project-card'));
-        if (cards.length === 0) return;
-
-        cards.forEach((card) => {
-            let rafId = 0;
-            let lastEvent = null;
-
-            function applyTilt() {
-                rafId = 0;
-                if (!lastEvent) return;
-                const rect = card.getBoundingClientRect();
-                const x = Math.min(Math.max((lastEvent.clientX - rect.left) / rect.width, 0), 1);
-                const y = Math.min(Math.max((lastEvent.clientY - rect.top) / rect.height, 0), 1);
-                const rx = (0.5 - y) * 10;
-                const ry = (x - 0.5) * 12;
-
-                card.style.setProperty('--rx', `${rx}deg`);
-                card.style.setProperty('--ry', `${ry}deg`);
-                card.style.setProperty('--mx', `${x * 100}%`);
-                card.style.setProperty('--my', `${y * 100}%`);
-                card.classList.add('is-tilting');
-            }
-
-            card.addEventListener('pointermove', (event) => {
-                if (event.pointerType === 'touch') return;
-                lastEvent = event;
-                if (!rafId) {
-                    rafId = window.requestAnimationFrame(applyTilt);
-                }
-            });
-
-            card.addEventListener('pointerleave', () => {
-                if (rafId) {
-                    window.cancelAnimationFrame(rafId);
-                    rafId = 0;
-                }
-                lastEvent = null;
-                card.classList.remove('is-tilting');
-                card.style.removeProperty('--rx');
-                card.style.removeProperty('--ry');
-                card.style.removeProperty('--mx');
-                card.style.removeProperty('--my');
-            });
-        });
-    })();
-</script>

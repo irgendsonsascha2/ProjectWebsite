@@ -1,4 +1,4 @@
-.PHONY: help dev php frontend-build frontend-dev mailhog laravel
+.PHONY: help dev php frontend-build frontend-dev mailhog laravel services-up services-down services-logs
 
 HOST ?= 127.0.0.1
 PHP_PORT ?= 8080
@@ -16,7 +16,10 @@ help:
 	@echo "  make php            PHP-Server starten (Host/Port siehe Variablen)"
 	@echo "  make frontend-build Frontend-Assets bauen (react-dist/)"
 	@echo "  make frontend-dev   Vite Dev-Server (HMR) starten"
-	@echo "  make mailhog        MailHog via Docker (SMTP+Web UI)"
+	@echo "  make mailhog        MailHog via Docker (SMTP+Web UI, einzelner Container)"
+	@echo "  make services-up    MongoDB + MailHog (docker compose up -d)"
+	@echo "  make services-down  Docker-Dienste stoppen"
+	@echo "  make services-logs  Logs der Compose-Dienste"
 	@echo "  make laravel        Laravel Test-Server (Port 8000)"
 	@echo ""
 	@echo "Variablen (optional überschreiben):"
@@ -57,6 +60,19 @@ mailhog:
 	@echo "MailHog SMTP: smtp://$(HOST):$(MAILHOG_SMTP_PORT)"
 	@echo ""
 	docker run --rm -p $(MAILHOG_SMTP_PORT):1025 -p $(MAILHOG_UI_PORT):8025 mailhog/mailhog
+
+services-up:
+	@echo ""
+	@echo "MongoDB: mongodb://$(HOST):27017"
+	@echo "MailHog: http://$(HOST):$(MAILHOG_UI_PORT)/  SMTP $(HOST):$(MAILHOG_SMTP_PORT)"
+	@echo ""
+	docker compose up -d
+
+services-down:
+	docker compose down
+
+services-logs:
+	docker compose logs -f --tail=100
 
 laravel:
 	cd laravel && ./serve-test.sh

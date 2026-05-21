@@ -12,14 +12,8 @@
     display: inline-flex;
     gap: 0.45rem;
     padding: 0.3rem 0.45rem;
-    background: var(--glass-bg-strong) !important;
-    border-radius: 999rem;
-    color: #fff;
     font-size: 0.7rem;
     line-height: 1;
-    border: 1px solid var(--glass-border);
-    backdrop-filter: var(--glass-blur) var(--glass-saturate) !important;
-    -webkit-backdrop-filter: var(--glass-blur) var(--glass-saturate) !important;
   }
 
   .page-project_detail .media-metrics .metric {
@@ -73,15 +67,10 @@
     text-overflow: ellipsis;
     line-height: 1;
     padding: 0.3rem 0.45rem;
-    background: var(--glass-bg-strong) !important;
-    border-radius: 999rem;
     opacity: 0;
     transform: translateY(0.6rem);
     transition: opacity 0.25s ease, transform 0.25s ease;
     will-change: transform, opacity;
-    border: 1px solid var(--glass-border);
-    backdrop-filter: var(--glass-blur) var(--glass-saturate) !important;
-    -webkit-backdrop-filter: var(--glass-blur) var(--glass-saturate) !important;
   }
 
   .page-project_detail .media-hover-comments .hover-comment.is-active {
@@ -129,6 +118,10 @@
   @media (max-width: 40rem) {
     .page-project_detail .gallery-grid {
       grid-template-columns: 1fr;
+    }
+
+    .page-project_detail .media-hover-comments {
+      padding-right: 5.5rem;
     }
   }
 
@@ -218,13 +211,8 @@
     position: absolute;
     inset: auto 0 0 0;
     padding: 0.5rem;
-    background: var(--glass-bg-strong);
-    color: #fff;
     font-size: 0.85rem;
     text-align: center;
-    border-top: 1px solid var(--glass-border);
-    backdrop-filter: var(--glass-blur) var(--glass-saturate);
-    -webkit-backdrop-filter: var(--glass-blur) var(--glass-saturate);
   }
 
   .page-project_detail .load-more {

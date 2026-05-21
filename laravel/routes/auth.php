@@ -1,44 +1,39 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\Auth\ConfirmablePasswordController;
-use App\Http\Controllers\Auth\EmailVerificationNotificationController;
-use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\NewPasswordController;
-use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
-use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\View;
 
-Route::middleware('guest')->group(function () {
-    /*
-     * GET /login und /register: bei konfigurierter klassischer Site keine zweite Breeze-Oberfläche,
-     * sondern direkt die Account-Seite der PHP-App (Login ersetzt dort).
-     */
-    Route::get('register', function (): RedirectResponse|View {
-        $legacy = rtrim((string) config('legacy.site_url', ''), '/');
-        if ($legacy !== '') {
-            return redirect()->away($legacy.'/index.php?page=register#register-section');
+$legacySiteUrl = rtrim((string) config('legacy.site_url', ''), '/');
+
+Route::middleware('guest')->group(function () use ($legacySiteUrl) {
+    Route::get('register', function () use ($legacySiteUrl): RedirectResponse|View {
+        if ($legacySiteUrl !== '') {
+            return redirect()->away($legacySiteUrl.'/index.php?page=register#register-section');
         }
 
         return app(RegisteredUserController::class)->create(request());
     })->name('register');
 
-    Route::post('register', [RegisteredUserController::class, 'store']);
+    if ($legacySiteUrl === '') {
+        Route::post('register', [RegisteredUserController::class, 'store']);
+    }
 
-    Route::get('login', function (): RedirectResponse|View {
-        $legacy = rtrim((string) config('legacy.site_url', ''), '/');
-        if ($legacy !== '') {
-            return redirect()->away($legacy.'/index.php?page=login');
+    Route::get('login', function () use ($legacySiteUrl): RedirectResponse|View {
+        if ($legacySiteUrl !== '') {
+            return redirect()->away($legacySiteUrl.'/index.php?page=login');
         }
 
         return app(AuthenticatedSessionController::class)->create();
     })->name('login');
 
-    Route::post('login', [AuthenticatedSessionController::class, 'store']);
+    if ($legacySiteUrl === '') {
+        Route::post('login', [AuthenticatedSessionController::class, 'store']);
+    }
 
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');
@@ -54,24 +49,6 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('verify-email', EmailVerificationPromptController::class)
-        ->name('verification.notice');
-
-    Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
-        ->middleware(['signed', 'throttle:6,1'])
-        ->name('verification.verify');
-
-    Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
-        ->middleware('throttle:6,1')
-        ->name('verification.send');
-
-    Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
-        ->name('password.confirm');
-
-    Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
-
-    Route::put('password', [PasswordController::class, 'update'])->name('password.update');
-
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
 });

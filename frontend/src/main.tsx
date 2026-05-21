@@ -5,19 +5,14 @@ import { ThemeToggle } from './components/ThemeToggle';
 import './app.css';
 
 import { ToastProvider } from './ui/toast';
-import { Button } from './ui/Button';
-import { Modal } from './ui/Modal';
-import { Card } from './ui/Card';
 import { useToast } from './ui/toast';
 import { CopyButton } from './ui/CopyButton';
 import { CopyField } from './ui/CopyField';
 import { HelpButton } from './ui/HelpButton';
-import { MediaLightbox } from './features/projectDetail/MediaLightbox';
 import { InviteCodes } from './features/account/InviteCodes';
 
 function Bootstrap() {
   const { success } = useToast();
-  const [open, setOpen] = React.useState(false);
 
   // Debug: wenn React läuft, kann es einen Test-Toast anzeigen.
   React.useEffect(() => {
@@ -81,8 +76,6 @@ function Bootstrap() {
 
   return (
     <>
-      <MediaLightbox />
-      {/* Account-Seite: Einladungscodes React-native rendern */}
       <InviteCodes />
       {/* Demo/Test-UI entfernt (soll in der klassischen Website nicht erscheinen). */}
     </>

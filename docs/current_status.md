@@ -56,7 +56,7 @@ Umgesetzt in der Codebasis (lokal testbar):
 - Rechtstext-/Startseiten-Platzhalter (`includes/site_pages.php`): `site_page_legal_defaults()` / `site_page_home_profile_defaults()`; Init über `dbScripts/05`–`08` (Replace pro Datensatz; Master `05` droppt `site_pages`).
 - Admin **Nutzer** (`pages/admin/users.php`): Suche, Timeout/Ban mit Grund-Dropdown (+ Custom), Toggle „Grund anzeigen“; Durchsetzung Login/Handoff/Session (`account_moderation` auf `users`).
 
-Offen: Deployment, UI-Backlog — **`docs/next_session_plan.md`**. Admin-Re-Auth für DB-Skripte: `includes/admin_reauth.php`.
+Offen: Produktions-Server/DynDNS (Entwurf in `docs/deployment.md`); optional Admin-`onclick` durch `data-confirm` ersetzen (CSP `script-src-attr`). Lokal: `docker compose up -d` / `make services-up`.
 
 ## Session-Handoff (neue Cursor-Session)
 
@@ -89,37 +89,14 @@ Offen: Deployment, UI-Backlog — **`docs/next_session_plan.md`**. Admin-Re-Auth
 - `VITE_USE_BUILT_ASSETS=1` erzwingt ausschließlich Manifest, ohne Dev-Skripte (z. B. CI).
 - Doku: `README.md` (React/Vite, Tabelle *Wenn kein Styling*), `AGENTS.md` (Lokaler Start).
 
-## Frontend/React (Hybrid) – offene UI-Punkte
+## Frontend/React (Hybrid) – UI (2026-05-21)
 
-- Glass / halbtransparente Overlays standardisieren:
-  - Aktuell gibt es mehrere halbtransparente UI-Flächen (z. B. Grid-Caption, Metrics-Pills, Comment-Preview, Lightbox-Overlay) mit leicht unterschiedlichen Farben/Blur-Werten.
-  - Fix geplant: zentrale Tokens/Variablen für „Glass“ definieren (Background-Farbe/Alpha, Border, Blur/Saturate) und alle entsprechenden Komponenten darauf umstellen, damit Light/Dark konsistent wirkt.
-
-- Einladungscodes – Kollisions-/Skalierungsproblem:
-  - Aktuell werden Codes als 8 Hex-Zeichen erzeugt: `strtoupper(bin2hex(random_bytes(4)))` → nur \(2^{32}\) Möglichkeiten.
-  - Bei vielen generierten Codes werden Duplikate/Kollisionen wahrscheinlich (Birthday-Problem) und aktuell gibt es keinen Unique-Guard/Retry.
-  - Fix geplant:
-    - Codes länger machen (z. B. `random_bytes(8)` → 16 Hex-Zeichen) **und**
-    - Unique-Index in MongoDB auf `registration_codes.code` setzen **und**
-    - beim Generieren Duplicate-Key abfangen und neu generieren (Retry/Backoff).
-
-- Einladungscodes – Fix umgesetzt (2026-04-24):
-  - Code-Länge auf 16 Hex-Zeichen erhöht (`random_bytes(8)`), damit Kollisionen praktisch nicht mehr auftreten.
-  - Beim Generieren wird ein Unique-Index auf `registration_codes.code` best-effort sichergestellt (Legacy-DBs).
-  - Duplicate-Key (`11000`) wird abgefangen und automatisch neu generiert (Retry), statt dass der Admin beim Generieren einen Fehler sieht.
-
-- Copy-UI Abstände/Margins:
-  - Auf der Account-Seite (`index.php?page=account`) wirken die Abstände zwischen Copy-Feld und Copy-Button aktuell teils „zu eng“ bzw. inkonsistent.
-  - Ursache ist sehr wahrscheinlich ein Zusammenspiel aus Legacy-Defaults (z. B. globale `button`-Regeln) und dem neuen React/Tailwind-Layout.
-  - Fix geplant: CopyField/CopyButton Spacing finalisieren (Layout + ggf. alte CSS-Regeln entschärfen), sodass links/rechts konsistent „Luft“ vorhanden ist.
-
-- Responsive Design (allgemein):
-  - Es fehlt noch ein gezielter Responsive-Pass (Mobile/Tablet/Desktop), insbesondere für Navigation, Tabellen (Account/Admin), Grid/Detail-Ansichten und Lightbox/Modals.
-  - Fix geplant: Breakpoints definieren und Seiten nacheinander durchgehen (Layout, Touch Targets, Textgrößen, Overflow).
-
-- React-native Styling: CSS-Struktur aufteilen
-  - Aktuell liegt der Großteil der page-scoped Styles gesammelt in `frontend/src/app.css`.
-  - Fix geplant: Aufteilung in mehrere Dateien (z. B. `styles/tokens.css`, `styles/layout.css`, `styles/pages/*`, `styles/admin.css`) und zentraler Import über `app.css`/`main.tsx`, um Wartbarkeit und Merge-Konflikte zu verbessern.
+- **Glass:** zentrale Utilities in `frontend/src/styles/components/glass.css` (Grid/Detail/Create-Edit).
+- **CSS-Split:** `frontend/src/app.css` importiert `styles/*` (tokens, layout, pages, admin, components).
+- **Responsive:** Admin-Mobile-Pass; Account-Tabellen/Code-Form; Lightbox/FABs auf schmalen Viewports.
+- **Copy-UI Account:** Abstände in `frontend/src/styles/pages/account.css` (`[data-react-copy-field]`).
+- **Seiten-JS:** Inline-Skripte nach `js/` (z. B. `project-detail.js`, `project-media-manager.js`); Laden über `index.php` je `page=`.
+- **CSP:** `script-src 'self'` (Legacy + Laravel); CSRF nur noch per `<meta name="csrf-token">` + `js/csrf-forms.js`. `script-src-attr 'unsafe-inline'` bleibt für vereinzelte `onclick` im Admin.
 
 ## Geplant: Mini-CMS (Option A – in der eigenen App)
 
@@ -147,6 +124,23 @@ Beim nächsten Arbeitsstand zuerst prüfen:
 1. Mit welchen effektiven Verbindungsdaten der PHP-Serverprozess wirklich läuft.
 2. Ob `ADMIN_DB_URI` im laufenden Prozess tatsächlich `admin@portfolio_db` mit dem richtigen Passwort verwendet.
 3. Ob `03_db_init_mongo_roles.php` nach einem sauberen Neustart des Servers mit explizit gesetzten URIs weiterhin `Authentication failed` oder `not authorized` liefert.
+
+## Aufräumen + Security-Pass (2026-05-21)
+
+- Toter Code entfernt; `includes/registration_codes.php`; SVG-Upload gesperrt.
+- Handoff mit Einmal-Nonce (`handoff_tokens`, `dbScripts/14_db_init_handoff_tokens.php`).
+- Security-Header (PHP + Laravel); Rate-Limits für Kommentare und Handoff-Fehler.
+- Laravel verschlankt (kein Verify-Email/Dashboard/Profil im Hybrid).
+- Docker: Mongo/MailHog nur `127.0.0.1`.
+- Admin-Dialoge: `js/admin-dialogs.js` am Seitenende; `js/theme-bootstrap.js` (Site + Admin).
+
+### Dependency-Audit (2026-05-21)
+
+| Bereich | Ergebnis |
+|---------|----------|
+| Root `composer audit` | Keine Advisories |
+| `laravel/composer audit` | ✅ Symfony-Pakete aktualisiert (2026-05-21), keine offenen Advisories |
+| `frontend/npm audit` | (bei Bedarf `npm audit` lokal; Build OK) |
 
 ## Betroffene Dateien
 
