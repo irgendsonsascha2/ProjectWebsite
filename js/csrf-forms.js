@@ -24,6 +24,13 @@
 
     document.querySelectorAll('form').forEach(ensureFormToken);
 
+    document.addEventListener('submit', function (event) {
+        var form = event.target;
+        if (form instanceof HTMLFormElement) {
+            ensureFormToken(form);
+        }
+    }, true);
+
     var originalFetch = window.fetch;
     if (typeof originalFetch !== 'function') {
         return;

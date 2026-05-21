@@ -116,6 +116,7 @@ function render_media_manager($draftProject, $createActionUrl, $message, $showMe
         <input type="hidden" id="draft-id" value="<?php echo htmlspecialchars($draftId); ?>">
 
         <form method="POST" action="<?php echo htmlspecialchars($createActionUrl); ?>" enctype="multipart/form-data" class="media-upload-form" id="draft-media-upload-form" data-ajax="true">
+            <?php echo csrf_field(); ?>
             <label for="draft_gallery_files">Bilder/Videos hinzufügen</label>
             <input type="file" id="draft_gallery_files" name="draft_gallery_files[]" multiple accept="image/*,video/*">
             <input type="hidden" name="upload_media_draft" value="1">
@@ -136,6 +137,7 @@ function render_media_manager($draftProject, $createActionUrl, $message, $showMe
                                 <img src="<?php echo htmlspecialchars($url); ?>" alt="Bild" loading="lazy" draggable="false">
                             <?php endif; ?>
                             <form method="POST" action="<?php echo htmlspecialchars($createActionUrl); ?>" class="media-delete" data-ajax="true">
+                                <?php echo csrf_field(); ?>
                                 <input type="hidden" name="media_index" value="<?php echo (int)$index; ?>">
                                 <button type="submit" name="delete_media">Löschen</button>
                             </form>
@@ -489,6 +491,7 @@ if ($isAjax) {
     <?php endif; ?>
 
     <form method="POST" action="<?php echo htmlspecialchars($createActionUrl); ?>" enctype="multipart/form-data" id="create-project-form">
+        <?php echo csrf_field(); ?>
         <label for="title">Projekttitel</label>
         <input type="text" id="title" name="title" required>
 

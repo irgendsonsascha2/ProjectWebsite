@@ -15,7 +15,7 @@ if (session_status() === PHP_SESSION_NONE) {
     $page = (string)($_GET['page'] ?? '');
     $script = (string)($_SERVER['SCRIPT_NAME'] ?? '');
     $isAdminScript = strpos($script, '/pages/admin/') !== false;
-    $needsSessionForPage = in_array($page, ['login', 'register', 'account', 'two_factor'], true);
+    $needsSessionForPage = in_array($page, ['login', 'register', 'account', 'two_factor', 'create_project', 'edit_project'], true);
     $shouldStartSession = $hasSessionCookie || $isPost || $needsSessionForPage || $isAdminScript;
     if ($shouldStartSession) {
         session_start();

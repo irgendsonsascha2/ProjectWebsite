@@ -115,6 +115,7 @@ function render_media_manager($workingGallery, $editActionUrl, $message, $showMe
         <?php endif; ?>
 
         <form method="POST" action="<?php echo htmlspecialchars($editActionUrl); ?>" enctype="multipart/form-data" class="media-upload-form" id="media-upload-form" data-ajax="true">
+            <?php echo csrf_field(); ?>
             <label for="gallery_files">Bilder/Videos hinzufügen</label>
             <input type="file" id="gallery_files" name="gallery_files[]" multiple accept="image/*,video/*">
             <input type="hidden" name="upload_media" value="1">
@@ -135,6 +136,7 @@ function render_media_manager($workingGallery, $editActionUrl, $message, $showMe
                                 <img src="<?php echo htmlspecialchars($url); ?>" alt="Bild" loading="lazy" draggable="false">
                             <?php endif; ?>
                             <form method="POST" action="<?php echo htmlspecialchars($editActionUrl); ?>" class="media-delete" data-ajax="true">
+                                <?php echo csrf_field(); ?>
                                 <input type="hidden" name="media_index" value="<?php echo (int)$index; ?>">
                                 <button type="submit" name="delete_media">Löschen</button>
                             </form>
@@ -437,6 +439,7 @@ if ($isAjax) {
     <?php endif; ?>
 
     <form method="POST" action="<?php echo htmlspecialchars($editActionUrl); ?>" enctype="multipart/form-data" id="edit-project-form">
+        <?php echo csrf_field(); ?>
         <input type="hidden" name="return_to" id="return_to" value="">
         <label for="title">Projekttitel</label>
         <input type="text" id="title" name="title" value="<?php echo htmlspecialchars($project['title']); ?>" required>
