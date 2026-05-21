@@ -525,15 +525,17 @@ Die wichtigsten Initialisierungsskripte:
 - `dbScripts/04_db_users_validator_allow_laravel.php`
   - **Nicht destruktiv:** passt nur den MongoDB-Validator der Collection `users` an (`additionalProperties: true`), damit Laravel zusätzliche Felder (`remember_token` usw.) speichern kann. Einmal ausführen, wenn die Registrierung mit „Document failed validation“ fehlschlägt (bestehende DB nach älterem `00_db_init_accounts`).
 - `dbScripts/05_db_init_site_pages.php`
-  - `site_pages`-Collection + Seed `home_profile` (destruktiv: droppt die Collection)
+  - `site_pages`-Collection + Startseite `home_profile` aus `site_page_home_profile_defaults()` (destruktiv: droppt die Collection)
 - `dbScripts/06_db_init_site_impressum.php`
-  - Impressum in `site_pages` (Platzhalter-Daten; ersetzt nur diesen Datensatz)
+  - Impressum in `site_pages` aus `site_page_legal_defaults()` (Platzhalter; ersetzt nur diesen Datensatz)
 - `dbScripts/07_db_init_site_datenschutz.php`
-  - Datenschutz in `site_pages` (ersetzt nur diesen Datensatz)
+  - Datenschutz in `site_pages` aus `site_page_legal_defaults()` inkl. optionalem TOTP-2FA (ersetzt nur diesen Datensatz)
 - `dbScripts/08_db_init_site_nutzungsbedingungen.php`
-  - Nutzungsbedingungen in `site_pages` (ersetzt nur diesen Datensatz)
+  - Nutzungsbedingungen in `site_pages` aus `site_page_legal_defaults()` (ersetzt nur diesen Datensatz)
 - `dbScripts/09_db_init_site_settings.php`
   - Allgemeine Einstellungen (`site_settings` in `site_pages`; ersetzt nur diesen Datensatz)
+- `dbScripts/11_db_init_users_two_factor.php`
+  - Dokumentation der optionalen `two_factor_*`-Felder auf `users` + sparse Index
 - `dbScripts/db_init_master.php`
   - Führt die nummerierten Skripte gesammelt aus
 

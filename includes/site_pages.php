@@ -28,6 +28,22 @@ if (!function_exists('site_page_can_edit_content')) {
     }
 }
 
+if (!function_exists('site_page_home_profile_defaults')) {
+    /**
+     * @return array<string, string>
+     */
+    function site_page_home_profile_defaults(): array
+    {
+        return [
+            'display_name' => 'Dein Name',
+            'kicker' => 'Deine Position / Spezialisierung',
+            'lead' => "Kurze Beschreibung.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+            'body' => "Langer Text.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam.\n\nSed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum. Praesent mauris.",
+            'portrait_url' => '',
+        ];
+    }
+}
+
 if (!function_exists('site_page_legal_defaults')) {
     /**
      * @return array<string, array<string, mixed>>
@@ -85,13 +101,31 @@ if (!function_exists('site_page_legal_defaults')) {
                         'heading' => 'Welche Daten verarbeiten wir?',
                         'body' => "- Bei der Registrierung: E-Mail-Adresse, Username, Passwort (wird gehasht gespeichert).\n"
                             . "- Bei der Anfrage eines Registrierungscodes: E-Mail-Adresse sowie technische Metadaten (IP-Adresse, User-Agent) zur Missbrauchsprävention und Bearbeitung.\n"
-                            . "- Bei Nutzung der Website: Nach Login/Registrierung Session/Cookies zur Anmeldung und Bedienbarkeit.",
+                            . "- Bei Nutzung der Website: Nach Login/Registrierung Session/Cookies zur Anmeldung und Bedienbarkeit.\n"
+                            . "- Bei optional aktivierter Zwei-Faktor-Authentifizierung (2FA): siehe Abschnitt „Zwei-Faktor-Authentifizierung (optional)“ unten.",
                     ],
                     [
                         'heading' => 'Wofür werden die Daten genutzt?',
                         'body' => "- Konto anlegen und Login ermöglichen\n"
                             . "- Invite-/Registrierungscode-Anfragen verifizieren und administrativ freigeben\n"
-                            . "- Sicherheit und Stabilität (z. B. Rate-Limits, Fehleranalyse)",
+                            . "- Sicherheit und Stabilität (z. B. Rate-Limits, Fehleranalyse)\n"
+                            . "- optional: Zwei-Faktor-Authentifizierung zur Erhöhung der Kontosicherheit",
+                    ],
+                    [
+                        'heading' => 'Zwei-Faktor-Authentifizierung (optional)',
+                        'body' => "Die Nutzung der Zwei-Faktor-Authentifizierung (2FA) ist freiwillig. Der Login ist grundsätzlich mit Benutzername bzw. E-Mail und Passwort möglich. 2FA kann im Konto aktiviert und wieder deaktiviert werden.\n\n"
+                            . "Verfahren: Es wird TOTP (zeitbasiertes Einmalpasswort, 6-stellig, 30 Sekunden Gültigkeit) verwendet. Du richtest 2FA mit einer Authenticator-App auf deinem eigenen Gerät ein (z. B. Google Authenticator, Aegis oder vergleichbare Apps). Der Betreiber dieser Website sendet beim Login keine 2FA-Codes per E-Mail oder SMS.\n\n"
+                            . "Verarbeitete Daten bei aktivierter 2FA:\n"
+                            . "- Status, ob 2FA aktiv ist\n"
+                            . "- TOTP-Geheimnis (technisch als Base32-Zeichenkette auf dem Server gespeichert; für die Prüfung der Codes erforderlich, nicht gehasht)\n"
+                            . "- Zeitpunkt der erfolgreichen Einrichtung\n"
+                            . "- Backup-Codes ausschließlich als Passwort-Hashes (Klartext der Codes nur einmalig bei der Einrichtung bzw. Neuerzeugung angezeigt)\n\n"
+                            . "Beim Login mit aktivierter 2FA: Nach erfolgreicher Passwortprüfung wird ein kurzlebiger Anmelde-Zwischenzustand in der Session gespeichert (typisch wenige Minuten), bis du einen gültigen TOTP- oder Backup-Code eingibst. Die eingegebenen Codes werden nicht dauerhaft gespeichert.\n\n"
+                            . "Zweck: Erhöhung der Sicherheit deines Kontos.\n\n"
+                            . "Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einer sicheren Kontoverwaltung); soweit die Nutzung des Kontos als Nutzungsverhältnis gilt, zusätzlich Art. 6 Abs. 1 lit. b DSGVO.\n\n"
+                            . "Speicherdauer: Die genannten 2FA-Daten werden gespeichert, bis du 2FA deaktivierst oder dein Konto gelöscht wird.\n\n"
+                            . "Empfänger: Das TOTP-Geheimnis wird nicht an Dritte weitergegeben. Authenticator-Apps wählst du selbst; sie sind nicht Bestandteil dieser Website und unterliegen der Verantwortung des jeweiligen App-Anbieters auf deinem Gerät.\n\n"
+                            . "Betroffenenrechte: Du hast die Rechte nach der DSGVO (z. B. Auskunft, Berichtigung, Löschung, Einschränkung, Widerspruch). 2FA kannst du im Konto deaktivieren. Speichere Backup-Codes sicher; ohne sie und ohne Zugang zum Authenticator-Gerät kann der Login eingeschränkt sein.",
                     ],
                     [
                         'heading' => 'Kontakt',
@@ -119,6 +153,12 @@ if (!function_exists('site_page_legal_defaults')) {
                     [
                         'heading' => 'Moderation / Entfernung',
                         'body' => 'Ich behalte mir vor, Inhalte zu prüfen und bei Verstößen oder bei Verdacht auf Rechtsverletzungen zu entfernen oder zu sperren.',
+                    ],
+                    [
+                        'heading' => 'Zwei-Faktor-Authentifizierung (optional)',
+                        'body' => "Du kannst freiwillig eine Zwei-Faktor-Authentifizierung (2FA) per Authenticator-App aktivieren.\n\n"
+                            . "Du bist dafür verantwortlich, dein Authenticator-Gerät und die bei der Einrichtung angezeigten Backup-Codes sicher aufzubewahren. Jeder Backup-Code ist nur einmal verwendbar.\n\n"
+                            . "Bei Verlust des Authenticator-Geräts ohne nutzbare Backup-Codes kann der Zugang zum Konto eingeschränkt sein. Support oder Wiederherstellung erfolgen nur im Rahmen der im Impressum genannten Kontaktmöglichkeiten und nach Prüfung des Einzelfalls.",
                     ],
                     [
                         'heading' => 'Kontakt',
@@ -238,6 +278,45 @@ if (!function_exists('site_page_seed_legal_page')) {
         $db->site_pages->replaceOne(['_id' => $key], $doc, ['upsert' => true]);
 
         return $existing ? 'replaced' : 'inserted';
+    }
+}
+
+if (!function_exists('site_page_seed_home_profile')) {
+    /**
+     * Legt/ersetzt den Startseiten-Datensatz mit Platzhalter-Inhalten.
+     *
+     * @return 'inserted'|'replaced'|'skipped'
+     */
+    function site_page_seed_home_profile($db, bool $onlyIfMissing = false): string
+    {
+        site_page_ensure_collection($db);
+        $existing = $db->site_pages->findOne(['_id' => 'home_profile']);
+        if ($onlyIfMissing && $existing) {
+            return 'skipped';
+        }
+        $hadExisting = (bool) $existing;
+        $defaults = site_page_home_profile_defaults();
+        $now = new UTCDateTime();
+        $createdAt = $now;
+        if ($hadExisting) {
+            $existingArr = iterator_to_array($existing);
+            $createdAt = $existingArr['created_at'] ?? $now;
+        }
+        $doc = [
+            '_id' => 'home_profile',
+            'page_kind' => 'home_profile',
+            'display_name' => $defaults['display_name'],
+            'kicker' => $defaults['kicker'],
+            'lead' => $defaults['lead'],
+            'body' => $defaults['body'],
+            'portrait_url' => $defaults['portrait_url'],
+            'created_at' => $createdAt,
+            'updated_at' => $now,
+            'updated_by' => '',
+        ];
+        $db->site_pages->replaceOne(['_id' => 'home_profile'], $doc, ['upsert' => true]);
+
+        return $hadExisting ? 'replaced' : 'inserted';
     }
 }
 

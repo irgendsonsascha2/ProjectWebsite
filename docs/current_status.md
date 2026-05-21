@@ -62,6 +62,7 @@ Umgesetzt in der Codebasis (lokal testbar):
 - Laravel `User`: kein `MustVerifyEmail`; `email_verified_at` wird bei Registrierung gesetzt.
 
 - Optionales TOTP-2FA: `pages/two_factor.php` (Auto-Start QR-Einrichtung, Verwaltung); Login nur `step=2fa`; Account/2FA: `?`-Hilfe als Modal; Backup-Codes kopierbar.
+- Rechtstext-/Startseiten-Platzhalter (`includes/site_pages.php`): `site_page_legal_defaults()` / `site_page_home_profile_defaults()`; Init über `dbScripts/05`–`08` (Replace pro Datensatz; Master `05` droppt `site_pages`).
 
 Offen: Admin-Re-Auth, Betrieb/Mongo-Checks — **`docs/next_session_plan.md`**.
 
