@@ -47,10 +47,10 @@ Kurzüberblick zum Weitermachen — Zielbild, erledigt, offen, Test.
 - **Manuell im Admin**, wenn Passwörter geändert wurden: `03_db_init_mongo_roles.php` ausführen (Checkbox „`.env.local` aktualisieren“ optional).
 - Nach **`db_init_master`**: neu einloggen (Session `user_id` kann ungültig sein).
 
-### P4 — Später
-- Admin Re-Auth vor destruktiven DB-Aktionen (`db_scripts.php`).
-- Deployment Docker/DynDNS.
-- Frontend/CSS (`current_status.md` UI-Backlog).
+### P4 — Admin Re-Auth (umgesetzt 2026-05-21)
+- ✅ `includes/admin_reauth.php`: 15-Min.-Fenster nach Passwort (+ TOTP wenn 2FA aktiv).
+- ✅ `pages/admin/db_scripts.php`: CSRF-Prüfung, Re-Auth vor `run_script`, Felder in Ausführen-Dialogen.
+- **Nächstes:** Deployment Docker/DynDNS; Frontend/CSS (`current_status.md` UI-Backlog).
 
 ## Lokaler Test (kurz)
 
@@ -70,6 +70,11 @@ cd frontend && npm run build
 - Admin → **Nutzer** → Timeout/Ban setzen → Logout des Nutzers → Login zeigt Sperr-Meldung (ggf. ohne Grund, wenn `show_reason` aus).
 - Sperre aufheben → Login wieder möglich.
 
+**Checks (DB-Skripte / Re-Auth):**
+- Admin → **DB-Skripte** → Skript ausführen: Passwort (+ TOTP wenn 2FA) → Erfolg; Banner „Bestätigung aktiv“ (~15 Min.).
+- Zweites Skript innerhalb des Fensters ohne erneute Passwort-Eingabe.
+- Nach Ablauf (oder neuer Tab nach Logout) wieder Passwort nötig; falsches Passwort blockiert Ausführung.
+
 ## Wichtige Dateien
 
 | Bereich | Dateien |
@@ -77,9 +82,9 @@ cd frontend && npm run build
 | Auth / 2FA | `pages/two_factor.php`, `includes/two_factor.php`, `includes/two_factor_handlers.php`, `bridge_auth.php`, `bridge_auth_2fa.php`, `pages/login.php` |
 | Moderation | `pages/admin/users.php`, `includes/user_moderation.php`, `dbScripts/13_db_init_users_moderation.php` |
 | Account | `pages/account.php` (Link 2FA; Code-Generierung über Admin-DB) |
-| Security | `includes/authz.php`, `dbScripts/03_db_init_mongo_roles.php`, `dbScripts/11_db_init_users_two_factor.php` |
+| Security | `includes/authz.php`, `includes/admin_reauth.php`, `dbScripts/03_db_init_mongo_roles.php`, `dbScripts/11_db_init_users_two_factor.php` |
 | Doku | `docs/security_roadmap.md`, `README.md`, `AGENTS.md` |
 
 ## Referenz
 
-`docs/security_roadmap.md` — Schritte 1–5 + 2FA + Moderation umgesetzt; offen: Re-Auth (6–7), Deployment, UI-Backlog.
+`docs/security_roadmap.md` — Schritte 1–7 (inkl. Re-Auth) umgesetzt; offen: Deployment, UI-Backlog.

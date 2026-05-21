@@ -4,7 +4,7 @@
 
 **Stand 2026:** **Schritt 1** (kein direkter öffentlicher Webzugriff auf `dbScripts/`, Laufzeit-Guards) und **Schritt 2** (getrennte Mongo-URIs pro Rolle, Admin-Skripte nur über `ADMIN_DB_URI` / Admin-Pfad) sind in der laufenden App umgesetzt. Details: `docs/current_status.md`.
 
-Offen: Admin-Re-Auth, Deployment. Einstieg neue Session: `docs/next_session_plan.md`.
+Offen: Deployment, UI-Backlog. Einstieg neue Session: `docs/next_session_plan.md`.
 
 **Ergänzung (Sprint 1, 2026-05):** CSRF für Legacy-POSTs, gehärtete Session-Cookies, Handoff `session_regenerate`, POST-Logout, eingeschränktes `?debug=1`, keine stillen Mongo-Default-URIs ohne `APP_ALLOW_DEV_DB_DEFAULTS` — Details `docs/current_status.md`.
 
@@ -35,7 +35,7 @@ Am Ende der Umsetzung soll gelten:
 - Allgemeine Nutzerrechte werden nicht nur in der Oberfläche, sondern in der zentralen Datenzugriffslogik erzwungen.
 - Benutzer können **optional** TOTP-2FA in der klassischen PHP-App aktivieren (nicht verpflichtend).
 - E-Mail-Nachweis nur im **Registrierungs-Anfrage-Flow**, nicht als Laravel-Login-Gate.
-- Für sicherheitskritische Admin-Aktionen kann eine frische Authentifizierung verlangt werden (noch offen).
+- Für sicherheitskritische Admin-Aktionen (DB-Skripte) ist frische Passwort-(+ optional 2FA-)Bestätigung mit 15-Min.-Fenster umgesetzt (`includes/admin_reauth.php`).
 
 ## Architekturentscheidung
 
@@ -172,14 +172,18 @@ Umsetzung:
 
 ## Schritt 6: Admin-CSRF und Re-Auth
 
+**Status: umgesetzt.**
+
 Ziel:
 
 - Alle Admin-POST-Formulare mit `csrf_field()`; CSRF-Fehler bleiben auf derselben Admin-Seite
 - Vor destruktiven DB-Aktionen frische Passwort-(+ optional 2FA-)Bestätigung
 
-**Status: CSRF-Felder umgesetzt** (alle genannten Admin-Formulare); Re-Auth vor destruktiven DB-Aktionen offen.
+Umsetzung: CSRF auf Admin-POST-Formularen; Re-Auth für `pages/admin/db_scripts.php` über `includes/admin_reauth.php` (15 Min. TTL, Passwort + TOTP wenn 2FA aktiv).
 
 ## Schritt 7: Frische Admin-Authentifizierung für sensible Aktionen
+
+**Status: umgesetzt** für DB-Skript-Ausführung (Schritt 6/7 zusammengeführt in `admin_reauth.php`).
 
 Ziel:
 
@@ -187,14 +191,14 @@ Ziel:
 
 Umsetzung:
 
-- Re-Auth-Fenster für Admin-Aktionen einführen
+- Re-Auth-Fenster für Admin-Aktionen (900 s)
 - vor destruktiven DB-Aktionen erneute Passwortbestätigung verlangen
-- falls 2FA aktiv ist, zusätzlich 2FA-Code verlangen
+- falls 2FA aktiv ist, zusätzlich TOTP-Code verlangen
 
 Was danach testbar ist:
 
 - Admin kann normale Seiten nutzen
-- DB-Reset oder ähnliche Aktionen verlangen frische Bestätigung
+- DB-Reset oder ähnliche Aktionen verlangen frische Bestätigung (oder gültiges Fenster)
 - abgelaufene Admin-Bestätigung blockiert den Vorgang
 
 ## Schritt 8: Datenbanklogik und Dokumentation finalisieren

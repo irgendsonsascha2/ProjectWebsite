@@ -495,6 +495,7 @@ Der Admin-Bereich liegt unter `pages/admin/` und umfasst:
   - Allgemeine Einstellungen (Medien-Limits, Galerie-Paging, Kommentarlänge; Datensatz `site_settings` in `site_pages`, nur Admin)
 - `db_scripts.php`
   - Ausführung und Einsicht der Datenbankskripte aus `dbScripts/`
+  - Vor Ausführung: CSRF + **frische Admin-Bestätigung** (Passwort, bei aktivem 2FA zusätzlich TOTP; danach 15 Min. gültig — `includes/admin_reauth.php`)
 - `roles.php`
   - Rollen anlegen, bearbeiten und löschen
 - `permissions.php`

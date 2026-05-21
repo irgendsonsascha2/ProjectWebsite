@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/_layout.php';
 require_once __DIR__ . '/../../includes/db.php';
+require_once __DIR__ . '/../../includes/admin_reauth.php';
 
 // The DB scripts page is intentionally separate from the dashboard.
 
@@ -121,9 +122,23 @@ $availableScripts = list_admin_db_scripts();
 $allowedScriptNames = array_map('basename', $availableScripts);
 
 $message = "";
+$adminReauthFresh = admin_reauth_is_fresh();
+$adminReauthNeeds2fa = admin_reauth_user_has_2fa();
+$reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
 
 // --- LOGIK: SCRIPT AUSFÜHREN ---
 if (isset($_POST['run_script'])) {
+    if (! csrf_verify()) {
+        $message = '<p class="alert alert--error">Formular ungültig oder Sitzung abgelaufen (CSRF).</p>';
+    } else {
+    $reauth = admin_reauth_require_fresh_or_post();
+    if (! $reauth['ok']) {
+        $message = '<p class="alert alert--error">'.htmlspecialchars($reauth['error'], ENT_QUOTES, 'UTF-8').'</p>';
+        $adminReauthFresh = false;
+    } else {
+    $adminReauthFresh = admin_reauth_is_fresh();
+    $reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
+
     $requestedScript = basename((string)($_POST['script_name'] ?? ''));
     $scriptPath = __DIR__ . '/../../dbScripts/' . $requestedScript;
 
@@ -173,14 +188,39 @@ if (isset($_POST['run_script'])) {
     } else {
         $message = "<p>Fehler: Script nicht gefunden.</p>";
     }
+    }
+    }
 }
 
-admin_render_page('DB-Skripte', 'db_scripts', function () use ($availableScripts, $message) { ?>
+function admin_reauth_form_fields(bool $needs2fa): void {
+    ?>
+    <p class="muted">Zum Ausführen destruktiver Skripte: Passwort<?php echo $needs2fa ? ' und Authenticator-Code' : ''; ?> bestätigen (gültig <?php echo (int) (admin_reauth_ttl_seconds() / 60); ?> Min. nach Erfolg).</p>
+    <p>
+        <label>
+            Dein Admin-Passwort<br>
+            <input type="password" name="admin_confirm_password" autocomplete="current-password" required>
+        </label>
+    </p>
+    <?php if ($needs2fa): ?>
+    <p>
+        <label>
+            Authenticator-Code (6 Ziffern)<br>
+            <input type="text" name="admin_totp_code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required>
+        </label>
+    </p>
+    <?php endif;
+}
+
+admin_render_page('DB-Skripte', 'db_scripts', function () use ($availableScripts, $message, $adminReauthFresh, $adminReauthNeeds2fa, $reauthMinutesLeft) { ?>
     <div class="page-header">
         <h1>DB-Skripte</h1>
     </div>
 
     <p class="muted">Diese Skripte setzen Teile der Datenbank zurück und initialisieren sie neu. Vorsicht beim Ausführen!</p>
+
+    <?php if ($adminReauthFresh): ?>
+        <p class="alert">Admin-Bestätigung aktiv — noch ca. <?php echo (int) $reauthMinutesLeft; ?> Min. gültig. Danach erneut Passwort<?php echo $adminReauthNeeds2fa ? ' und 2FA-Code' : ''; ?> eingeben.</p>
+    <?php endif; ?>
 
     <ul class="script-list">
         <?php foreach ($availableScripts as $script): ?>
@@ -189,16 +229,7 @@ admin_render_page('DB-Skripte', 'db_scripts', function () use ($availableScripts
                 <div class="script-actions">
                     <button type="button" class="icon-button" data-dialog-open="script-info-<?php echo htmlspecialchars(basename($script)); ?>" aria-label="Skript anzeigen" title="Skript anzeigen">ℹ</button>
                     <?php $scriptName = basename($script); ?>
-                    <?php $scriptFields = admin_script_fields($scriptName); ?>
-                    <?php if (count($scriptFields) > 0): ?>
-                        <button type="button" data-dialog-open="script-run-<?php echo htmlspecialchars($scriptName); ?>">Ausführen</button>
-                    <?php else: ?>
-                        <form method="POST" onsubmit="return confirm('Achtung! Sind Sie sicher, dass Sie das Skript <?php echo htmlspecialchars($scriptName); ?> ausführen möchten? Dies kann Daten löschen.');">
-                            <?php echo csrf_field(); ?>
-                            <input type="hidden" name="script_name" value="<?php echo htmlspecialchars($scriptName); ?>">
-                            <button type="submit" name="run_script">Ausführen</button>
-                        </form>
-                    <?php endif; ?>
+                    <button type="button" data-dialog-open="script-run-<?php echo htmlspecialchars($scriptName); ?>">Ausführen</button>
                 </div>
 
                 <dialog id="script-info-<?php echo htmlspecialchars(basename($script)); ?>">
@@ -211,45 +242,49 @@ admin_render_page('DB-Skripte', 'db_scripts', function () use ($availableScripts
                     </div>
                 </dialog>
 
-                <?php if (count($scriptFields) > 0): ?>
-                    <dialog id="script-run-<?php echo htmlspecialchars($scriptName); ?>">
-                        <div class="dialog-card">
-                            <div class="dialog-header">
-                                <h2><?php echo htmlspecialchars($scriptName); ?> ausführen</h2>
-                                <button type="button" class="close-button" data-dialog-close>Schließen</button>
-                            </div>
-                            <form method="POST" onsubmit="return confirm('Achtung! Sind Sie sicher, dass Sie das Skript <?php echo htmlspecialchars($scriptName); ?> ausführen möchten? Dies kann Daten löschen.');">
-                                <?php echo csrf_field(); ?>
-                                <input type="hidden" name="script_name" value="<?php echo htmlspecialchars($scriptName); ?>">
-                                <?php foreach ($scriptFields as $field): ?>
-                                    <p>
-                                        <?php if (($field['type'] ?? '') === 'checkbox'): ?>
-                                            <label>
-                                                <input type="checkbox" name="<?php echo htmlspecialchars($field['name']); ?>" value="1" checked>
-                                                <?php echo htmlspecialchars($field['label']); ?>
-                                            </label>
-                                        <?php else: ?>
-                                            <label>
-                                                <?php echo htmlspecialchars($field['label']); ?><br>
-                                                <input
-                                                    type="<?php echo htmlspecialchars($field['type']); ?>"
-                                                    name="<?php echo htmlspecialchars($field['name']); ?>"
-                                                    <?php if (!empty($field['placeholder'])): ?>
-                                                        placeholder="<?php echo htmlspecialchars($field['placeholder']); ?>"
-                                                    <?php endif; ?>
-                                                    <?php if (!empty($field['required'])): ?>
-                                                        required
-                                                    <?php endif; ?>
-                                                >
-                                            </label>
-                                        <?php endif; ?>
-                                    </p>
-                                <?php endforeach; ?>
-                                <button type="submit" name="run_script">Ausführen</button>
-                            </form>
+                <?php $scriptFields = admin_script_fields($scriptName); ?>
+                <dialog id="script-run-<?php echo htmlspecialchars($scriptName); ?>">
+                    <div class="dialog-card">
+                        <div class="dialog-header">
+                            <h2><?php echo htmlspecialchars($scriptName); ?> ausführen</h2>
+                            <button type="button" class="close-button" data-dialog-close>Schließen</button>
                         </div>
-                    </dialog>
-                <?php endif; ?>
+                        <form method="POST" onsubmit="return confirm('Achtung! Sind Sie sicher, dass Sie das Skript <?php echo htmlspecialchars($scriptName); ?> ausführen möchten? Dies kann Daten löschen.');">
+                            <?php echo csrf_field(); ?>
+                            <input type="hidden" name="script_name" value="<?php echo htmlspecialchars($scriptName); ?>">
+                            <?php foreach ($scriptFields as $field): ?>
+                                <p>
+                                    <?php if (($field['type'] ?? '') === 'checkbox'): ?>
+                                        <label>
+                                            <input type="checkbox" name="<?php echo htmlspecialchars($field['name']); ?>" value="1" checked>
+                                            <?php echo htmlspecialchars($field['label']); ?>
+                                        </label>
+                                    <?php else: ?>
+                                        <label>
+                                            <?php echo htmlspecialchars($field['label']); ?><br>
+                                            <input
+                                                type="<?php echo htmlspecialchars($field['type']); ?>"
+                                                name="<?php echo htmlspecialchars($field['name']); ?>"
+                                                <?php if (!empty($field['placeholder'])): ?>
+                                                    placeholder="<?php echo htmlspecialchars($field['placeholder']); ?>"
+                                                <?php endif; ?>
+                                                <?php if (!empty($field['required'])): ?>
+                                                    required
+                                                <?php endif; ?>
+                                            >
+                                        </label>
+                                    <?php endif; ?>
+                                </p>
+                            <?php endforeach; ?>
+                            <?php if (! $adminReauthFresh) {
+                                admin_reauth_form_fields($adminReauthNeeds2fa);
+                            } else { ?>
+                                <p class="muted">Admin-Bestätigung aktiv (noch ca. <?php echo (int) $reauthMinutesLeft; ?> Min.) — Passwort nicht erneut nötig.</p>
+                            <?php } ?>
+                            <button type="submit" name="run_script">Ausführen</button>
+                        </form>
+                    </div>
+                </dialog>
             </li>
         <?php endforeach; ?>
     </ul>
