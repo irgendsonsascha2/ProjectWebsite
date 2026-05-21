@@ -151,15 +151,21 @@ if (!empty($roleOptions)) {
                 <a href="index.php?page=two_factor">jetzt notieren</a>.
             </p>
         <?php endif; ?>
-        <?php if ((string) ($_SESSION['two_factor_setup_secret'] ?? '') !== ''): ?>
-            <p class="field-hint">
-                2FA-Einrichtung läuft —
-                <a href="index.php?page=two_factor">fortsetzen</a>.
-            </p>
-        <?php endif; ?>
-        <p>
-            <a href="index.php?page=two_factor" class="button-link">2FA verwalten &amp; Erklärung</a>
-        </p>
+        <?php
+            $twoFactorActionLabel = $twoFactorEnabled ? '2FA verwalten' : '2FA einrichten';
+            $twoFactorHelpTitle = 'Was ist Zwei-Faktor-Authentifizierung?';
+        ?>
+        <div id="two-factor-help-content" hidden>
+            <?php require __DIR__.'/../includes/partials/two_factor_help_content.php'; ?>
+        </div>
+        <div class="account-2fa-actions">
+            <a href="index.php?page=two_factor" class="btn-primary"><?php echo htmlspecialchars($twoFactorActionLabel, ENT_QUOTES, 'UTF-8'); ?></a>
+            <div
+                data-react-help-button
+                data-help-title="<?php echo htmlspecialchars($twoFactorHelpTitle, ENT_QUOTES, 'UTF-8'); ?>"
+                data-help-source="two-factor-help-content"
+            ></div>
+        </div>
     </section>
 
     <hr class="account-divider">

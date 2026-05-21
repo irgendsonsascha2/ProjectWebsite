@@ -16,12 +16,38 @@ function fallbackCopy(text: string) {
   }
 }
 
+function CopyIcon() {
+  return (
+    <svg
+      className="h-5 w-5"
+      style={{
+        width: 16,
+        height: 16,
+        maxWidth: 16,
+        maxHeight: 16,
+        minWidth: 16,
+        minHeight: 16,
+        transform: 'translateX(0.5px)',
+        display: 'block',
+        flex: '0 0 auto',
+      }}
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path fill="currentColor" d="M9 9h10v10H9V9zm-4 6H4V4h11v1H5v10z"></path>
+    </svg>
+  );
+}
+
 export type CopyButtonProps = {
   text: string;
   label: string;
+  variant?: 'icon' | 'labeled';
+  buttonText?: string;
 };
 
-export function CopyButton({ text, label }: CopyButtonProps) {
+export function CopyButton({ text, label, variant = 'icon', buttonText }: CopyButtonProps) {
   const { success, error } = useToast();
   const [done, setDone] = React.useState(false);
 
@@ -47,42 +73,32 @@ export function CopyButton({ text, label }: CopyButtonProps) {
     }
   }, [text, label, success, error]);
 
+  const isLabeled = variant === 'labeled';
+  const displayText = buttonText ?? label;
+
   return (
     <button
       type="button"
       className={[
-        // Tailwind-first (mit harten Overrides gegen globale `button { width:100% }`)
-        '!w-9 !h-9 !p-0 !m-0 inline-flex items-center justify-center flex-none',
-        'rounded-full border border-[color:var(--border-subtle)] bg-[color:var(--surface-muted)] text-[color:var(--text-main)] shadow-sm',
-        'hover:bg-[color:var(--surface-hover)]',
-        'transition',
-        'focus-visible:outline-none',
-        done ? 'border-emerald-400 bg-emerald-50' : '',
+        'inline-flex items-center justify-center flex-none transition focus-visible:outline-none',
+        isLabeled ? 'btn-secondary !w-auto gap-2' : [
+          '!w-9 !h-9 !p-0 !m-0 rounded-full border shadow-sm',
+          'border-[color:var(--border-subtle)] bg-[color:var(--card-bg)] text-[color:var(--text-main)]',
+          'hover:bg-[color:var(--surface-hover)]',
+          done ? 'border-emerald-400' : '',
+        ].join(' '),
       ].join(' ')}
-      style={{ width: 36, height: 36, flex: '0 0 auto', maxWidth: 36, maxHeight: 36, minWidth: 36, minHeight: 36 }}
+      style={
+        isLabeled
+          ? { width: 'auto', maxWidth: 'none', minWidth: 0 }
+          : { width: 36, height: 36, flex: '0 0 auto', maxWidth: 36, maxHeight: 36, minWidth: 36, minHeight: 36 }
+      }
       aria-label={label}
       title={label}
       onClick={onCopy}
     >
-      <svg
-        className="h-5 w-5"
-        // Minimal kleiner + 1px optischer Shift, damit links/rechts gleich wirkt.
-        style={{
-          width: 16,
-          height: 16,
-          maxWidth: 16,
-          maxHeight: 16,
-          minWidth: 16,
-          minHeight: 16,
-          transform: 'translateX(0.5px)',
-          display: 'block',
-        }}
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-        focusable="false"
-      >
-        <path fill="currentColor" d="M9 9h10v10H9V9zm-4 6H4V4h11v1H5v10z"></path>
-      </svg>
+      {isLabeled ? <span>{displayText}</span> : null}
+      <CopyIcon />
     </button>
   );
 }

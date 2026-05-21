@@ -11,6 +11,7 @@ import { Card } from './ui/Card';
 import { useToast } from './ui/toast';
 import { CopyButton } from './ui/CopyButton';
 import { CopyField } from './ui/CopyField';
+import { HelpButton } from './ui/HelpButton';
 import { MediaLightbox } from './features/projectDetail/MediaLightbox';
 import { InviteCodes } from './features/account/InviteCodes';
 
@@ -46,16 +47,33 @@ function Bootstrap() {
       );
     });
 
+    const helpNodes = document.querySelectorAll<HTMLElement>('[data-react-help-button][data-help-source]');
+    helpNodes.forEach((node) => {
+      if ((node as any).__reactRoot) return;
+      const title = node.getAttribute('data-help-title') || 'Hilfe';
+      const sourceId = node.getAttribute('data-help-source') || '';
+      const root = createRoot(node);
+      (node as any).__reactRoot = root;
+      root.render(
+        <React.StrictMode>
+          <HelpButton title={title} sourceId={sourceId} />
+        </React.StrictMode>,
+      );
+    });
+
     const nodes = document.querySelectorAll<HTMLElement>('[data-react-copy-button][data-copy-text]');
     nodes.forEach((node) => {
       if ((node as any).__reactRoot) return;
       const text = node.getAttribute('data-copy-text') || '';
       const label = node.getAttribute('aria-label') || node.getAttribute('title') || 'Kopieren';
+      const variantAttr = node.getAttribute('data-copy-variant');
+      const variant = variantAttr === 'labeled' ? 'labeled' : 'icon';
+      const buttonText = node.getAttribute('data-copy-button-text') || undefined;
       const root = createRoot(node);
       (node as any).__reactRoot = root;
       root.render(
         <React.StrictMode>
-          <CopyButton text={text} label={label} />
+          <CopyButton text={text} label={label} variant={variant} buttonText={buttonText} />
         </React.StrictMode>,
       );
     });

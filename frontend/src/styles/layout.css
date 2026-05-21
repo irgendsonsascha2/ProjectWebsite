@@ -75,15 +75,153 @@
     color: var(--secondary-color);
   }
 
-  .account-2fa-summary .button-link {
-    @apply inline-block mt-2 rounded-lg px-4 py-2 text-sm font-medium no-underline;
-    background: var(--surface-muted);
+  /* 2FA / Account: gleiche Form wie Login (.container form button), nur Farbstufen */
+  a.btn-primary {
+    @apply inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full px-5 py-2 text-sm font-semibold no-underline;
+    min-height: 2.5rem;
+    margin: 0;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  .btn-primary,
+  a.btn-primary,
+  button.btn-primary,
+  .two-factor-page form button.btn-primary,
+  .two-factor-page form button[type='submit'].btn-primary {
+    background: var(--primary-color);
+    color: var(--text-on-primary);
+    border: 0;
+  }
+
+  .btn-primary:hover,
+  a.btn-primary:hover,
+  button.btn-primary:hover,
+  .two-factor-page form button.btn-primary:hover,
+  .two-factor-page form button[type='submit'].btn-primary:hover {
+    background: var(--primary-hover);
+    color: var(--text-on-primary);
+  }
+
+  .btn-secondary,
+  button.btn-secondary,
+  .two-factor-page form button.btn-secondary,
+  .two-factor-page form button[type='submit'].btn-secondary {
+    background: var(--card-bg);
+    color: var(--text-main);
     border: 1px solid var(--border-subtle);
+  }
+
+  .btn-secondary:hover,
+  button.btn-secondary:hover,
+  .two-factor-page form button.btn-secondary:hover,
+  .two-factor-page form button[type='submit'].btn-secondary:hover {
+    background: color-mix(in srgb, var(--primary-color) 8%, var(--card-bg) 92%);
+    border-color: color-mix(in srgb, var(--primary-color) 30%, var(--border-subtle) 70%);
     color: var(--text-main);
   }
 
-  .account-2fa-summary .button-link:hover {
-    border-color: var(--border-strong, var(--border-subtle));
+  .btn-muted,
+  button.btn-muted,
+  .two-factor-page form button.btn-muted,
+  .two-factor-page form button[type='submit'].btn-muted {
+    background: var(--card-bg);
+    color: var(--secondary-color);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .btn-muted:hover,
+  button.btn-muted:hover,
+  .two-factor-page form button.btn-muted:hover,
+  .two-factor-page form button[type='submit'].btn-muted:hover {
+    background: var(--surface-hover);
+    color: var(--text-main);
+    border-color: var(--border-subtle);
+  }
+
+  .btn-help-trigger {
+    @apply inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full text-sm font-semibold;
+    width: 2.5rem;
+    height: 2.5rem;
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+    padding: 0;
+    margin: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    background: var(--card-bg);
+    color: var(--secondary-color);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .btn-help-trigger:hover {
+    color: var(--text-main);
+    background: var(--surface-hover);
+    border-color: color-mix(in srgb, var(--primary-color) 20%, var(--border-subtle) 80%);
+  }
+
+  .btn-help-trigger:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+
+  .account-2fa-actions {
+    @apply mt-2 flex flex-wrap items-center gap-2;
+  }
+
+  .two-factor-page-title {
+    @apply mb-4 mt-0 text-2xl font-semibold;
+    color: var(--text-main);
+  }
+
+  .two-factor-panel-head {
+    @apply relative mb-3 flex items-start justify-between gap-3;
+    padding-right: 2.75rem;
+  }
+
+  .two-factor-panel-head h2 {
+    @apply m-0 flex-1;
+  }
+
+  .two-factor-panel-head [data-react-help-button] {
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+
+  .two-factor-help-modal p {
+    @apply my-2 text-sm leading-relaxed;
+    color: var(--text-main);
+  }
+
+  .two-factor-help-modal p:first-child {
+    @apply mt-0;
+  }
+
+  .two-factor-help-modal .two-factor-steps {
+    @apply my-2 list-decimal pl-6 text-sm;
+    color: var(--text-main);
+  }
+
+  .two-factor-help-modal .field-hint {
+    @apply text-xs;
+  }
+
+  .two-factor-backup-copy {
+    @apply mb-3;
+  }
+
+  .two-factor-page form button.danger,
+  .two-factor-page form button[type='submit'].danger {
+    background-image: var(--danger-fab-bg);
+    color: var(--danger-fab-fg);
+    border: 0;
+  }
+
+  .two-factor-page form button.danger:hover,
+  .two-factor-page form button[type='submit'].danger:hover {
+    background-image: var(--danger-fab-bg-hover);
+    color: var(--danger-fab-fg);
   }
 
   .alert {

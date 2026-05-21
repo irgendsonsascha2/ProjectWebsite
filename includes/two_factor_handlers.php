@@ -3,6 +3,51 @@
 use MongoDB\BSON\UTCDateTime;
 
 /**
+ * Startet die 2FA-Einrichtung (Secret in Session, Backup-Anzeige zurücksetzen).
+ */
+function two_factor_begin_setup(): string
+{
+    require_once __DIR__.'/two_factor.php';
+
+    $secret = two_factor_generate_secret();
+    $_SESSION['two_factor_setup_secret'] = $secret;
+    unset($_SESSION['two_factor_display_backup_codes']);
+
+    return $secret;
+}
+
+/**
+ * Ob beim Laden der 2FA-Seite automatisch ein Setup-Secret erzeugt werden soll.
+ */
+function two_factor_should_auto_begin(string $userId): bool
+{
+    require_once __DIR__.'/two_factor.php';
+
+    $accountUser = $userId !== '' ? two_factor_find_user_by_id($userId) : null;
+    if (two_factor_user_enabled($accountUser)) {
+        return false;
+    }
+
+    $pending = $_SESSION['two_factor_display_backup_codes'] ?? null;
+    if (is_array($pending) && count(array_filter($pending, 'is_string')) > 0) {
+        return false;
+    }
+
+    if ((string) ($_SESSION['two_factor_setup_secret'] ?? '') !== '') {
+        return false;
+    }
+
+    return true;
+}
+
+function two_factor_maybe_auto_begin(string $userId): void
+{
+    if (two_factor_should_auto_begin($userId)) {
+        two_factor_begin_setup();
+    }
+}
+
+/**
  * POST-Verarbeitung für die 2FA-Seite (pages/two_factor.php).
  *
  * @return array{
@@ -40,9 +85,7 @@ function two_factor_handle_post(string $userId): array
     }
 
     if (isset($_POST['two_factor_begin'])) {
-        $twoFactorSetupSecret = two_factor_generate_secret();
-        $_SESSION['two_factor_setup_secret'] = $twoFactorSetupSecret;
-        unset($_SESSION['two_factor_display_backup_codes']);
+        $twoFactorSetupSecret = two_factor_begin_setup();
         $displayBackupCodes = null;
         $message = '✅ QR-Code bereit — scanne ihn mit deiner Authenticator-App und bestätige mit einem 6-stelligen Code.';
         $messageClass = 'alert alert--success';

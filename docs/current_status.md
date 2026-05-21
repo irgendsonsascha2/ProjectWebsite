@@ -61,7 +61,7 @@ Umgesetzt in der Codebasis (lokal testbar):
 - Admin: CSRF auf allen POST-Formularen (inkl. Rollen, Berechtigungen, Einstellungen, Home-Profil, Legal); CSRF-Redirect zurück auf Admin-URL.
 - Laravel `User`: kein `MustVerifyEmail`; `email_verified_at` wird bei Registrierung gesetzt.
 
-- Optionales TOTP-2FA: eigene Seite `pages/two_factor.php` (Erklärung, QR), Login nur `step=2fa`; Account verlinkt nur.
+- Optionales TOTP-2FA: `pages/two_factor.php` (Auto-Start QR-Einrichtung, Verwaltung); Login nur `step=2fa`; Account/2FA: `?`-Hilfe als Modal; Backup-Codes kopierbar.
 
 Offen: Admin-Re-Auth, Betrieb/Mongo-Checks — **`docs/next_session_plan.md`**.
 

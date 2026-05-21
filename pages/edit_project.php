@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/bootstrap.php';
+require_once __DIR__ . '/../includes/project_return.php';
 
 $isLoggedIn = authz_is_logged_in();
 
@@ -11,22 +12,12 @@ if (!$projectId) {
     die("Projekt nicht gefunden.");
 }
 
-$returnTo = 'index.php';
+$defaultReturnTo = 'index.php?page=project_detail&id='.preg_replace('/[^a-fA-F0-9]/', '', (string) $projectId);
+$returnTo = $defaultReturnTo;
 if (!empty($_POST['return_to'])) {
-    $candidate = $_POST['return_to'];
-    $candidatePath = parse_url($candidate, PHP_URL_PATH);
-    $candidateQuery = parse_url($candidate, PHP_URL_QUERY);
-    $candidateFile = $candidatePath ? basename($candidatePath) : '';
-    if (in_array($candidateFile, ['index.php', ''], true)) {
-        $returnTo = 'index.php' . ($candidateQuery ? ('?' . $candidateQuery) : '');
-    }
+    $returnTo = project_safe_return_to((string) $_POST['return_to'], $defaultReturnTo);
 } elseif (!empty($_SERVER['HTTP_REFERER'])) {
-    $refererPath = parse_url($_SERVER['HTTP_REFERER'], PHP_URL_PATH);
-    $refererQuery = parse_url($_SERVER['HTTP_REFERER'], PHP_URL_QUERY);
-    $refererFile = $refererPath ? basename($refererPath) : '';
-    if (in_array($refererFile, ['index.php', ''], true)) {
-        $returnTo = 'index.php' . ($refererQuery ? ('?' . $refererQuery) : '');
-    }
+    $returnTo = project_safe_return_to((string) $_SERVER['HTTP_REFERER'], $defaultReturnTo);
 }
 
 try {
@@ -478,8 +469,9 @@ if ($isAjax) {
         }
 
         const returnToInput = document.getElementById('return_to');
-        if (returnToInput && document.referrer) {
-            returnToInput.value = document.referrer;
+        if (returnToInput) {
+            const defaultReturn = <?php echo json_encode($defaultReturnTo); ?>;
+            returnToInput.value = document.referrer || defaultReturn || returnToInput.value || defaultReturn;
         }
 
         const mediaSection = document.getElementById('media-upload');

@@ -200,6 +200,13 @@ if ($postBodyError !== null) {
 
 // --- LOGIK: DRAFT CLEANUP ---
 if (isset($_POST['cleanup_draft']) && $_POST['cleanup_draft'] === '1') {
+    if (! empty($_SESSION['draft_publish_in_progress'])) {
+        if (!headers_sent()) {
+            header('Content-Type: application/json; charset=utf-8');
+        }
+        echo json_encode(['ok' => true, 'skipped' => true]);
+        exit();
+    }
     if ($draftObjectId && $draftProject) {
         delete_project_media_files($draftProject);
         $db->projects->deleteOne(['_id' => $draftObjectId]);
@@ -358,6 +365,7 @@ function has_error_message($message) {
 
 // --- LOGIK: PROJEKT ERSTELLEN ---
 if (isset($_POST['create_project'])) {
+    $_SESSION['draft_publish_in_progress'] = '1';
     $title = trim($_POST['title']);
     $description = trim($_POST['description']);
     $rawTags = [];
@@ -405,16 +413,20 @@ if (isset($_POST['create_project'])) {
                 $updateData['thumbnail_type'] = $thumbType ?? 'image';
             }
             try {
-                $db->projects->updateOne(
-                    ['_id' => $draftObjectId],
+                $publishResult = $db->projects->updateOne(
+                    ['_id' => $draftObjectId, 'is_draft' => true],
                     ['$set' => $updateData]
                 );
-                $publishedId = $draftObjectId;
-                unset($_SESSION['draft_project_id']);
-                $draftProject = null;
-                $draftObjectId = null;
-                header("Location: index.php?page=project_detail&id=" . urlencode((string)$publishedId));
-                exit();
+                if ($publishResult->getMatchedCount() < 1) {
+                    $message = '❌ Entwurf konnte nicht veröffentlicht werden (nicht gefunden oder bereits gespeichert).';
+                } else {
+                    $publishedId = (string) $draftObjectId;
+                    unset($_SESSION['draft_project_id'], $_SESSION['draft_publish_in_progress']);
+                    $draftProject = null;
+                    $draftObjectId = null;
+                    header('Location: index.php?page=project_detail&id='.urlencode($publishedId));
+                    exit();
+                }
             } catch (Exception $e) {
                 $message = "❌ Datenbankfehler: " . $e->getMessage();
             }
@@ -436,8 +448,9 @@ if (isset($_POST['create_project'])) {
 
             try {
                 $insertResult = $db->projects->insertOne($document);
-                $newId = $insertResult->getInsertedId();
-                header("Location: index.php?page=project_detail&id=" . urlencode((string)$newId));
+                $newId = (string) $insertResult->getInsertedId();
+                unset($_SESSION['draft_publish_in_progress']);
+                header('Location: index.php?page=project_detail&id='.urlencode($newId));
                 exit();
             } catch (Exception $e) {
                 foreach ($uploadedFiles as $file) {
@@ -453,6 +466,7 @@ if (isset($_POST['create_project'])) {
     if (!empty($uploadErrors)) {
         $message .= "<br>" . implode("<br>", $uploadErrors);
     }
+    unset($_SESSION['draft_publish_in_progress']);
 }
 
 if ($isAjax) {
@@ -474,7 +488,7 @@ if ($isAjax) {
         <div class="alert"><?php echo $message; ?></div>
     <?php endif; ?>
 
-    <form method="POST" action="<?php echo htmlspecialchars($createActionUrl); ?>" enctype="multipart/form-data">
+    <form method="POST" action="<?php echo htmlspecialchars($createActionUrl); ?>" enctype="multipart/form-data" id="create-project-form">
         <label for="title">Projekttitel</label>
         <input type="text" id="title" name="title" required>
 
@@ -507,7 +521,17 @@ if ($isAjax) {
         const mediaActionUrl = <?php echo json_encode($createActionUrl); ?>;
         let isSubmitting = false;
 
-        document.addEventListener('submit', function () {
+        const createProjectForm = document.getElementById('create-project-form');
+        if (createProjectForm) {
+            createProjectForm.addEventListener('submit', function () {
+                isSubmitting = true;
+            });
+        }
+        document.addEventListener('submit', function (event) {
+            const form = event.target;
+            if (form instanceof HTMLFormElement && form.dataset.ajax === 'true') {
+                return;
+            }
             isSubmitting = true;
         }, true);
 
@@ -641,6 +665,9 @@ if ($isAjax) {
                 return;
             }
             const data = new URLSearchParams({ cleanup_draft: '1' });
+            if (window.PORTFOLIO_CSRF) {
+                data.set('_token', window.PORTFOLIO_CSRF);
+            }
             navigator.sendBeacon(
                 cleanupUrl,
                 new Blob([data.toString()], { type: 'application/x-www-form-urlencoded' })

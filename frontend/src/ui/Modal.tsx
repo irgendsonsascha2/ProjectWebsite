@@ -37,7 +37,6 @@ export function Modal({
     if (!open) return;
     const el = dialogRef.current;
     if (!el) return;
-    // Focus first focusable element or the dialog itself.
     const focusable = el.querySelector<HTMLElement>(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
     );
@@ -46,82 +45,54 @@ export function Modal({
 
   const labeledBy = useMemo(() => (title ? 'modal-title' : undefined), [title]);
 
+  const onBackdropMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   if (!open) return null;
 
   const node = (
-    <div className="fixed inset-0 z-[20000]" role="presentation">
+    <div
+      className="site-modal-backdrop"
+      role="presentation"
+      onMouseDown={onBackdropMouseDown}
+    >
       <div
-        className="absolute inset-0 bg-slate-950/60"
-        onMouseDown={onClose}
-        aria-hidden="true"
-      />
-      <div className="absolute inset-0 flex items-center justify-center p-3">
-        <div
-          ref={dialogRef}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={labeledBy}
-          tabIndex={-1}
-          onMouseDown={(e) => e.stopPropagation()}
-          className={[
-            'w-full',
-            maxWidthClassName,
-            'rounded-2xl border border-slate-200 bg-white shadow-xl',
-            'dark:border-slate-800 dark:bg-slate-950',
-            'outline-none',
-          ].join(' ')}
-        >
-          {(title || showCloseButton) && (
-            <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
-              {title ? (
-                <div id="modal-title" className="text-sm font-semibold text-slate-900 dark:text-slate-50">
-                  {title}
-                </div>
-              ) : (
-                <span />
-              )}
-              {showCloseButton ? (
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="rounded-full p-1 text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-slate-50"
-                  aria-label="Schließen"
-                  title="Schließen"
-                >
-                  <svg
-                    className="h-5 w-5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M18 6L6 18" />
-                    <path d="M6 6l12 12" />
-                  </svg>
-                </button>
-              ) : null}
-            </div>
-          )}
-          <div
-            className={['px-4 py-4 text-sm text-slate-700 dark:text-slate-200', bodyClassName]
-              .filter(Boolean)
-              .join(' ')}
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={labeledBy}
+        tabIndex={-1}
+        onMouseDown={(e) => e.stopPropagation()}
+        className={['site-modal', maxWidthClassName].filter(Boolean).join(' ')}
+      >
+        {showCloseButton ? (
+          <button
+            type="button"
+            className="site-modal-close"
+            onClick={onClose}
+            aria-label="Schließen"
+            title="Schließen"
           >
-            {children}
-          </div>
-          {footer ? (
-            <div className="flex items-center justify-end gap-2 border-t border-slate-200 px-4 py-3 dark:border-slate-800">
-              {footer}
+            ×
+          </button>
+        ) : null}
+        {title ? (
+          <div className="site-modal__header">
+            <div id="modal-title" className="site-modal__title">
+              {title}
             </div>
-          ) : null}
+          </div>
+        ) : null}
+        <div className={['site-modal__body', bodyClassName].filter(Boolean).join(' ')}>
+          {children}
         </div>
+        {footer ? <div className="site-modal__footer">{footer}</div> : null}
       </div>
     </div>
   );
 
   return typeof document !== 'undefined' ? createPortal(node, document.body) : node;
 }
-
