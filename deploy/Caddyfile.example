@@ -1,0 +1,21 @@
+# Beispiel: Caddy v2 — TLS automatisch, PHP-FPM
+# Anpassen: Domains, root-Pfad
+
+example.com {
+    root * /var/www/projectwebsite
+    encode gzip
+
+    @blocked path /content/* /logs/* /dbScripts/*
+    respond @blocked 404
+
+    php_fastcgi unix//run/php-fpm/www.sock
+    file_server
+    try_files {path} {path}/ /index.php?{query}
+}
+
+# auth.example.com {
+#     root * /var/www/projectwebsite/laravel/public
+#     php_fastcgi unix//run/php-fpm/www.sock
+#     file_server
+#     try_files {path} {path}/ /index.php?{query}
+# }

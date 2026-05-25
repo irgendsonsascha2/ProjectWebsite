@@ -427,13 +427,13 @@ Technik:
 
 - Collection: `registration_code_requests` (Token + Metadaten, Verifikation/Freigabe)
 - Admin-Seite: `pages/admin/registration_requests.php`
-- Mailversand: Standard PHP `mail()`; optional **lokales SMTP** ohne TLS (für z. B. MailHog) über Umgebungsvariablen:
-  - `MAIL_SMTP_HOST` (z. B. `127.0.0.1`) — wenn gesetzt, wird statt `mail()` direkt per SMTP (Plain, kein Auth/TLS) gesendet
-  - `MAIL_SMTP_PORT` (z. B. `1025` für MailHog; Default ohne Variable: `25`)
-  - `MAIL_FROM_EMAIL` (Absender)
-  - `MAIL_LOG_REDACT_SECRETS=1` (Default): Bestätigungs-Token und Registrierungscodes erscheinen in `logs/mail.log` **nur in redigierter Form**; `=0` schreibt den vollen Text (nur in vertrauenswürdiger Dev-Umgebung)
-- Für Debug schreibt die Mail-Hilfe weiterhin best-effort nach `logs/mail.log` inkl. `via: mail()` bzw. `via: smtp://…`.
-- **Hinweis:** Ohne `MAIL_SMTP_HOST` und ohne lokalen MTA liefert `mail()` typischerweise `sent: false` — dann bleibt `mail.log` die Quelle für Test-URLs. Für einen lokalen **Web-UI-Posteingang** (MailHog, MailDev o. ä.): Container starten, `MAIL_SMTP_HOST`/`MAIL_SMTP_PORT` in `.env.local` setzen. Offene TODOs/Backlog: `docs/local_next_steps.md`.
+- Mailversand: Standard PHP `mail()`; optional SMTP über `includes/mail.php`:
+  - `MAIL_SMTP_HOST`, `MAIL_SMTP_PORT` (z. B. MailHog `127.0.0.1:1025` ohne Verschlüsselung)
+  - `MAIL_SMTP_ENCRYPTION`: `tls` (STARTTLS, typ. Port 587), `ssl` (465) oder `none` (nur lokal)
+  - `MAIL_SMTP_USERNAME` / `MAIL_SMTP_PASSWORD` (Provider-Auth)
+  - `MAIL_FROM_EMAIL`, `MAIL_LOG_REDACT_SECRETS=1` (Default: Token/Codes in `logs/mail.log` redigiert)
+- **Produktion:** Bei `APP_ENV=production` ist Plain-SMTP (`encryption=none`) blockiert; Vorlage [`.env.production.example`](.env.production.example), Prüfung `make prod-env-check` / Admin **Deploy-Status**.
+- Lokal ohne SMTP: `mail.log` enthält Test-URLs. MailHog: `make mailhog` oder `make services-up`, siehe `docs/deployment.md`.
 
 Die Auth-/Invite-Funktionen umfassen:
 
@@ -593,7 +593,7 @@ index.php?page=project_grid&debug=1
 
 - Die Anwendung ist stark auf lokale Entwicklung mit einer lokalen MongoDB-Instanz ausgelegt.
 - Konfiguration wie Datenbank-URI oder Admin-Seed ist derzeit im Code fest hinterlegt.
-- Es gibt aktuell keine getrennte Produktionskonfiguration oder `.env`-Struktur.
+- Produktions-Vorlage: [`.env.production.example`](.env.production.example) (auf dem Server als `.env.local`); Deploy-Hilfen: `make deploy-check`, `make deploy-server`, [docs/deployment.md](docs/deployment.md).
 - Die Anwendung nutzt kein Framework und keine API-Schicht; Rendering und Logik liegen direkt in den PHP-Seiten.
 
 ## Empfohlene nächste Dokumente

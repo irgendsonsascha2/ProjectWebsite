@@ -246,6 +246,15 @@ if (!function_exists('deploy_status_collect_checks')) {
             $migrationCheck['hint']
         );
 
+        $mailCheck = deploy_status_mail_smtp_check();
+        $checks[] = deploy_status_check(
+            'mail_smtp',
+            'E-Mail (SMTP / TLS)',
+            $mailCheck['status'],
+            $mailCheck['detail'],
+            $mailCheck['hint']
+        );
+
         return $checks;
     }
 }
@@ -371,6 +380,63 @@ if (!function_exists('deploy_status_migration_tracking_check')) {
             'status' => 'warn',
             'detail' => $applied.' von '.$total.' protokolliert; nicht protokolliert: '.$pendingList,
             'hint' => 'Nur Skripte ausführen, die du brauchst; danach erscheinen sie unter DB-Skripte als „Angewendet“',
+        ];
+    }
+}
+
+if (!function_exists('deploy_status_mail_smtp_check')) {
+    /**
+     * @return array{status: string, detail: string, hint: string}
+     */
+    function deploy_status_mail_smtp_check(): array
+    {
+        require_once __DIR__.'/mail.php';
+
+        $host = trim((string) (getenv('MAIL_SMTP_HOST') ?: ''));
+        $encryption = function_exists('mail_smtp_encryption') ? mail_smtp_encryption() : 'none';
+        $isProd = app_is_production();
+
+        if ($host === '') {
+            if ($isProd) {
+                return [
+                    'status' => 'warn',
+                    'detail' => 'MAIL_SMTP_HOST nicht gesetzt — Registrierung/Invite nutzen mail() oder Laravel',
+                    'hint' => 'SMTP mit MAIL_SMTP_ENCRYPTION=tls setzen oder Laravel MAIL_* konfigurieren',
+                ];
+            }
+
+            return [
+                'status' => 'ok',
+                'detail' => 'Kein SMTP (lokal: MailHog optional oder mail.log)',
+                'hint' => '',
+            ];
+        }
+
+        $port = (int) (getenv('MAIL_SMTP_PORT') ?: 25);
+        $user = trim((string) (getenv('MAIL_SMTP_USERNAME') ?: ''));
+        $detail = $host.':'.$port.', Verschlüsselung='.$encryption
+            .($user !== '' ? ', Auth=ja' : ', Auth=nein');
+
+        if ($isProd && $encryption === 'none') {
+            return [
+                'status' => 'fail',
+                'detail' => $detail.' — Plain SMTP in Produktion nicht erlaubt',
+                'hint' => 'MAIL_SMTP_ENCRYPTION=tls (Port 587) oder ssl (Port 465); siehe .env.production.example',
+            ];
+        }
+
+        if ($isProd && $user === '') {
+            return [
+                'status' => 'warn',
+                'detail' => $detail.' — kein MAIL_SMTP_USERNAME (Provider verlangt oft Auth)',
+                'hint' => 'MAIL_SMTP_USERNAME und MAIL_SMTP_PASSWORD setzen',
+            ];
+        }
+
+        return [
+            'status' => 'ok',
+            'detail' => $detail,
+            'hint' => $isProd ? '' : 'Lokal: encryption=none für MailHog OK',
         ];
     }
 }

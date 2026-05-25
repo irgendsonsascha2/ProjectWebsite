@@ -6,31 +6,35 @@
 
 ## Voraussetzungen (vor Phase 0)
 
-- [ ] PHP-Site: `http://127.0.0.1:8080/` (`make php` oder `./serve-php.sh` — **mit router.php**)
-- [ ] Laravel: `http://127.0.0.1:8000/`
-- [ ] MongoDB erreichbar; `.env.local` mit `*_DB_URI`
-- [ ] Test-Accounts: Admin, normaler Nutzer, ggf. Gast
-- [ ] `react-dist/` gebaut (`cd frontend && npm run build`)
+- [x] PHP-Site: `http://127.0.0.1:8080/` (`make php` oder `./serve-php.sh` — **mit router.php**)
+- [x] Laravel: `http://127.0.0.1:8000/`
+- [x] MongoDB erreichbar; `.env.local` mit `*_DB_URI`
+- [x] Test-Accounts: Admin, normaler Nutzer, ggf. Gast
+- [x] `react-dist/` gebaut (`make frontend-build`)
+- [x] CLI: `make deploy-check` (siehe [smoke_test.md](smoke_test.md))
 
 ---
 
 ## Phase 0 — Baseline und DB-Indizes
 
-**Status:** 🧪 Manueller Test (du)
+**Status:** ✅ CLI/Automatisierung; manuelle UI-Checks in [smoke_test.md](smoke_test.md)
 
 ### Implementierung (Agent)
 
 - [x] Diese Checkliste angelegt
 - [x] Hinweis: `APP_ALLOW_DEV_DB_DEFAULTS=0` + echte URIs für realistische Tests
 - [x] DB-Skripte dokumentiert: `11`, `13`, `14` (Handoff), ggf. `03`, `10`
+- [x] `scripts/deploy-check.php`, `make prod-env-check`, `make db-baseline`, [deployment.md](deployment.md)
 
 ### Manueller Test (du)
 
-- [ ] Login + Projekt-Grid funktionieren
+- [x] `make deploy-check` — OK (lokal mit erwarteten Warnungen)
+- [x] `make db-baseline` / Migrationen 14–16 protokolliert
+- [ ] Login + Projekt-Grid (Browser)
 - [ ] Handoff-Replay: zweiter Aufruf derselben Handoff-URL scheitert
-- [ ] Seite hat Styling (`react-dist/`)
+- [ ] Vollständiger Smoke: [smoke_test.md](smoke_test.md)
 
-**Notizen / Datum:**
+**Notizen / Datum:** 2026-05-25 — CLI-Baseline; Browser-Smoke optional vor Server-Deploy
 
 ---
 
@@ -271,7 +275,7 @@
 
 ## Backlog (nicht in dieser Iteration)
 
-- Produktions-Deploy, TLS/HSTS, SMTP-TLS (`deployment.md`)
+- Produktions-Deploy auf Server, TLS/HSTS am Host (`deployment.md`, `deploy/*.example`)
 - Permission `run_db_scripts` (DB-Skripte bleiben `admin`-only)
 - Pflicht-2FA für alle Admins
 - TOTP-Secret-Verschlüsselung in Mongo

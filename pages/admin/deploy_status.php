@@ -19,7 +19,7 @@ admin_render_page('Deploy-Status', 'deploy_status', function () use ($checks, $f
         <h1>Deploy-Status</h1>
     </div>
 
-    <p class="muted">Read-only-Checkliste für Laufzeit und Deployment. Es werden keine Updates ausgeführt.</p>
+    <p class="muted">Read-only-Checkliste für Laufzeit und Deployment. CLI: <code>make deploy-check</code> / <code>make prod-env-check</code>. Es werden keine Updates ausgeführt.</p>
 
     <?php if ($failCount > 0): ?>
         <p class="alert alert--error"><?php echo (int) $failCount; ?> Prüfung(en) fehlgeschlagen.</p>

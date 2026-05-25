@@ -1,4 +1,4 @@
-.PHONY: help dev php frontend-build frontend-dev mailhog laravel services-up services-down services-logs
+.PHONY: help dev php frontend-build frontend-dev mailhog laravel services-up services-down services-logs deploy-check prod-env-check db-baseline deploy-server
 
 HOST ?= 127.0.0.1
 PHP_PORT ?= 8080
@@ -21,6 +21,10 @@ help:
 	@echo "  make services-down  Docker-Dienste stoppen"
 	@echo "  make services-logs  Logs der Compose-Dienste"
 	@echo "  make laravel        Laravel Test-Server (Port 8000)"
+	@echo "  make deploy-check   Deploy-Status-Prüfungen (CLI)"
+	@echo "  make prod-env-check Produktions-Overlay + deploy-check"
+	@echo "  make db-baseline    DB-Skripte 16/15/14 idempotent (CLI)"
+	@echo "  make deploy-server  Build + Composer (Server-Update)"
 	@echo ""
 	@echo "Variablen (optional überschreiben):"
 	@echo "  HOST=$(HOST)  PHP_PORT=$(PHP_PORT)  VITE_PORT=$(VITE_PORT)"
@@ -76,4 +80,19 @@ services-logs:
 
 laravel:
 	cd laravel && ./serve-test.sh
+
+deploy-check:
+	php scripts/deploy-check.php
+
+prod-env-check:
+	@bash scripts/prod-env-check.sh
+
+db-baseline:
+	php scripts/ensure-db-baseline.php
+
+deploy-server: frontend-build
+	composer install --no-dev --optimize-autoloader
+	cd laravel && composer install --no-dev --optimize-autoloader && php artisan config:cache
+	@echo ""
+	@echo "Deploy-Build fertig. Danach: make deploy-check, Admin DB-Skripte, docs/deployment.md"
 

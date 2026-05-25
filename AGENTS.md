@@ -93,6 +93,12 @@ Damit die klassische PHP-Seite sichtbares Styling (Tailwind/React-Bundle aus `re
   - Admin-Dashboard (DB-Konfig-Überblick, Metriken)
 - `pages/admin/db_scripts.php`
   - Ausführung der destruktiven `dbScripts/`-Skripte
+- `pages/admin/deploy_status.php` / `includes/deploy_status.php`
+  - Read-only Deploy-Checkliste; CLI: `make deploy-check`, `make prod-env-check`
+- `scripts/deploy-check.php`, `scripts/ensure-db-baseline.php`, `scripts/run-db-script.php`
+  - Deploy-Prüfungen und idempotente DB-Skripte 14/15/16 ohne Admin-UI
+- `.env.production.example`, `deploy/nginx.example.conf`, `deploy/Caddyfile.example`
+  - Vorlagen für Server-Env und Reverse-Proxy (siehe `docs/deployment.md`)
 - `router.php` / `media.php` / `includes/media_serve.php`
   - Geschützte Auslieferung von `content/images`, `content/videos` und `content/tmp` (Entwurfs-/Bearbeitungs-Medien)
 - `includes/admin_reauth.php`

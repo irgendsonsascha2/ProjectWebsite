@@ -1,10 +1,10 @@
 # Deployment
 
-**Arbeitsweise:** Bis auf Weiteres wird nur **lokal** entwickelt. Dieses Dokument beschreibt die lokale Infrastruktur (Docker) und einen **Entwurf** für späteres Hosting — ohne verbindlichen Produktions-Rollout.
+Lokale Infrastruktur (Docker) und Anleitung für Server/Staging. Vor dem ersten externen Setup: [smoke_test.md](smoke_test.md), `make prod-env-check`, Checkliste unten.
 
 ## Lokal: Docker-Dienste
 
-MongoDB und MailHog lassen sich per Compose starten; PHP und Laravel laufen weiter auf dem Host (Ports wie in `AGENTS.md` / `Makefile`).
+MongoDB und MailHog lassen sich per Compose starten; PHP und Laravel laufen auf dem Host (Ports wie in `AGENTS.md` / `Makefile`).
 
 ```bash
 docker compose up -d
@@ -14,56 +14,97 @@ docker compose up -d
 | Dienst   | Port (Host) | Nutzung |
 |----------|-------------|---------|
 | MongoDB  | 127.0.0.1:27017 | Nur Loopback (siehe `docker-compose.yml`) |
-| MailHog SMTP | 127.0.0.1:1025 | `MAIL_SMTP_HOST=127.0.0.1`, `MAIL_SMTP_PORT=1025` |
+| MailHog SMTP | 127.0.0.1:1025 | `MAIL_SMTP_HOST=127.0.0.1`, `MAIL_SMTP_PORT=1025` (ohne TLS) |
 | MailHog UI   | 127.0.0.1:8025 | http://127.0.0.1:8025/ |
 
-**Nach erstem Mongo-Start:** Datenbank und Mongo-Benutzer wie gewohnt über Admin **DB-Skripte** (`03_db_init_mongo_roles.php`, ggf. `db_init_master.php`) anlegen. Ohne Auth in der URI funktioniert die App erst nach dieser Initialisierung.
-
 ```bash
-make frontend-build   # einmalig / nach CSS-Änderung
+make frontend-build
 make php              # http://127.0.0.1:8080/
-make laravel          # http://127.0.0.1:8000/ (Passwort-Reset)
+make laravel          # http://127.0.0.1:8000/
+make deploy-check     # CLI wie Admin → Deploy-Status
+make prod-env-check   # APP_ENV=production-Overlay (siehe Hinweise unten)
+make db-baseline      # Skripte 16, 15, 14 per CLI (idempotent)
 ```
 
-Stoppen: `docker compose down` bzw. `make services-down`. Daten bleiben im Volume `mongo_data`.
+Stoppen: `docker compose down` bzw. `make services-down`.
 
-## Lokal ohne Docker
+## Produktions-Env (Dry-Run lokal)
 
-- MongoDB: eigene Installation oder Remote-URI in `.env.local`
-- Mail: `make mailhog` (einzelner Container) oder System-`mail()`
+1. Vorlage: [`.env.production.example`](../.env.production.example) — auf dem Server als `.env.local` anlegen (nicht committen).
+2. Optional lokal: Kopie nach `.env.production.local` und Werte anpassen; `prod-env-check.sh` lädt diese Datei zusätzlich.
+3. Ausführen:
 
-Siehe `Makefile`, `README.md`, `docs/local_next_steps.md`.
+```bash
+make prod-env-check
+```
 
-## Später: Server + DynDNS (Entwurf)
+**Erwartung lokal:** Oft 1–2 rote Prüfungen, solange `laravel/.env` noch `APP_DEBUG=true` und MailHog ohne TLS läuft — auf dem Server beheben. Mongo-URIs und `APP_ALLOW_DEV_DB_DEFAULTS=0` sollten grün sein.
 
-Noch **nicht** umgesetzt im Repo. Grober Ablauf, wenn ein eigener Server bereitsteht:
+## E-Mail in Produktion
 
-1. **DNS:** DynDNS (oder statische IP) auf den Server; Subdomain für die Site und optional für Laravel-Auth.
-2. **TLS:** Reverse-Proxy (z. B. Caddy oder nginx) mit Let's Encrypt; `SESSION_SECURE=1`, konsistente Basis-URL (`LEGACY_SITE_URL`, `APP_URL`).
-3. **Prozessmodell (Variante A — einfach):** PHP-FPM + nginx für Projektroot; Laravel als zweite Site oder Subpath; MongoDB nur intern erreichbar.
-4. **Prozessmodell (Variante B — Container):** Compose mit `mongodb`, App-Image (PHP), Laravel-Image; Secrets nur in `.env` auf dem Server, nicht im Git.
-5. **Secrets:** `HANDOFF_SECRET`, Mongo-Passwörter, SMTP — getrennt von Dev; keine `APP_ALLOW_DEV_DB_DEFAULTS` in Produktion.
-6. **Medien:** `content/images`, `content/videos`, `content/tmp` persistent mounten; **kein** direkter Static-Serve unter `/content/` — nur App-Proxy (`media.php` / Rewrite). Backups für Mongo + Medien.
-7. **Logs:** Verzeichnis `logs/` nicht im öffentlichen Document Root (oder `Require all denied`); Rate-Limit- und Fehlerdateien enthalten IPs.
-8. **Mail:** SMTP mit TLS (kein MailHog); Laravel und/oder `includes/mail.php` auf denselben Provider.
+Klassische PHP-App (`includes/mail.php`):
 
-Offene Punkte vor Go-Live: Firewall (nur 80/443 öffentlich), Rate-Limits, Log-Rotation, Monitoring.
+| Variable | Bedeutung |
+|----------|-----------|
+| `MAIL_SMTP_HOST` | SMTP-Server |
+| `MAIL_SMTP_PORT` | z. B. `587` (STARTTLS) oder `465` (SSL) |
+| `MAIL_SMTP_ENCRYPTION` | `tls`, `ssl` oder `none` (nur lokal/MailHog) |
+| `MAIL_SMTP_USERNAME` / `MAIL_SMTP_PASSWORD` | Auth beim Provider |
+| `MAIL_FROM_EMAIL` | Absender |
+
+In `APP_ENV=production` blockiert Plain-SMTP (`encryption=none`) den Versand und schlägt im Deploy-Status fehl.
+
+Laravel (Passwort-Reset): `laravel/.env` mit `MAIL_MAILER=smtp`, `MAIL_ENCRYPTION=tls`, Provider-Credentials — siehe `laravel/.env.example`.
+
+## Server: Reverse-Proxy (Beispiele im Repo)
+
+- [deploy/nginx.example.conf](../deploy/nginx.example.conf) — TLS, `client_max_body_size`, Block für `/content/`, `/logs/`, `/dbScripts/`
+- [deploy/Caddyfile.example](../deploy/Caddyfile.example) — automatisches TLS, gleiche Block-Regeln
+
+Nach dem Proxy:
+
+- `SESSION_SECURE=1` im Projektroot-`.env.local`
+- `TRUSTED_PROXY_IPS` = IP des Reverse-Proxys (z. B. `127.0.0.1`)
+- `LEGACY_SITE_URL` / `APP_URL` in `laravel/.env` mit **HTTPS** und korrektem Host/Port
+
+## Server-Update (Code)
+
+Nicht über das Admin-Panel — per SSH im Projektroot:
+
+```bash
+git pull
+make deploy-server
+# oder manuell:
+# composer install --no-dev --optimize-autoloader
+# cd frontend && npm ci && npm run build
+# cd laravel && composer install --no-dev && php artisan config:cache && php artisan migrate
+make deploy-check
+php scripts/ensure-db-baseline.php
+```
+
+Danach im Browser: **Admin → Deploy-Status**, ausstehende **DB-Skripte** (Re-Auth). `03_db_init_mongo_roles.php` nur mit **Prod-Passwörtern** und nie `db_init_master` auf bestehender DB ohne Freigabe.
+
+## Betrieb (Firewall, Backups, Logs)
+
+| Thema | Empfehlung |
+|--------|------------|
+| Firewall | Nur 80/443 öffentlich; MongoDB nur intern |
+| Backups | Regelmäßig Mongo (`mongodump`) + `content/images`, `content/videos` |
+| `logs/` | Nicht öffentlich (nginx/Caddy deny; siehe Beispiel-Configs) |
+| Log-Rotation | `logrotate` für `logs/*.log` |
+| Monitoring | Optional Uptime + Disk; nicht im Repo |
 
 ## Checkliste vor erstem Server-Deploy
 
-Nach dem Deploy im Browser: **Admin → Deploy-Status** (read-only) und **Admin → DB-Skripte** (ausstehende Migrationen, Badges „Ausstehend“/„Angewendet“). Code-Updates weiter per SSH/Git, nicht über das Admin-Panel.
+- [ ] `react-dist/` gebaut (`make frontend-build` / `make deploy-server`)
+- [ ] Projektroot `.env.local` aus `.env.production.example` (Produktions-URIs, `APP_ALLOW_DEV_DB_DEFAULTS=0`)
+- [ ] `laravel/.env`: `APP_ENV=production`, `APP_DEBUG=false`, HTTPS-URLs, `HANDOFF_SECRET` (≥32 Zeichen, neu)
+- [ ] Mongo-Rollen: `03_db_init_mongo_roles.php` (kein offenes Mongo)
+- [ ] `SESSION_SECURE=1`, `TRUSTED_PROXY_IPS` hinter TLS
+- [ ] `make db-baseline` oder Skripte 14/15/16 im Admin
+- [ ] `cd laravel && php artisan migrate`
+- [ ] Mail: `MAIL_SMTP_ENCRYPTION=tls` (PHP) und/oder Laravel SMTP mit TLS
+- [ ] `make deploy-check` und Admin **Deploy-Status** ohne Fehler
+- [ ] Smoke-Test: [docs/smoke_test.md](smoke_test.md)
 
-- [ ] `react-dist/` gebaut (`cd frontend && npm run build`)
-- [ ] `.env.local` / Server-`.env` mit Produktions-URIs (keine Dev-Defaults)
-- [ ] `laravel/.env`: `APP_ENV=production`, `APP_DEBUG=false`, Handoff-URLs mit HTTPS
-- [ ] Mongo-Rollen aus `03_db_init_mongo_roles.php` (kein offenes Mongo ohne Auth)
-- [ ] `APP_ENV=production`, `APP_ALLOW_DEV_DB_DEFAULTS=0`, explizite Mongo-URIs
-- [ ] `SESSION_SECURE=1`, `TRUSTED_PROXY_IPS` hinter TLS-Terminierung
-- [ ] `dbScripts/14_db_init_handoff_tokens.php` oder `15_db_init_security_baseline.php` (Handoff- + Security-Indizes)
-- [ ] `dbScripts/16_db_init_schema_migrations.php` (Migration-Tracking; einmalig oder via Master)
-- [ ] Admin **Deploy-Status**: keine roten Prüfungen; ausstehende Migrationen in **DB-Skripte** abarbeiten
-- [ ] Upload-Limits (PHP + nginx); **kein SVG** als Bild-Upload
-- [ ] `Referrer-Policy` / CSP aktiv (automatisch via `includes/security_headers.php`)
-- [ ] Smoke-Test: Login, Register mit Code, Handoff-Replay blockiert, Projekt, Admin DB-Skripte
-
-Weitere Sicherheit: `docs/security_roadmap.md`, `docs/next_session_plan.md`.
+Weitere Sicherheit: [security_roadmap.md](security_roadmap.md), [next_session_plan.md](next_session_plan.md).

@@ -56,7 +56,8 @@ Kurzüberblick zum Weitermachen — Zielbild, erledigt, offen, Test.
 - ✅ `docs/deployment.md` (lokal + Entwurf Server/DynDNS).
 - ✅ Admin **Deploy-Status** (read-only) + `schema_migrations`-Tracking in DB-Skripte (`16_db_init_schema_migrations.php`).
 - ✅ Copy-UI Admin Einladungscodes (`CopyField` Abstand, `admin.css`).
-- **Nächstes:** Server-Deploy umsetzen (wenn entschieden); UI-Backlog Glass/Responsive/CSS-Split (`current_status.md`).
+- ✅ Pre-Production: `make deploy-check`, `make prod-env-check`, `make db-baseline`, `.env.production.example`, SMTP-TLS in `includes/mail.php`, `deploy/*.example`, [docs/smoke_test.md](smoke_test.md), [docs/deployment.md](deployment.md) erweitert.
+- **Nächstes:** Server-Deploy (Push: 28 Commits lokal vor `origin/main`); Browser-Smoke [smoke_test.md](smoke_test.md); UI-Backlog optional.
 
 ### P6 — Aufräumen & Security-Pass (2026-05-21)
 - ✅ Toter Code (theme-toggle.js, account Code-Generator, authz-Stubs, React Card).

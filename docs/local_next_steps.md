@@ -23,9 +23,7 @@ Arbeitsliste für Entwicklung auf der eigenen Maschine. Reihenfolge: grober Nutz
    - Laravel lokal starten (z. B. `cd laravel && php artisan serve --host 127.0.0.1 --port 8000`) und notwendige Migrations einmal ausführen (`php artisan migrate`, u. a. Reset-Tokens).
    - Konfiguration/Handoff sauber dokumentieren (`laravel/.env`: `APP_URL`, `HANDOFF_SECRET`, `LEGACY_SITE_URL`), damit Login/Register/Reset aus einem Guss funktionieren.
 
-10. **Produktionsreifer Mailversand (TLS) vorbereiten** — Lokal bleibt MailHog/localhost bewusst **ohne TLS** (nur Dev/Test). Für späteren echten Versand:
-   - Laravel-Mail auf Provider/SMTP mit **STARTTLS/TLS** umstellen (Credentials nur in `laravel/.env`, nicht committen).
-   - Für die klassische PHP-App entweder SMTP mit TLS per Library implementieren **oder** alle Mails zentral über Laravel versenden, damit kein „Plain SMTP“ im Produktivbetrieb bleibt.
+10. **Produktionsreifer Mailversand (TLS)** — umgesetzt in `includes/mail.php` (`MAIL_SMTP_ENCRYPTION`, Auth); Deploy-Status prüft Plain-SMTP in `APP_ENV=production`. Vorlage: `.env.production.example`, `docs/deployment.md`.
 
 11. **Dokumentation für häufige Stolpersteine** — Ports, Vite-HMR, `.env.local`, Mail, Laravel — bei Bedarf in `README.md` oder hier ergänzen.
 
