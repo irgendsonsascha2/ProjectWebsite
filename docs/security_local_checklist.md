@@ -183,15 +183,16 @@
 ## Gesamt-Abschluss
 
 - [x] Alle Phasen 0–7: Manueller Test abgehakt
+- [x] Phasen 8–11 (Security Follow-up): Manueller Test abgehakt
 - [x] Keine offenen Regressionen notiert
 
-**Datum:** 2026-05-25 — Lokale Security-Iteration abgeschlossen.
+**Datum:** 2026-05-25 — Lokale Security-Iteration + Follow-up abgeschlossen.
 
 ---
 
 ## Phase 8 — DB Security-Baseline (Skript 15)
 
-**Status:** 🧪 Manueller Test (du)
+**Status:** ✅ erledigt
 
 ### Implementierung (Agent)
 
@@ -200,16 +201,16 @@
 
 ### Manueller Test (du)
 
-- [ ] Admin → DB-Skripte → `15_db_init_security_baseline.php` → Erfolg
-- [ ] Skript **zweites Mal** ausführen → idempotent, kein Fehler
+- [x] Admin → DB-Skripte → `15_db_init_security_baseline.php` → Erfolg
+- [x] Skript **zweites Mal** ausführen → idempotent, kein Fehler
 
-**Notizen / Datum:**
+**Notizen / Datum:** 2026-05-25 — OK
 
 ---
 
 ## Phase 9 — Tmp-Medien-Proxy
 
-**Status:** 🧪 Manueller Test (du)
+**Status:** ✅ erledigt
 
 ### Implementierung (Agent)
 
@@ -218,19 +219,19 @@
 
 ### Manueller Test (du)
 
-- [ ] `make php` neu starten
-- [ ] Autor: Bild in `edit_project` hochladen → Tmp-URL kopieren
-- [ ] Ausgeloggt / anderer User: Tmp-URL → **403**
-- [ ] Autor: Tmp-URL → **200**
-- [ ] Regression: `/content/images/…` veröffentlichtes Projekt weiterhin OK
+- [x] `make php` neu starten
+- [x] Autor: Bild in `edit_project` hochladen → Tmp-URL kopieren
+- [x] Ausgeloggt / anderer User: Tmp-URL → **403**
+- [x] Autor: Tmp-URL → **200**
+- [x] Regression: `/content/images/…` veröffentlichtes Projekt weiterhin OK
 
-**Notizen / Datum:**
+**Notizen / Datum:** 2026-05-25 — OK
 
 ---
 
 ## Phase 10 — logs/ blockiert
 
-**Status:** 🧪 Manueller Test (du)
+**Status:** ✅ erledigt
 
 ### Implementierung (Agent)
 
@@ -239,16 +240,16 @@
 
 ### Manueller Test (du)
 
-- [ ] `http://127.0.0.1:8080/logs/handoff_errors.log` → **404**
-- [ ] Login/Seite normal
+- [x] `http://127.0.0.1:8080/logs/handoff_errors.log` → **404** (Not Found)
+- [x] Login/Seite normal
 
-**Notizen / Datum:**
+**Notizen / Datum:** 2026-05-25 — OK
 
 ---
 
 ## Phase 11 — Admin Re-Auth erweitert
 
-**Status:** 🧪 Manueller Test (du)
+**Status:** ✅ erledigt
 
 ### Implementierung (Agent)
 
@@ -259,12 +260,12 @@
 
 ### Manueller Test (du)
 
-- [ ] Einladungscode: Passwort nötig, 15-Min.-Fenster
-- [ ] Startseite / Impressum / Einstellungen: gleiches Verhalten
-- [ ] Falsches Passwort blockiert
-- [ ] Regression: DB-Skripte + Nutzer-Moderation
+- [x] Einladungscode: Passwort nötig, 15-Min.-Fenster
+- [x] Startseite / Impressum / Einstellungen: gleiches Verhalten (Dialog, kein Dauer-Passwortfeld)
+- [x] Falsches Passwort blockiert
+- [x] Regression: DB-Skripte + Nutzer-Moderation
 
-**Notizen / Datum:**
+**Notizen / Datum:** 2026-05-25 — OK
 
 ---
 

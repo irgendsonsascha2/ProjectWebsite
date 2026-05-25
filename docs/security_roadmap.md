@@ -8,6 +8,8 @@ Offen: Deployment (Server). UI/CSP-Aufräumen (2026-05-21): erledigt — `docs/n
 
 **Lokale Security-Iteration (2026-05):** Medien-Proxy, CSP ohne `script-src-attr`, erweiterte Admin-Re-Auth, `manage_users`-Gates, Rate-Limits Likes/Upload, Upload-Härtung — siehe `docs/security.md` und abhakbare Tests in `docs/security_local_checklist.md`.
 
+**Security Follow-up (2026-05):** Tmp-Medien über `media_serve` (`content/tmp/`), Block `/logs`, Skript `15_db_init_security_baseline.php`, Re-Auth auf weiteren Admin-Seiten (Dialog-UX). Manuell abgehakt: Checkliste Phasen 8–11.
+
 **Ergänzung (Sprint 1, 2026-05):** CSRF für Legacy-POSTs, gehärtete Session-Cookies, Handoff `session_regenerate`, POST-Logout, eingeschränktes `?debug=1`, keine stillen Mongo-Default-URIs ohne `APP_ALLOW_DEV_DB_DEFAULTS` — Details `docs/current_status.md`.
 
 **Ergänzung (Sprint 2, 2026-05):** Mongo-RBAC ohne `users`/`registration_codes` für App-Rollen; `registration_code_requests` für Gäste; `includes/user_db.php`; `10_db_init_projects_indexes.php` — Details `docs/current_status.md`. Schritt 2 (URIs) war bereits umgesetzt; RBAC-Verfeinerung ist der Sprint-2-Teil.

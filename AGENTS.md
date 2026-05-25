@@ -93,6 +93,12 @@ Damit die klassische PHP-Seite sichtbares Styling (Tailwind/React-Bundle aus `re
   - Admin-Dashboard (DB-Konfig-Überblick, Metriken)
 - `pages/admin/db_scripts.php`
   - Ausführung der destruktiven `dbScripts/`-Skripte
+- `router.php` / `media.php` / `includes/media_serve.php`
+  - Geschützte Auslieferung von `content/images`, `content/videos` und `content/tmp` (Entwurfs-/Bearbeitungs-Medien)
+- `includes/admin_reauth.php`
+  - 15-Min.-Admin-Bestätigung (Passwort + optional TOTP); UI über Dialoge (`admin_reauth_confirm_dialog` usw.)
+- `dbScripts/15_db_init_security_baseline.php`
+  - Idempotente Security-Indizes (Handoff, projects, users-Moderation); beliebig im Admin wiederholbar
 - `pages/admin/_layout.php`
   - gemeinsames Admin-Layout (Nav, Vite-Assets, Theme); lädt `js/theme-bootstrap.js`, `js/admin-dialogs.js` (am Seitenende)
 - `js/theme-bootstrap.js`, `js/admin-dialogs.js`, `js/admin-*.js`

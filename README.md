@@ -117,10 +117,13 @@ MongoDB ohne Replica Set unterstützt keine DB-Transaktionen wie Laravels `Refre
 ├── dbScripts/                # Initialisierung und Reset von Collections
 ├── content/
 │   ├── images/               # Hochgeladene Bilder
-│   └── videos/               # Hochgeladene Videos
+│   ├── videos/               # Hochgeladene Videos
+│   └── tmp/                  # Bearbeitungs-Uploads (nur über media-Proxy, gitignored)
+├── router.php                # Dev-Server: Medien-Proxy + /logs blockieren
+├── media.php                 # Auth-Auslieferung für content/images|videos|tmp
 ├── style/                    # CSS-Dateien
 ├── img/                      # Statische Bilder
-└── logs/                     # PHP-Fehlerlog bei Debug-Modus
+└── logs/                     # Lokal: Fehler/Rate-Limits (gitignored; `logs/.htaccess` verweigert Direktzugriff)
 ```
 
 ## Voraussetzungen

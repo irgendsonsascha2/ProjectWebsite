@@ -73,7 +73,7 @@ Kurzüberblick zum Weitermachen — Zielbild, erledigt, offen, Test.
 - ✅ Inline-Skripte nach `js/`; CSP `script-src 'self'`; CSRF nur Meta-Tag.
 - ✅ Responsive Lightbox/FABs/Account; CopyField-Abstände Account.
 - ✅ Security-Iteration (2026-05): Medien-Proxy, CSP, Admin-Re-Auth, `manage_users`, Rate-Limits, Upload-Härtung — `docs/security_local_checklist.md` (manuelle Tests offen).
-- ✅ Security Follow-up (2026-05): `15_db_init_security_baseline.php`, Tmp-Proxy, `logs/`-Block, Re-Auth erweitert — Checkliste Phasen 8–11 in `docs/security_local_checklist.md`.
+- ✅ Security Follow-up (2026-05): `15_db_init_security_baseline.php`, Tmp-Proxy, `logs/`-Block, Re-Auth erweitert (Dialog) — Checkliste Phasen 8–11 manuell OK (`docs/security_local_checklist.md`).
 
 ## Lokaler Test (kurz)
 

@@ -54,6 +54,7 @@ Lokal: `make php` oder `./serve-php.sh` (beide nutzen `router.php`).
 - **15 Minuten** gültiges Fenster nach Passwort (+ TOTP wenn 2FA aktiv): `includes/admin_reauth.php`.
 - Gilt für Rollen `admin` und `content_manager` (Passwort aus `users`).
 - Pflicht vor: DB-Skript-Ausführung, Nutzer-Moderation, Rolle/Berechtigung löschen/ändern, Registrierungsfreigabe, **Einladungscode erzeugen**, **Startseite**, **Rechtstexte**, **Site-Einstellungen** (nur `admin`).
+- **UI:** Passwort/TOTP erscheinen nur im **Bestätigungs-Dialog** (oder Kurzform bei aktivem 15-Min.-Fenster), nicht dauerhaft in Seitenformularen. Hilfen: `admin_reauth_primary_button()`, `admin_reauth_confirm_dialog()`, `admin_reauth_dialog_body()`; Registrierungsfreigabe: `js/admin-reauth-approve.js`.
 
 ## Uploads
 
