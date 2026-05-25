@@ -149,7 +149,7 @@ $autoOpenRequestDialog = $message !== '' && str_contains($message, 'Postfach');
             <p class="field-hint" style="margin-bottom: 1rem;">
                 Für die Registrierung brauchst du einen <b>Registrierungscode</b>. Du kannst ihn hier manuell eingeben oder anfragen.
             </p>
-            <button type="button" id="open-request-code-dialog">Registrierungscode anfragen</button>
+            <button type="button" id="open-request-code-dialog" class="btn-pill-contrast">Registrierungscode anfragen</button>
         <?php endif; ?>
 
         <form method="POST" id="register-form" action="bridge_register.php" style="margin-top: 1rem;">

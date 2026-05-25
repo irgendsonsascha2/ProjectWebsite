@@ -75,6 +75,26 @@
     color: var(--secondary-color);
   }
 
+  /* Pill-CTA wie „Registrierungscode anfragen“ (invertiert: Textfarbe als Fläche) */
+  .btn-pill-contrast,
+  a.btn-pill-contrast,
+  button.btn-pill-contrast {
+    @apply inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full px-4 py-2 text-sm font-semibold no-underline;
+    background: var(--text-main);
+    color: var(--bg-color);
+    border: 0;
+    margin: 0;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  .btn-pill-contrast:hover,
+  a.btn-pill-contrast:hover,
+  button.btn-pill-contrast:hover {
+    background: color-mix(in srgb, var(--text-main) 85%, var(--primary-color));
+    color: var(--bg-color);
+  }
+
   /* 2FA / Account: gleiche Form wie Login (.container form button), nur Farbstufen */
   a.btn-primary {
     @apply inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full px-5 py-2 text-sm font-semibold no-underline;

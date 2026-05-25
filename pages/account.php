@@ -77,7 +77,7 @@ if (! empty($_SESSION['register_validation_errors'])) {
             <?php require __DIR__.'/../includes/partials/two_factor_help_content.php'; ?>
         </div>
         <div class="account-2fa-actions">
-            <a href="index.php?page=two_factor" class="btn-primary"><?php echo htmlspecialchars($twoFactorActionLabel, ENT_QUOTES, 'UTF-8'); ?></a>
+            <a href="index.php?page=two_factor" class="btn-pill-contrast"><?php echo htmlspecialchars($twoFactorActionLabel, ENT_QUOTES, 'UTF-8'); ?></a>
             <div
                 data-react-help-button
                 data-help-title="<?php echo htmlspecialchars($twoFactorHelpTitle, ENT_QUOTES, 'UTF-8'); ?>"

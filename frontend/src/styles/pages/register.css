@@ -1,19 +1,5 @@
 @layer components {
-  /* Register page: request-code dialog + trigger button */
-  .page-register #open-request-code-dialog {
-    @apply inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold;
-    background: var(--text-main);
-    color: var(--bg-color);
-    border: 0;
-    appearance: none;
-    -webkit-appearance: none;
-    cursor: pointer;
-  }
-
-  .page-register #open-request-code-dialog:hover {
-    background: color-mix(in srgb, var(--text-main) 85%, var(--primary-color));
-  }
-
+  /* Register page: request-code dialog */
   .page-register dialog#request-code-dialog {
     border: none;
     border-radius: 1rem;
