@@ -17,12 +17,20 @@ Kurzdokumentation zum Sicherheitsmodell der klassischen PHP-Site und der Laravel
 
 ## Medien
 
-- Dateien liegen unter `content/images` und `content/videos`.
+- Dateien liegen unter `content/images`, `content/videos` und (während Bearbeitung) `content/tmp/`.
 - **Auslieferung:** über `router.php` → `media.php` → `includes/media_serve.php` (nicht mehr ungeschützt direkt vom Webroot).
-- **Apache/nginx:** `content/.htaccess` verweigert direkten Zugriff; Auslieferung nur über die App.
+- **Veröffentlichte Medien:** Zugriff über `authz_can_view_project()` (Entwürfe nur Autor).
+- **Tmp-Medien** (`content/tmp/{userId}/{projectId}/…`): nur eingeloggt und `authz_can_edit_project()` für das Projekt.
+- **Apache/nginx:** `content/.htaccess` verweigert direkten Zugriff; Auslieferung nur über die App (Rewrite auf `media.php` o. ä.).
 - **Startseiten-Portrait** in `site_pages` (`home_profile`) ist öffentlich, wenn als `content/images/…` gespeichert.
 
 Lokal: `make php` oder `./serve-php.sh` (beide nutzen `router.php`).
+
+## Logs
+
+- Anwendungs- und Rate-Limit-Dateien unter `logs/` (gitignored).
+- **Nicht** öffentlich: `logs/.htaccess` (Apache) und Block in `router.php` (PHP-Dev-Server).
+- Produktion: Document Root so wählen, dass `logs/` nicht erreichbar ist, oder explizit verweigern.
 
 ## HTTP-Härtung
 
@@ -44,7 +52,8 @@ Lokal: `make php` oder `./serve-php.sh` (beide nutzen `router.php`).
 ## Admin — Re-Auth
 
 - **15 Minuten** gültiges Fenster nach Passwort (+ TOTP wenn 2FA aktiv): `includes/admin_reauth.php`.
-- Pflicht vor: DB-Skript-Ausführung, Nutzer-Moderation, Rolle/Berechtigung löschen, Registrierungsfreigabe.
+- Gilt für Rollen `admin` und `content_manager` (Passwort aus `users`).
+- Pflicht vor: DB-Skript-Ausführung, Nutzer-Moderation, Rolle/Berechtigung löschen/ändern, Registrierungsfreigabe, **Einladungscode erzeugen**, **Startseite**, **Rechtstexte**, **Site-Einstellungen** (nur `admin`).
 
 ## Uploads
 
@@ -55,6 +64,7 @@ Lokal: `make php` oder `./serve-php.sh` (beide nutzen `router.php`).
 
 - Getrennte Mongo-URIs pro Rolle; Admin-Skripte nur über `ADMIN_DB_URI`.
 - `dbScripts/` nicht direkt per URL; Laufzeit-Guard + Admin-Pfad.
+- **`15_db_init_security_baseline.php`:** idempotent Handoff- + Projekt- + Moderation-Indizes (beliebig wiederholbar, auch in `db_init_master`).
 
 ## Entwicklung vs. Produktion
 

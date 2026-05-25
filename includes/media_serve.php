@@ -1,16 +1,15 @@
 <?php
 
 /**
- * Geschützte Auslieferung von Dateien unter content/images und content/videos.
+ * Geschützte Auslieferung von Dateien unter content/images, content/videos und content/tmp.
  */
 
 require_once __DIR__.'/authz.php';
 
-if (! function_exists('media_serve_relative_path')) {
-    /**
-     * Normalisiert einen relativen Pfad (content/images/… oder content/videos/…).
-     */
-    function media_serve_relative_path(string $raw): ?string
+use MongoDB\BSON\ObjectId;
+
+if (! function_exists('media_serve_relative_path_published')) {
+    function media_serve_relative_path_published(string $raw): ?string
     {
         $raw = str_replace('\\', '/', trim($raw));
         $raw = ltrim($raw, '/');
@@ -25,6 +24,58 @@ if (! function_exists('media_serve_relative_path')) {
     }
 }
 
+if (! function_exists('media_serve_relative_path_tmp')) {
+    function media_serve_relative_path_tmp(string $raw): ?string
+    {
+        $raw = str_replace('\\', '/', trim($raw));
+        $raw = ltrim($raw, '/');
+        if ($raw === '' || strpos($raw, '..') !== false) {
+            return null;
+        }
+        if (! preg_match('#^content/tmp/[a-fA-F0-9]{24}/[a-fA-F0-9]{24}/(images|videos)/[a-zA-Z0-9._-]+$#', $raw)) {
+            return null;
+        }
+
+        return $raw;
+    }
+}
+
+if (! function_exists('media_serve_relative_path')) {
+    /**
+     * Normalisiert einen relativen Pfad (published oder tmp).
+     */
+    function media_serve_relative_path(string $raw): ?string
+    {
+        $published = media_serve_relative_path_published($raw);
+        if ($published !== null) {
+            return $published;
+        }
+
+        return media_serve_relative_path_tmp($raw);
+    }
+}
+
+if (! function_exists('media_serve_is_tmp_path')) {
+    function media_serve_is_tmp_path(string $relativePath): bool
+    {
+        return str_starts_with($relativePath, 'content/tmp/');
+    }
+}
+
+if (! function_exists('media_serve_tmp_project_id')) {
+    function media_serve_tmp_project_id(string $relativePath): ?string
+    {
+        if (! media_serve_is_tmp_path($relativePath)) {
+            return null;
+        }
+        if (! preg_match('#^content/tmp/[a-fA-F0-9]{24}/([a-fA-F0-9]{24})/#', $relativePath, $m)) {
+            return null;
+        }
+
+        return $m[1];
+    }
+}
+
 if (! function_exists('media_serve_absolute_path')) {
     function media_serve_absolute_path(string $relativePath): ?string
     {
@@ -33,11 +84,21 @@ if (! function_exists('media_serve_absolute_path')) {
             return null;
         }
         $full = realpath($root.'/'.$relativePath);
-        $imagesDir = realpath($root.'/content/images');
-        $videosDir = realpath($root.'/content/videos');
         if ($full === false || ! is_file($full)) {
             return null;
         }
+
+        if (media_serve_is_tmp_path($relativePath)) {
+            $tmpDir = realpath($root.'/content/tmp');
+            if ($tmpDir !== false && strpos($full, $tmpDir) === 0) {
+                return $full;
+            }
+
+            return null;
+        }
+
+        $imagesDir = realpath($root.'/content/images');
+        $videosDir = realpath($root.'/content/videos');
         if ($imagesDir !== false && strpos($full, $imagesDir) === 0) {
             return $full;
         }
@@ -93,9 +154,57 @@ if (! function_exists('media_serve_find_project_for_url')) {
     }
 }
 
+if (! function_exists('media_serve_find_project_by_id')) {
+    /**
+     * @return array<string, mixed>|null
+     */
+    function media_serve_find_project_by_id($db, string $projectIdHex): ?array
+    {
+        if (! preg_match('/^[a-fA-F0-9]{24}$/', $projectIdHex)) {
+            return null;
+        }
+        try {
+            $project = $db->projects->findOne(['_id' => new ObjectId($projectIdHex)]);
+        } catch (Throwable $e) {
+            return null;
+        }
+        if (! $project) {
+            return null;
+        }
+        if ($project instanceof Traversable) {
+            return iterator_to_array($project);
+        }
+
+        return is_array($project) ? $project : null;
+    }
+}
+
+if (! function_exists('media_serve_may_access_tmp')) {
+    function media_serve_may_access_tmp($db, string $relativePath): bool
+    {
+        if (! authz_is_logged_in()) {
+            return false;
+        }
+        $projectIdHex = media_serve_tmp_project_id($relativePath);
+        if ($projectIdHex === null) {
+            return false;
+        }
+        $project = media_serve_find_project_by_id($db, $projectIdHex);
+        if ($project === null) {
+            return false;
+        }
+
+        return authz_can_edit_project($project);
+    }
+}
+
 if (! function_exists('media_serve_may_access')) {
     function media_serve_may_access($db, string $relativePath): bool
     {
+        if (media_serve_is_tmp_path($relativePath)) {
+            return media_serve_may_access_tmp($db, $relativePath);
+        }
+
         if (media_serve_is_public_home_portrait($db, $relativePath)) {
             return true;
         }

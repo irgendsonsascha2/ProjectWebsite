@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/_layout.php';
 require_once __DIR__ . '/../../includes/site_settings.php';
+require_once __DIR__ . '/../../includes/admin_reauth.php';
 
 use MongoDB\BSON\UTCDateTime;
 
@@ -8,9 +9,19 @@ $allowedRoles = ['admin'];
 
 $notice = '';
 $error = '';
+$adminReauthFresh = admin_reauth_is_fresh();
+$adminReauthNeeds2fa = admin_reauth_user_has_2fa();
+$reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
 $settings = site_settings_load($db);
 
 if (isset($_POST['action']) && $_POST['action'] === 'save_site_settings') {
+    $reauth = admin_reauth_require_fresh_or_post();
+    if (! $reauth['ok']) {
+        $error = $reauth['error'];
+    } else {
+    $adminReauthFresh = admin_reauth_is_fresh();
+    $reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
+
     $input = [
         'max_image_mb' => (int) ($_POST['max_image_mb'] ?? 0),
         'max_video_mb' => (int) ($_POST['max_video_mb'] ?? 0),
@@ -47,9 +58,10 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_site_settings') {
     } catch (Exception $e) {
         $error = 'Datenbankfehler: ' . $e->getMessage();
     }
+    }
 }
 
-admin_render_page('Einstellungen', 'settings', function () use ($notice, $error, $settings) { ?>
+admin_render_page('Einstellungen', 'settings', function () use ($notice, $error, $settings, $adminReauthFresh, $adminReauthNeeds2fa, $reauthMinutesLeft) { ?>
     <div class="page-header">
         <h1>Allgemeine Einstellungen</h1>
     </div>
@@ -61,6 +73,8 @@ admin_render_page('Einstellungen', 'settings', function () use ($notice, $error,
         <div class="alert success"><?php echo htmlspecialchars($notice, ENT_QUOTES, 'UTF-8'); ?></div>
     <?php endif; ?>
 
+    <?php echo admin_reauth_banner_html($adminReauthFresh, $reauthMinutesLeft); ?>
+
     <p class="field-hint">
         Werte gelten für Medien-Uploads und einige Anzeige-Limits auf der Website.
         Der PHP-Server muss große Uploads weiterhin erlauben (<code>post_max_size</code> / <code>upload_max_filesize</code>).
@@ -68,7 +82,7 @@ admin_render_page('Einstellungen', 'settings', function () use ($notice, $error,
 
     <div class="admin-card admin-card--spaced">
         <h2>Medien-Uploads</h2>
-        <form method="POST">
+        <form method="POST" id="site-settings-form">
             <?php echo csrf_field(); ?>
             <input type="hidden" name="action" value="save_site_settings">
 
@@ -120,8 +134,10 @@ admin_render_page('Einstellungen', 'settings', function () use ($notice, $error,
             </div>
 
             <div class="actions">
-                <button type="submit">Speichern</button>
+                <?php admin_reauth_primary_button('site-settings-form', 'admin-reauth-settings', $adminReauthFresh, 'Speichern', 'action', 'save_site_settings'); ?>
             </div>
         </form>
     </div>
+
+    <?php admin_reauth_confirm_dialog('admin-reauth-settings', 'site-settings-form', $adminReauthFresh, $adminReauthNeeds2fa, $reauthMinutesLeft, 'Speichern', 'action', 'save_site_settings'); ?>
 <?php }, $allowedRoles);

@@ -155,19 +155,35 @@ $verifiedPending = iterator_to_array(
                         <td><?php echo htmlspecialchars($ver, ENT_QUOTES, 'UTF-8'); ?></td>
                         <td><?php echo htmlspecialchars($ip, ENT_QUOTES, 'UTF-8'); ?></td>
                         <td>
+                            <?php if ($adminReauthFresh): ?>
                             <form method="POST" action="registration_requests.php" data-confirm-submit="Anfrage freigeben und Code senden?">
                                 <?php echo csrf_field(); ?>
                                 <input type="hidden" name="approve_request_id" value="<?php echo htmlspecialchars($rid, ENT_QUOTES, 'UTF-8'); ?>">
-                                <?php if (! $adminReauthFresh) {
-                                    admin_reauth_form_fields($adminReauthNeeds2fa);
-                                } ?>
                                 <button type="submit">Freigeben + Code senden</button>
                             </form>
+                            <?php else: ?>
+                            <button type="button" class="button-primary" data-dialog-open="approve-request-dialog" data-approve-request-id="<?php echo htmlspecialchars($rid, ENT_QUOTES, 'UTF-8'); ?>">Freigeben + Code senden…</button>
+                            <?php endif; ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>
             </table>
         </div>
     <?php endif; ?>
-<?php }); ?>
+
+    <dialog id="approve-request-dialog">
+        <div class="dialog-card">
+            <div class="dialog-header">
+                <h2>Registrierung freigeben</h2>
+                <button type="button" class="close-button" data-dialog-close>Schließen</button>
+            </div>
+            <form method="POST" action="registration_requests.php" id="approve-request-form" data-dialog-close-on-submit data-confirm-submit="Anfrage freigeben und Code senden?">
+                <?php echo csrf_field(); ?>
+                <input type="hidden" name="approve_request_id" id="approve_request_id" value="">
+                <?php admin_reauth_dialog_body($adminReauthFresh, $adminReauthNeeds2fa, $reauthMinutesLeft); ?>
+                <button type="submit">Freigeben + Code senden</button>
+            </form>
+        </div>
+    </dialog>
+<?php }, ['admin'], ['admin-reauth-approve.js']); ?>
 

@@ -64,7 +64,8 @@ if (!function_exists('admin_reauth_load_user')) {
         if (session_status() !== PHP_SESSION_ACTIVE) {
             return null;
         }
-        if (($_SESSION['role'] ?? '') !== 'admin') {
+        $role = (string) ($_SESSION['role'] ?? '');
+        if (! in_array($role, ['admin', 'content_manager'], true)) {
             return null;
         }
 
@@ -223,11 +224,37 @@ if (! function_exists('admin_reauth_banner_html')) {
     }
 }
 
+if (! function_exists('admin_reauth_form_fields_for_form')) {
+    /**
+     * Passwort/TOTP außerhalb des Hauptformulars — per form-Attribut beim Absenden mitgeschickt.
+     */
+    function admin_reauth_form_fields_for_form(string $formId, bool $needs2fa): void
+    {
+        $fid = htmlspecialchars($formId, ENT_QUOTES, 'UTF-8');
+        ?>
+    <p class="muted">Passwort<?php echo $needs2fa ? ' und Authenticator-Code' : ''; ?> zur Bestätigung (gültig <?php echo (int) (admin_reauth_ttl_seconds() / 60); ?> Min. nach Erfolg).</p>
+    <p>
+        <label>
+            Dein Admin-Passwort<br>
+            <input type="password" name="admin_confirm_password" form="<?php echo $fid; ?>" autocomplete="current-password" required>
+        </label>
+    </p>
+        <?php if ($needs2fa): ?>
+    <p>
+        <label>
+            Authenticator-Code (6 Ziffern)<br>
+            <input type="text" name="admin_totp_code" form="<?php echo $fid; ?>" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required>
+        </label>
+    </p>
+        <?php endif;
+    }
+}
+
 if (! function_exists('admin_reauth_dialog_body')) {
     /**
      * Passwort/TOTP-Felder oder Hinweis auf aktives Re-Auth-Fenster (für Admin-Dialoge).
      */
-    function admin_reauth_dialog_body(bool $fresh, bool $needs2fa, int $minutesLeft): void
+    function admin_reauth_dialog_body(bool $fresh, bool $needs2fa, int $minutesLeft, ?string $attachFormId = null): void
     {
         if ($fresh) {
             echo '<p class="muted">Admin-Bestätigung aktiv (noch ca. '
@@ -237,6 +264,84 @@ if (! function_exists('admin_reauth_dialog_body')) {
             return;
         }
 
+        if ($attachFormId !== null && $attachFormId !== '') {
+            admin_reauth_form_fields_for_form($attachFormId, $needs2fa);
+
+            return;
+        }
+
         admin_reauth_form_fields($needs2fa);
+    }
+}
+
+if (! function_exists('admin_reauth_confirm_dialog')) {
+    /**
+     * Bestätigungs-Dialog: Passwort nur im Popup, Submit sendet das Hauptformular (form-Attribut).
+     */
+    function admin_reauth_confirm_dialog(
+        string $dialogId,
+        string $formId,
+        bool $fresh,
+        bool $needs2fa,
+        int $minutesLeft,
+        string $submitLabel = 'Bestätigen und fortfahren',
+        ?string $submitName = null,
+        ?string $submitValue = null
+    ): void {
+        $dialogIdEsc = htmlspecialchars($dialogId, ENT_QUOTES, 'UTF-8');
+        $formIdEsc = htmlspecialchars($formId, ENT_QUOTES, 'UTF-8');
+        ?>
+    <dialog id="<?php echo $dialogIdEsc; ?>">
+        <div class="dialog-card">
+            <div class="dialog-header">
+                <h2>Admin-Bestätigung</h2>
+                <button type="button" class="close-button" data-dialog-close>Schließen</button>
+            </div>
+            <?php admin_reauth_dialog_body($fresh, $needs2fa, $minutesLeft, $formId); ?>
+            <?php if (! $fresh): ?>
+            <p>
+                <button type="submit" form="<?php echo $formIdEsc; ?>" class="button-primary"
+                    <?php if ($submitName !== null && $submitName !== ''): ?>
+                        name="<?php echo htmlspecialchars($submitName, ENT_QUOTES, 'UTF-8'); ?>"
+                        value="<?php echo htmlspecialchars($submitValue ?? '1', ENT_QUOTES, 'UTF-8'); ?>"
+                    <?php endif; ?>
+                ><?php echo htmlspecialchars($submitLabel, ENT_QUOTES, 'UTF-8'); ?></button>
+            </p>
+            <?php endif; ?>
+        </div>
+    </dialog>
+        <?php
+    }
+}
+
+if (! function_exists('admin_reauth_primary_button')) {
+    /**
+     * Speichern/Aktion: direkt submit wenn Re-Auth frisch, sonst Dialog öffnen.
+     */
+    function admin_reauth_primary_button(
+        string $formId,
+        string $dialogId,
+        bool $fresh,
+        string $label,
+        ?string $submitName = null,
+        ?string $submitValue = null
+    ): void {
+        if ($fresh) {
+            ?>
+            <button type="submit" class="button-primary"
+                <?php if ($submitName !== null && $submitName !== ''): ?>
+                    name="<?php echo htmlspecialchars($submitName, ENT_QUOTES, 'UTF-8'); ?>"
+                    value="<?php echo htmlspecialchars($submitValue ?? '1', ENT_QUOTES, 'UTF-8'); ?>"
+                <?php endif; ?>
+            ><?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></button>
+            <?php
+
+            return;
+        }
+        ?>
+        <button type="button" class="button-primary" data-dialog-open="<?php echo htmlspecialchars($dialogId, ENT_QUOTES, 'UTF-8'); ?>">
+            <?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?>
+        </button>
+        <?php
     }
 }

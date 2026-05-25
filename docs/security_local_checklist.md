@@ -104,7 +104,7 @@
 
 ## Phase 4 — Admin Permissions (`manage_users`)
 
-**Status:** 🧪 Manueller Test (du) — **jetzt**
+**Status:** ✅ erledigt
 
 ### Implementierung (Agent)
 
@@ -114,17 +114,17 @@
 
 ### Manueller Test (du)
 
-- [ ] Nutzer ohne `manage_users`: direkte URL `pages/admin/users.php` → verweigert
-- [ ] Admin mit `manage_users`: Zugriff OK
-- [ ] `content_manager`: Startseite/Rechtstexte OK, keine DB-Skripte / Nutzer-Verwaltung
+- [x] Nutzer ohne `manage_users`: direkte URL `pages/admin/users.php` → verweigert
+- [x] Admin mit `manage_users`: Zugriff OK
+- [x] `content_manager`: Startseite/Rechtstexte OK, keine DB-Skripte / Nutzer-Verwaltung
 
-**Notizen / Datum:**
+**Notizen / Datum:** 2026-05-25 — OK
 
 ---
 
 ## Phase 5 — Rate-Limits (Likes + Upload)
 
-**Status:** 🧪 Manueller Test (du)
+**Status:** ✅ erledigt
 
 ### Implementierung (Agent)
 
@@ -133,17 +133,17 @@
 
 ### Manueller Test (du)
 
-- [ ] Viele Like-Klicks kurz hintereinander → Throttle-Hinweis
-- [ ] Viele Uploads kurz hintereinander → Throttle-Hinweis
-- [ ] Normaler Einzel-Upload/Like weiterhin OK
+- [x] Viele Like-Klicks kurz hintereinander → Throttle-Hinweis
+- [x] Viele Uploads kurz hintereinander → Throttle-Hinweis
+- [x] Normaler Einzel-Upload/Like weiterhin OK
 
-**Notizen / Datum:**
+**Notizen / Datum:** 2026-05-25 — OK
 
 ---
 
 ## Phase 6 — Upload-Härtung
 
-**Status:** 🧪 Manueller Test (du)
+**Status:** ✅ erledigt
 
 ### Implementierung (Agent)
 
@@ -152,17 +152,17 @@
 
 ### Manueller Test (du)
 
-- [ ] `.php` / getarnte Datei → abgelehnt
-- [ ] Gültiges JPG/MP4 → OK
-- [ ] Sehr große Datei → verständliche Meldung
+- [x] `.php` / getarnte Datei → abgelehnt
+- [x] Gültiges JPG/MP4 → OK
+- [x] Sehr große Datei → verständliche Meldung
 
-**Notizen / Datum:**
+**Notizen / Datum:** 2026-05-25 — OK
 
 ---
 
 ## Phase 7 — Doku und Abschluss
 
-**Status:** 🧪 Manueller Test (du)
+**Status:** ✅ erledigt
 
 ### Implementierung (Agent)
 
@@ -172,18 +172,99 @@
 
 ### Manueller Test (du)
 
-- [ ] Smoke: Login → Handoff → Entwurf-Medien → Admin Re-Auth → CSP-Header
-- [ ] README-Abschnitt Sicherheit stimmt
+- [x] Smoke: Login → Handoff → Entwurf-Medien → Admin Re-Auth → CSP-Header
+- [x] README-Abschnitt Sicherheit stimmt
 - [ ] Optional: `composer audit` (Root + `laravel/`), `cd frontend && npm audit`
 
-**Notizen / Datum:**
+**Notizen / Datum:** 2026-05-25 — OK
 
 ---
 
 ## Gesamt-Abschluss
 
-- [ ] Alle Phasen 0–7: Manueller Test abgehakt
-- [ ] Keine offenen Regressionen notiert
+- [x] Alle Phasen 0–7: Manueller Test abgehakt
+- [x] Keine offenen Regressionen notiert
+
+**Datum:** 2026-05-25 — Lokale Security-Iteration abgeschlossen.
+
+---
+
+## Phase 8 — DB Security-Baseline (Skript 15)
+
+**Status:** 🧪 Manueller Test (du)
+
+### Implementierung (Agent)
+
+- [x] `dbScripts/15_db_init_security_baseline.php`
+- [x] README-Verweis
+
+### Manueller Test (du)
+
+- [ ] Admin → DB-Skripte → `15_db_init_security_baseline.php` → Erfolg
+- [ ] Skript **zweites Mal** ausführen → idempotent, kein Fehler
+
+**Notizen / Datum:**
+
+---
+
+## Phase 9 — Tmp-Medien-Proxy
+
+**Status:** 🧪 Manueller Test (du)
+
+### Implementierung (Agent)
+
+- [x] `router.php` + `includes/media_serve.php` für `content/tmp/`
+- [x] Zugriff nur mit `authz_can_edit_project()`
+
+### Manueller Test (du)
+
+- [ ] `make php` neu starten
+- [ ] Autor: Bild in `edit_project` hochladen → Tmp-URL kopieren
+- [ ] Ausgeloggt / anderer User: Tmp-URL → **403**
+- [ ] Autor: Tmp-URL → **200**
+- [ ] Regression: `/content/images/…` veröffentlichtes Projekt weiterhin OK
+
+**Notizen / Datum:**
+
+---
+
+## Phase 10 — logs/ blockiert
+
+**Status:** 🧪 Manueller Test (du)
+
+### Implementierung (Agent)
+
+- [x] `logs/.htaccess`
+- [x] `router.php` blockiert `/logs`
+
+### Manueller Test (du)
+
+- [ ] `http://127.0.0.1:8080/logs/handoff_errors.log` → **404**
+- [ ] Login/Seite normal
+
+**Notizen / Datum:**
+
+---
+
+## Phase 11 — Admin Re-Auth erweitert
+
+**Status:** 🧪 Manueller Test (du)
+
+### Implementierung (Agent)
+
+- [x] Re-Auth: `invite_codes`, `home_profile`, `legal_page_edit`, `settings`
+- [x] `content_manager` in `admin_reauth_load_user()`
+- [x] Passwort nur im Bestätigungs-Dialog (nicht dauerhaft im Seitenformular)
+- [x] Fix `home_profile`: Mongo `$set` / `$setOnInsert` Konflikt `page_kind`
+
+### Manueller Test (du)
+
+- [ ] Einladungscode: Passwort nötig, 15-Min.-Fenster
+- [ ] Startseite / Impressum / Einstellungen: gleiches Verhalten
+- [ ] Falsches Passwort blockiert
+- [ ] Regression: DB-Skripte + Nutzer-Moderation
+
+**Notizen / Datum:**
 
 ---
 
@@ -192,3 +273,4 @@
 - Produktions-Deploy, TLS/HSTS, SMTP-TLS (`deployment.md`)
 - Permission `run_db_scripts` (DB-Skripte bleiben `admin`-only)
 - Pflicht-2FA für alle Admins
+- TOTP-Secret-Verschlüsselung in Mongo

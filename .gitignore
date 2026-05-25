@@ -5,7 +5,8 @@ content/videos/*
 !content/videos/.gitkeep
 
 ## Local logs / temp
-logs/
+logs/*
+!logs/.htaccess
 
 ## Node/Frontend build artifacts
 frontend/node_modules/

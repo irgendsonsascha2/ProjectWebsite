@@ -43,8 +43,9 @@ Noch **nicht** umgesetzt im Repo. Grober Ablauf, wenn ein eigener Server bereits
 3. **Prozessmodell (Variante A — einfach):** PHP-FPM + nginx für Projektroot; Laravel als zweite Site oder Subpath; MongoDB nur intern erreichbar.
 4. **Prozessmodell (Variante B — Container):** Compose mit `mongodb`, App-Image (PHP), Laravel-Image; Secrets nur in `.env` auf dem Server, nicht im Git.
 5. **Secrets:** `HANDOFF_SECRET`, Mongo-Passwörter, SMTP — getrennt von Dev; keine `APP_ALLOW_DEV_DB_DEFAULTS` in Produktion.
-6. **Medien:** `content/images`, `content/videos` persistent mounten; Backups für Mongo + Medien.
-7. **Mail:** SMTP mit TLS (kein MailHog); Laravel und/oder `includes/mail.php` auf denselben Provider.
+6. **Medien:** `content/images`, `content/videos`, `content/tmp` persistent mounten; **kein** direkter Static-Serve unter `/content/` — nur App-Proxy (`media.php` / Rewrite). Backups für Mongo + Medien.
+7. **Logs:** Verzeichnis `logs/` nicht im öffentlichen Document Root (oder `Require all denied`); Rate-Limit- und Fehlerdateien enthalten IPs.
+8. **Mail:** SMTP mit TLS (kein MailHog); Laravel und/oder `includes/mail.php` auf denselben Provider.
 
 Offene Punkte vor Go-Live: Firewall (nur 80/443 öffentlich), Rate-Limits, Log-Rotation, Monitoring.
 
@@ -56,7 +57,7 @@ Offene Punkte vor Go-Live: Firewall (nur 80/443 öffentlich), Rate-Limits, Log-R
 - [ ] Mongo-Rollen aus `03_db_init_mongo_roles.php` (kein offenes Mongo ohne Auth)
 - [ ] `APP_ENV=production`, `APP_ALLOW_DEV_DB_DEFAULTS=0`, explizite Mongo-URIs
 - [ ] `SESSION_SECURE=1`, `TRUSTED_PROXY_IPS` hinter TLS-Terminierung
-- [ ] `dbScripts/14_db_init_handoff_tokens.php` (Handoff-Nonces)
+- [ ] `dbScripts/14_db_init_handoff_tokens.php` oder `15_db_init_security_baseline.php` (Handoff- + Security-Indizes)
 - [ ] Upload-Limits (PHP + nginx); **kein SVG** als Bild-Upload
 - [ ] `Referrer-Policy` / CSP aktiv (automatisch via `includes/security_headers.php`)
 - [ ] Smoke-Test: Login, Register mit Code, Handoff-Replay blockiert, Projekt, Admin DB-Skripte

@@ -62,7 +62,7 @@ Parallel zur klassischen PHP-App liegt eine **Laravel-13-Anwendung** mit **Mongo
 
 **E-Mail-Nachweis:** Kein Login-Gate über Laravel `/verify-email`. Registrierung setzt `email_verified_at` über **`RegisterInvitedUser`** (Invite-Code / verifizierte Anfrage). E-Mail-Bestätigung vor Code-Vergabe: `verify_registration_request` + Admin (`docs/next_session_plan.md`).
 
-**Sicherheit (Auszug):** Kein SVG-Upload; Medien nur über Auth-Proxy (`router.php` / `media.php`); Security-Header (CSP ohne `script-src-attr`); Rate-Limits (Kommentare, Handoff, Likes, Uploads); Admin-Re-Auth für sensible Aktionen; Docker-Mongo/MailHog nur `127.0.0.1`. Details: `docs/security.md`, Roadmap `docs/security_roadmap.md`, lokale Tests `docs/security_local_checklist.md`.
+**Sicherheit (Auszug):** Kein SVG-Upload; Medien nur über Auth-Proxy (`router.php` / `media.php`, inkl. Bearbeitungs-`content/tmp/`); `logs/` nicht öffentlich; Security-Header (CSP ohne `script-src-attr`); Rate-Limits (Kommentare, Handoff, Likes, Uploads); Admin-Re-Auth für sensible Aktionen (DB-Skripte, Nutzer, Codes, Startseite, Rechtstexte, Einstellungen); idempotentes `dbScripts/15_db_init_security_baseline.php`. Details: `docs/security.md`, Roadmap `docs/security_roadmap.md`, lokale Tests `docs/security_local_checklist.md`.
 
 **Wichtig beim Testen:** Laravel (`php artisan serve`, z. B. Port **8000**) und die **alte Website** sind zwei URLs. `LEGACY_SITE_URL` muss **genau** die Basis-URL sein, unter der `index.php` und `laravel_handoff.php` erreichbar sind (inkl. Port, z. B. `http://127.0.0.1:8080`, wenn die alte App mit `make php` / `./serve-php.sh` bzw. `php -S … router.php` im Projektroot läuft). Ohne laufenden Webserver auf dieser URL schlägt der Sprung nach dem Login fehl.
 
@@ -546,6 +546,8 @@ Die wichtigsten Initialisierungsskripte:
 - `dbScripts/11_db_init_users_two_factor.php`
   - Dokumentation der optionalen `two_factor_*`-Felder auf `users` + sparse Index
 - `dbScripts/13_db_init_users_moderation.php`
+- `dbScripts/14_db_init_handoff_tokens.php` (TTL/Unique für Handoff-Nonces)
+- `dbScripts/15_db_init_security_baseline.php` (idempotent: Handoff- + Projekt- + Moderation-Indizes; beliebig wiederholbar)
   - Dokumentation von `account_moderation` (Timeout/Ban) auf `users` + sparse Index
 - `dbScripts/db_init_master.php`
   - Führt die nummerierten Skripte gesammelt aus

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Geschützte Auslieferung von Medien unter content/images und content/videos.
+ * Geschützte Auslieferung von Medien unter content/images, content/videos und content/tmp.
  */
 
 require_once __DIR__.'/includes/bootstrap.php';

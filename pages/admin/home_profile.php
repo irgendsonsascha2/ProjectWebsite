@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/_layout.php';
 require_once __DIR__ . '/../../includes/db.php';
+require_once __DIR__ . '/../../includes/admin_reauth.php';
 
 use MongoDB\BSON\UTCDateTime;
 
@@ -50,6 +51,9 @@ function delete_portrait_if_owned(string $portraitUrl): void
 
 $notice = '';
 $error = '';
+$adminReauthFresh = admin_reauth_is_fresh();
+$adminReauthNeeds2fa = admin_reauth_user_has_2fa();
+$reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
 
 // Datensatz laden (Single-Doc Ansatz)
 $docId = 'home_profile';
@@ -71,6 +75,13 @@ if ($portraitUrl === '' || !is_safe_image_path($portraitUrl)) {
 }
 
 if (isset($_POST['action']) && $_POST['action'] === 'save_home_profile') {
+    $reauth = admin_reauth_require_fresh_or_post();
+    if (! $reauth['ok']) {
+        $error = $reauth['error'];
+    } else {
+    $adminReauthFresh = admin_reauth_is_fresh();
+    $reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
+
     $nextDisplayName = trim((string)($_POST['display_name'] ?? ''));
     $nextKicker = trim((string)($_POST['kicker'] ?? ''));
     $nextLead = trim((string)($_POST['lead'] ?? ''));
@@ -145,7 +156,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_home_profile') {
                 $set['portrait_url'] = $newPortraitUrl;
             }
             $setOnInsert = [
-                'page_kind' => 'home_profile',
                 'created_at' => new UTCDateTime(),
             ];
 
@@ -170,9 +180,10 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_home_profile') {
             }
         }
     }
+    }
 }
 
-admin_render_page('Startseite', 'home_profile', function () use ($notice, $error, $displayName, $kicker, $lead, $body, $portraitUrl) { ?>
+admin_render_page('Startseite', 'home_profile', function () use ($notice, $error, $displayName, $kicker, $lead, $body, $portraitUrl, $adminReauthFresh, $adminReauthNeeds2fa, $reauthMinutesLeft) { ?>
     <div class="page-header">
         <h1>Startseiten‑Profil</h1>
     </div>
@@ -184,9 +195,11 @@ admin_render_page('Startseite', 'home_profile', function () use ($notice, $error
         <div class="alert success"><?php echo htmlspecialchars($notice, ENT_QUOTES, 'UTF-8'); ?></div>
     <?php endif; ?>
 
+    <?php echo admin_reauth_banner_html($adminReauthFresh, $reauthMinutesLeft); ?>
+
     <div class="admin-card admin-card--spaced">
         <h2>Bearbeiten</h2>
-        <form method="POST" enctype="multipart/form-data">
+        <form method="POST" enctype="multipart/form-data" id="home-profile-form">
             <?php echo csrf_field(); ?>
             <input type="hidden" name="action" value="save_home_profile">
 
@@ -224,9 +237,11 @@ admin_render_page('Startseite', 'home_profile', function () use ($notice, $error
             </div>
 
             <div class="actions">
-                <button type="submit">Speichern</button>
+                <?php admin_reauth_primary_button('home-profile-form', 'admin-reauth-home-profile', $adminReauthFresh, 'Speichern', 'action', 'save_home_profile'); ?>
             </div>
         </form>
     </div>
+
+    <?php admin_reauth_confirm_dialog('admin-reauth-home-profile', 'home-profile-form', $adminReauthFresh, $adminReauthNeeds2fa, $reauthMinutesLeft, 'Speichern', 'action', 'save_home_profile'); ?>
 <?php }, $allowedRoles);
 

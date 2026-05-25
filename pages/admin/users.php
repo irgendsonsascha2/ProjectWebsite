@@ -276,9 +276,7 @@ try {
                             <span>Grund dem Nutzer anzeigen</span>
                         </label>
 
-                        <?php if (! $adminReauthFresh) {
-                            admin_reauth_form_fields($adminReauthNeeds2fa);
-                        } ?>
+                        <?php admin_reauth_dialog_body($adminReauthFresh, $adminReauthNeeds2fa, $reauthMinutesLeft); ?>
 
                         <div class="actions" style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
                             <button type="submit">Speichern</button>
@@ -292,9 +290,7 @@ try {
                         <?php echo csrf_field(); ?>
                         <input type="hidden" name="user_id" value="<?php echo htmlspecialchars($uid, ENT_QUOTES, 'UTF-8'); ?>">
                         <input type="hidden" name="action" value="clear_moderation">
-                        <?php if (! $adminReauthFresh) {
-                            admin_reauth_form_fields($adminReauthNeeds2fa);
-                        } ?>
+                        <?php admin_reauth_dialog_body($adminReauthFresh, $adminReauthNeeds2fa, $reauthMinutesLeft); ?>
                     </form>
                     <?php endif; ?>
                 </div>

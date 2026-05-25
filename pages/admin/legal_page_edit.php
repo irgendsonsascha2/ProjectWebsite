@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/_layout.php';
 require_once __DIR__ . '/../../includes/site_pages.php';
+require_once __DIR__ . '/../../includes/admin_reauth.php';
 
 use MongoDB\BSON\UTCDateTime;
 
@@ -18,10 +19,20 @@ if (!site_page_is_legal_key($pageKey)) {
 
 $notice = '';
 $error = '';
+$adminReauthFresh = admin_reauth_is_fresh();
+$adminReauthNeeds2fa = admin_reauth_user_has_2fa();
+$reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
 $defaults = site_page_legal_defaults()[$pageKey];
 $page = site_page_load_legal($pageKey, $db);
 
 if (isset($_POST['action']) && $_POST['action'] === 'save_legal_page') {
+    $reauth = admin_reauth_require_fresh_or_post();
+    if (! $reauth['ok']) {
+        $error = $reauth['error'];
+    } else {
+    $adminReauthFresh = admin_reauth_is_fresh();
+    $reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
+
     $postedKey = trim((string) ($_POST['page_key'] ?? ''));
     if ($postedKey !== $pageKey) {
         $error = 'Ungültige Seiten-ID.';
@@ -73,12 +84,13 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_legal_page') {
             }
         }
     }
+    }
 }
 
 $navKey = 'legal_' . $pageKey;
 $pageLabel = $labels[$pageKey] ?? $pageKey;
 
-admin_render_page($pageLabel, $navKey, function () use ($notice, $error, $pageKey, $pageLabel, $page) {
+admin_render_page($pageLabel, $navKey, function () use ($notice, $error, $pageKey, $pageLabel, $page, $adminReauthFresh, $adminReauthNeeds2fa, $reauthMinutesLeft) {
     $sections = site_page_normalize_sections($page['sections'] ?? []);
     if ($sections === []) {
         $sections = [['heading' => '', 'body' => '']];
@@ -95,9 +107,11 @@ admin_render_page($pageLabel, $navKey, function () use ($notice, $error, $pageKe
         <div class="alert success"><?php echo htmlspecialchars($notice, ENT_QUOTES, 'UTF-8'); ?></div>
     <?php endif; ?>
 
+    <?php echo admin_reauth_banner_html($adminReauthFresh, $reauthMinutesLeft); ?>
+
     <div class="admin-card admin-card--spaced">
         <h2>Inhalt bearbeiten</h2>
-        <form method="POST" id="legal-page-form">
+        <form method="POST" id="legal-page-form" data-legal-page-form>
             <?php echo csrf_field(); ?>
             <input type="hidden" name="action" value="save_legal_page">
             <input type="hidden" name="page_key" value="<?php echo htmlspecialchars($pageKey, ENT_QUOTES, 'UTF-8'); ?>">
@@ -155,10 +169,12 @@ admin_render_page($pageLabel, $navKey, function () use ($notice, $error, $pageKe
             </div>
 
             <div class="actions">
-                <button type="submit">Speichern</button>
+                <?php admin_reauth_primary_button('legal-page-form', 'admin-reauth-legal-page', $adminReauthFresh, 'Speichern', 'action', 'save_legal_page'); ?>
             </div>
         </form>
     </div>
+
+    <?php admin_reauth_confirm_dialog('admin-reauth-legal-page', 'legal-page-form', $adminReauthFresh, $adminReauthNeeds2fa, $reauthMinutesLeft, 'Speichern', 'action', 'save_legal_page'); ?>
 
     <template id="legal-section-template">
         <div class="legal-section-block" data-section>
