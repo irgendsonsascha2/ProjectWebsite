@@ -61,18 +61,25 @@ if (isset($_POST['action'])) {
             $notice = 'Berechtigung wurde erstellt.';
         }
     } elseif ($action === 'update_permission') {
-        $permKey = normalize_perm_key($_POST['perm_key'] ?? '');
-        $permLabel = trim($_POST['perm_label'] ?? '');
-        $permDesc = trim($_POST['perm_desc'] ?? '');
-
-        if (!$permKey) {
-            $error = 'Berechtigung fehlt.';
+        $reauth = admin_reauth_require_fresh_or_post();
+        if (! $reauth['ok']) {
+            $error = $reauth['error'];
         } else {
-            $db->permissions_config->updateOne(
-                ['key' => $permKey],
-                ['$set' => ['label' => $permLabel ?: $permKey, 'description' => $permDesc]]
-            );
-            $notice = 'Berechtigung wurde aktualisiert.';
+            $adminReauthFresh = admin_reauth_is_fresh();
+            $reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
+            $permKey = normalize_perm_key($_POST['perm_key'] ?? '');
+            $permLabel = trim($_POST['perm_label'] ?? '');
+            $permDesc = trim($_POST['perm_desc'] ?? '');
+
+            if (! $permKey) {
+                $error = 'Berechtigung fehlt.';
+            } else {
+                $db->permissions_config->updateOne(
+                    ['key' => $permKey],
+                    ['$set' => ['label' => $permLabel ?: $permKey, 'description' => $permDesc]]
+                );
+                $notice = 'Berechtigung wurde aktualisiert.';
+            }
         }
     } elseif ($action === 'delete_permission') {
         $reauth = admin_reauth_require_fresh_or_post();
@@ -179,17 +186,26 @@ try {
                 <div class="card-actions">
                     <button type="button" class="icon-button" data-dialog-open="edit-permission-<?php echo htmlspecialchars($permKey); ?>" aria-label="Berechtigung bearbeiten" title="Berechtigung bearbeiten"><?php echo svg_icon_pencil(18); ?></button>
                     <button type="button" class="icon-button" data-dialog-open="info-permission-<?php echo htmlspecialchars($permKey); ?>" aria-label="Berechtigung anzeigen" title="Berechtigung anzeigen">ℹ</button>
-                    <form method="POST" data-confirm-submit="Berechtigung wirklich löschen?">
-                        <?php echo csrf_field(); ?>
-                        <input type="hidden" name="action" value="delete_permission">
-                        <input type="hidden" name="perm_key" value="<?php echo htmlspecialchars($permKey); ?>">
-                        <?php if (! $adminReauthFresh) {
-                            admin_reauth_form_fields($adminReauthNeeds2fa);
-                        } ?>
-                        <button type="submit" class="icon-button danger" aria-label="Berechtigung löschen" title="Berechtigung löschen">🗑</button>
-                    </form>
+                    <button type="button" class="icon-button danger" data-dialog-open="delete-permission-<?php echo htmlspecialchars($permKey); ?>" aria-label="Berechtigung löschen" title="Berechtigung löschen">🗑</button>
                 </div>
             </div>
+
+            <dialog id="delete-permission-<?php echo htmlspecialchars($permKey); ?>">
+                <div class="dialog-card">
+                    <div class="dialog-header">
+                        <h2>Berechtigung löschen</h2>
+                        <button type="button" class="close-button" data-dialog-close>Schließen</button>
+                    </div>
+                    <p class="muted">Berechtigung: <strong><?php echo htmlspecialchars($permLabel, ENT_QUOTES, 'UTF-8'); ?></strong> (<?php echo htmlspecialchars($permKey, ENT_QUOTES, 'UTF-8'); ?>)</p>
+                    <form method="POST" data-dialog-close-on-submit data-confirm-submit="Berechtigung wirklich löschen?">
+                        <?php echo csrf_field(); ?>
+                        <input type="hidden" name="action" value="delete_permission">
+                        <input type="hidden" name="perm_key" value="<?php echo htmlspecialchars($permKey, ENT_QUOTES, 'UTF-8'); ?>">
+                        <?php admin_reauth_dialog_body($adminReauthFresh, $adminReauthNeeds2fa, $reauthMinutesLeft); ?>
+                        <button type="submit" class="danger">Endgültig löschen</button>
+                    </form>
+                </div>
+            </dialog>
 
             <dialog id="info-permission-<?php echo htmlspecialchars($permKey); ?>">
                 <div class="dialog-card">
@@ -209,7 +225,7 @@ try {
                         <h2>Berechtigung bearbeiten</h2>
                         <button type="button" class="close-button" data-dialog-close>Schließen</button>
                     </div>
-                    <form method="POST" class="permission-form">
+                    <form method="POST" class="permission-form" data-dialog-close-on-submit>
                         <?php echo csrf_field(); ?>
                         <input type="hidden" name="action" value="update_permission">
                         <input type="hidden" name="perm_key" value="<?php echo htmlspecialchars($permKey); ?>">
@@ -221,6 +237,7 @@ try {
                             <label>Beschreibung</label>
                             <textarea name="perm_desc"><?php echo htmlspecialchars($permDesc); ?></textarea>
                         </div>
+                        <?php admin_reauth_dialog_body($adminReauthFresh, $adminReauthNeeds2fa, $reauthMinutesLeft); ?>
                         <div class="actions">
                             <button type="submit">Speichern</button>
                         </div>

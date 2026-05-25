@@ -103,23 +103,30 @@ if (isset($_POST['action'])) {
             $notice = 'Rolle wurde erstellt.';
         }
     } elseif ($action === 'update_role') {
-        $roleKey = strtolower(trim($_POST['role_key'] ?? ''));
-        $roleLabel = trim($_POST['role_label'] ?? '');
-        $permissions = normalize_permission_keys($_POST['permissions'] ?? []);
-        $commentDeleteRoles = normalize_role_keys($_POST['comment_delete_roles'] ?? []);
-        $commentLimit = isset($_POST['comment_limit']) ? (int)$_POST['comment_limit'] : 0;
-        if ($commentLimit < 0) {
-            $commentLimit = 0;
-        }
-
-        if (!$roleKey) {
-            $error = 'Rolle fehlt.';
+        $reauth = admin_reauth_require_fresh_or_post();
+        if (! $reauth['ok']) {
+            $error = $reauth['error'];
         } else {
-            $db->roles_config->updateOne(
-                ['role' => $roleKey],
-                ['$set' => ['label' => $roleLabel ?: $roleKey, 'permissions' => $permissions, 'comment_delete_roles' => $commentDeleteRoles, 'comment_limit' => $commentLimit]]
-            );
-            $notice = 'Rolle wurde aktualisiert.';
+            $adminReauthFresh = admin_reauth_is_fresh();
+            $reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
+            $roleKey = strtolower(trim($_POST['role_key'] ?? ''));
+            $roleLabel = trim($_POST['role_label'] ?? '');
+            $permissions = normalize_permission_keys($_POST['permissions'] ?? []);
+            $commentDeleteRoles = normalize_role_keys($_POST['comment_delete_roles'] ?? []);
+            $commentLimit = isset($_POST['comment_limit']) ? (int) $_POST['comment_limit'] : 0;
+            if ($commentLimit < 0) {
+                $commentLimit = 0;
+            }
+
+            if (! $roleKey) {
+                $error = 'Rolle fehlt.';
+            } else {
+                $db->roles_config->updateOne(
+                    ['role' => $roleKey],
+                    ['$set' => ['label' => $roleLabel ?: $roleKey, 'permissions' => $permissions, 'comment_delete_roles' => $commentDeleteRoles, 'comment_limit' => $commentLimit]]
+                );
+                $notice = 'Rolle wurde aktualisiert.';
+            }
         }
     } elseif ($action === 'delete_role') {
         $reauth = admin_reauth_require_fresh_or_post();
@@ -351,17 +358,30 @@ try {
                 <div class="card-actions">
                     <button type="button" class="icon-button" data-dialog-open="edit-role-<?php echo htmlspecialchars($roleKey); ?>" aria-label="Rolle bearbeiten" title="Rolle bearbeiten"><?php echo svg_icon_pencil(18); ?></button>
                     <button type="button" class="icon-button" data-dialog-open="info-role-<?php echo htmlspecialchars($roleKey); ?>" aria-label="Berechtigungen anzeigen" title="Berechtigungen anzeigen">ℹ</button>
-                    <form method="POST" data-confirm-submit="Rolle wirklich löschen?">
-                    <?php echo csrf_field(); ?>
-                    <input type="hidden" name="action" value="delete_role">
-                    <input type="hidden" name="role_key" value="<?php echo htmlspecialchars($roleKey); ?>">
-                        <?php if (! $adminReauthFresh) {
-                            admin_reauth_form_fields($adminReauthNeeds2fa);
-                        } ?>
-                        <button type="submit" class="icon-button danger" aria-label="Rolle löschen" title="Rolle löschen">🗑</button>
-                    </form>
+                    <?php if ($roleKey !== 'admin'): ?>
+                    <button type="button" class="icon-button danger" data-dialog-open="delete-role-<?php echo htmlspecialchars($roleKey); ?>" aria-label="Rolle löschen" title="Rolle löschen">🗑</button>
+                    <?php endif; ?>
                 </div>
             </div>
+
+            <?php if ($roleKey !== 'admin'): ?>
+            <dialog id="delete-role-<?php echo htmlspecialchars($roleKey); ?>">
+                <div class="dialog-card">
+                    <div class="dialog-header">
+                        <h2>Rolle löschen</h2>
+                        <button type="button" class="close-button" data-dialog-close>Schließen</button>
+                    </div>
+                    <p class="muted">Rolle: <strong><?php echo htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8'); ?></strong> (<?php echo htmlspecialchars($roleKey, ENT_QUOTES, 'UTF-8'); ?>)</p>
+                    <form method="POST" data-dialog-close-on-submit data-confirm-submit="Rolle wirklich löschen?">
+                        <?php echo csrf_field(); ?>
+                        <input type="hidden" name="action" value="delete_role">
+                        <input type="hidden" name="role_key" value="<?php echo htmlspecialchars($roleKey, ENT_QUOTES, 'UTF-8'); ?>">
+                        <?php admin_reauth_dialog_body($adminReauthFresh, $adminReauthNeeds2fa, $reauthMinutesLeft); ?>
+                        <button type="submit" class="danger">Endgültig löschen</button>
+                    </form>
+                </div>
+            </dialog>
+            <?php endif; ?>
 
             <dialog id="info-role-<?php echo htmlspecialchars($roleKey); ?>">
                 <div class="dialog-card">
@@ -415,7 +435,7 @@ try {
                         <h2>Rolle bearbeiten</h2>
                         <button type="button" class="close-button" data-dialog-close>Schließen</button>
                     </div>
-                    <form method="POST" class="role-form" data-role="<?php echo htmlspecialchars($roleKey); ?>">
+                    <form method="POST" class="role-form" data-dialog-close-on-submit data-role="<?php echo htmlspecialchars($roleKey); ?>">
                         <?php echo csrf_field(); ?>
                         <input type="hidden" name="action" value="update_role">
                         <input type="hidden" name="role_key" value="<?php echo htmlspecialchars($roleKey); ?>">
@@ -483,6 +503,7 @@ try {
                                 <?php endforeach; ?>
                             </div>
                         </div>
+                        <?php admin_reauth_dialog_body($adminReauthFresh, $adminReauthNeeds2fa, $reauthMinutesLeft); ?>
                         <div class="actions">
                             <button type="submit" class="save-button" disabled>Speichern</button>
                         </div>

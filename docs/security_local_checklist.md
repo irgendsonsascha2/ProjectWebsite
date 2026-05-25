@@ -36,7 +36,7 @@
 
 ## Phase 1 — Medien-Proxy (Draft-Leak)
 
-**Status:** 🧪 Manueller Test (du)
+**Status:** ✅ erledigt
 
 ### Implementierung (Agent)
 
@@ -45,48 +45,50 @@
 - [x] `content/.htaccess` (Require all denied)
 - [x] `serve-php.sh` + `Makefile` mit Router
 - [x] README-Hinweis Medien-Proxy
+- [x] Fix: `isset($db->projects)` → Mongo-Lookup funktioniert
 
 ### Manueller Test (du)
 
-- [ ] **Server neu starten** (`make php` / `./serve-php.sh`)
-- [ ] Entwurfs-Projekt mit Bild: als **Gast** direkte URL `/content/images/…` → 403 oder 404
-- [ ] Als **Autor** eingeloggt: Bild in Detail + direkte URL sichtbar
-- [ ] Veröffentlichtes Projekt: Gast mit `view_projects` sieht Medien
-- [ ] Startseiten-Portrait (falls gesetzt) öffentlich
-- [ ] `js/`, `react-dist/` laden weiterhin
+- [x] **Server neu starten** (`make php` / `./serve-php.sh`)
+- [x] Entwurfs-Projekt mit Bild: als **Gast** direkte URL `/content/images/…` → 403 oder 404
+- [x] Als **Autor** eingeloggt: Bild in Detail + direkte URL sichtbar
+- [x] Veröffentlichtes Projekt: Gast mit `view_projects` sieht Medien
+- [x] Startseiten-Portrait (falls gesetzt) öffentlich
+- [x] `js/`, `react-dist/` laden weiterhin
 
-**Notizen / Datum:**
+**Notizen / Datum:** 2026-05-25 — OK
 
 ---
 
 ## Phase 2 — CSP ohne `script-src-attr 'unsafe-inline'`
 
-**Status:** 🧪 Manueller Test (du)
+**Status:** ✅ erledigt
 
 ### Implementierung (Agent)
 
 - [x] Inline `onclick`/`onsubmit` → `data-confirm-submit`
 - [x] Bestätigung in `js/csrf-forms.js` (Site + Admin)
 - [x] CSP in PHP + Laravel angepasst
+- [x] Rollen/Berechtigungen: Löschen + Bearbeiten mit Re-Auth im Dialog (`admin_reauth_dialog_body`)
 
 ### Manueller Test (du)
 
-- [ ] Response-Header: CSP **ohne** `script-src-attr 'unsafe-inline'`
-- [ ] Admin: Freigeben, Rolle/Berechtigung löschen, Registrierungsfreigabe, DB-Skript-Dialog, 2FA deaktivieren — Confirm funktioniert
-- [ ] Keine CSP-Fehler in der Konsole (Admin + Projektseiten)
+- [x] Response-Header: CSP **ohne** `script-src-attr 'unsafe-inline'`
+- [x] Admin: Freigeben, Rolle/Berechtigung löschen, Registrierungsfreigabe, DB-Skript-Dialog, 2FA deaktivieren — Confirm funktioniert
+- [x] Keine CSP-Fehler in der Konsole (Admin + Projektseiten)
 
-**Notizen / Datum:**
+**Notizen / Datum:** 2026-05-25 — OK
 
 ---
 
 ## Phase 3 — Admin-Re-Auth ausweiten
 
-**Status:** 🧪 Manueller Test (du)
+**Status:** 🧪 Manueller Test (du) — **jetzt**
 
 ### Implementierung (Agent)
 
 - [x] `admin_reauth_form_fields()` + `admin_reauth_banner_html()` in `includes/admin_reauth.php`
-- [x] Re-Auth: Nutzer-Moderation, Rolle löschen, Berechtigung löschen, Registrierungsfreigabe
+- [x] Re-Auth: Nutzer-Moderation, Rolle löschen/bearbeiten, Berechtigung löschen/bearbeiten, Registrierungsfreigabe, DB-Skripte
 - [x] Banner „Bestätigung aktiv“ auf betroffenen Admin-Seiten
 
 ### Manueller Test (du)

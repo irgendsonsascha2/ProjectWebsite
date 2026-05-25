@@ -222,3 +222,21 @@ if (! function_exists('admin_reauth_banner_html')) {
             .' Min.) — sensible Aktionen ohne erneute Passwort-Eingabe.</p>';
     }
 }
+
+if (! function_exists('admin_reauth_dialog_body')) {
+    /**
+     * Passwort/TOTP-Felder oder Hinweis auf aktives Re-Auth-Fenster (für Admin-Dialoge).
+     */
+    function admin_reauth_dialog_body(bool $fresh, bool $needs2fa, int $minutesLeft): void
+    {
+        if ($fresh) {
+            echo '<p class="muted">Admin-Bestätigung aktiv (noch ca. '
+                .(int) max(1, $minutesLeft)
+                .' Min.) — Passwort nicht erneut nötig.</p>';
+
+            return;
+        }
+
+        admin_reauth_form_fields($needs2fa);
+    }
+}

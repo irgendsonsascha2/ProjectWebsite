@@ -257,11 +257,7 @@ admin_render_page('DB-Skripte', 'db_scripts', function () use ($availableScripts
                                     <?php endif; ?>
                                 </p>
                             <?php endforeach; ?>
-                            <?php if (! $adminReauthFresh) {
-                                admin_reauth_form_fields($adminReauthNeeds2fa);
-                            } else { ?>
-                                <p class="muted">Admin-Bestätigung aktiv (noch ca. <?php echo (int) $reauthMinutesLeft; ?> Min.) — Passwort nicht erneut nötig.</p>
-                            <?php } ?>
+                            <?php admin_reauth_dialog_body($adminReauthFresh, $adminReauthNeeds2fa, $reauthMinutesLeft); ?>
                             <button type="submit" name="run_script">Ausführen</button>
                         </form>
                     </div>
