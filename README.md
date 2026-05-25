@@ -54,7 +54,7 @@ Parallel zur klassischen PHP-App liegt eine **Laravel-13-Anwendung** mit **Mongo
 
 **Nach Laravel-Login zur klassischen Website:** **`laravel_handoff.php`** validiert HMAC + **Einmal-Nonce** (`handoff_tokens`, Index: `dbScripts/14_db_init_handoff_tokens.php`), setzt `$_SESSION` und leitet auf **`index.php?page=…`** weiter (Standard: `home`, `LEGACY_AFTER_LOGIN_PAGE`). **`HANDOFF_SECRET`** und **`LEGACY_SITE_URL`** in **`laravel/.env`** erforderlich.
 
-**Passwort vergessen / neues Passwort (Laravel):** Auf der Account-Seite verweist der Link **Passwort vergessen** auf **`{APP_URL}/forgot-password`** (typ. `http://127.0.0.1:8000`, Wert aus `laravel/.env`). Der Link in der E-Mail setzt das Passwort in Laravel; **nach erfolgreichem Speichern** folgt derselbe **Handoff** wie nach Login, sofern `HANDOFF_SECRET` / `LEGACY_SITE_URL` gesetzt sind. Dafür muss die Collection/ Tabelle für Reset-Tokens existieren: einmal **`cd laravel && php artisan migrate`** (u. a. `password_reset_tokens` — auf Mongo legt das die nötigen Strukturen an, sofern die Verbindung steht). **E-Mail:** in `laravel/.env` z. B. `MAIL_MAILER=log` (lokal) oder echten Mailer setzen, sonst kommt kein Link an.
+**Passwort vergessen / neues Passwort (Laravel):** Auf der **Anmeldeseite** (`index.php?page=login`) verweist der Link **Passwort vergessen** auf **`{APP_URL}/forgot-password`** (typ. `http://127.0.0.1:8000`, Wert aus `laravel/.env`). Der Link in der E-Mail setzt das Passwort in Laravel; **nach erfolgreichem Speichern** folgt derselbe **Handoff** wie nach Login, sofern `HANDOFF_SECRET` / `LEGACY_SITE_URL` gesetzt sind. Dafür muss die Collection/Tabelle für Reset-Tokens existieren: einmal **`cd laravel && php artisan migrate`** (u. a. `password_reset_tokens`). **E-Mail lokal:** empfohlen **MailHog** für PHP (`.env.local`) und Laravel (`MAIL_MAILER=smtp`) — ein Posteingang, siehe **`docs/local_mail_setup.md`** (`make services-up`, `make mailhog-check`). Alternative nur Laravel: `MAIL_MAILER=log` → Reset-Link in `laravel/storage/logs/laravel.log`, nicht in MailHog.
 
 **Brücken (Rate-Limiting):** **`bridge_auth.php`** und **`bridge_register.php`** drosseln zu viele Anfragen pro IP (Laravel `RateLimiter`, **~10/60s** Login, **~5/60s** Registrierung) und leiten mit `?err=throttle` zur Login- bzw. Register-Seite um.
 
@@ -433,7 +433,7 @@ Technik:
   - `MAIL_SMTP_USERNAME` / `MAIL_SMTP_PASSWORD` (Provider-Auth)
   - `MAIL_FROM_EMAIL`, `MAIL_LOG_REDACT_SECRETS=1` (Default: Token/Codes in `logs/mail.log` redigiert)
 - **Produktion:** Bei `APP_ENV=production` ist Plain-SMTP (`encryption=none`) blockiert; Vorlage [`.env.production.example`](.env.production.example), Prüfung `make prod-env-check` / Admin **Deploy-Status**.
-- Lokal ohne SMTP: `mail.log` enthält Test-URLs. MailHog: `make mailhog` oder `make services-up`, siehe `docs/deployment.md`.
+- Lokal ohne SMTP: `mail.log` enthält Test-URLs. MailHog: `make services-up`, `make mailhog-check`, Setup **`docs/local_mail_setup.md`**.
 
 Die Auth-/Invite-Funktionen umfassen:
 

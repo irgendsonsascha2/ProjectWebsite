@@ -1,4 +1,4 @@
-.PHONY: help dev php frontend-build frontend-dev mailhog laravel services-up services-down services-logs deploy-check prod-env-check db-baseline deploy-server
+.PHONY: help dev php frontend-build frontend-dev mailhog mailhog-check laravel services-up services-down services-logs deploy-check prod-env-check db-baseline deploy-server
 
 HOST ?= 127.0.0.1
 PHP_PORT ?= 8080
@@ -17,6 +17,7 @@ help:
 	@echo "  make frontend-build Frontend-Assets bauen (react-dist/)"
 	@echo "  make frontend-dev   Vite Dev-Server (HMR) starten"
 	@echo "  make mailhog        MailHog via Docker (SMTP+Web UI, einzelner Container)"
+	@echo "  make mailhog-check  Prüft SMTP-Port MailHog (127.0.0.1:1025)"
 	@echo "  make services-up    MongoDB + MailHog (docker compose up -d)"
 	@echo "  make services-down  Docker-Dienste stoppen"
 	@echo "  make services-logs  Logs der Compose-Dienste"
@@ -37,6 +38,9 @@ help:
 	@echo ""
 
 dev: frontend-build php
+	@echo ""
+	@echo "Mail-Tests: make mailhog-check — Setup: docs/local_mail_setup.md"
+	@echo ""
 
 php:
 	@echo ""
@@ -64,6 +68,9 @@ mailhog:
 	@echo "MailHog SMTP: smtp://$(HOST):$(MAILHOG_SMTP_PORT)"
 	@echo ""
 	docker run --rm -p $(MAILHOG_SMTP_PORT):1025 -p $(MAILHOG_UI_PORT):8025 mailhog/mailhog
+
+mailhog-check:
+	@php -r '$$e=0; $$fp=@fsockopen("$(HOST)", $(MAILHOG_SMTP_PORT), $$e, $$s, 2); if (!$$fp) { fwrite(STDERR, "MailHog SMTP nicht erreichbar auf $(HOST):$(MAILHOG_SMTP_PORT) — make services-up oder make mailhog\n"); exit(1); } fclose($$fp); echo "MailHog SMTP OK ($(HOST):$(MAILHOG_SMTP_PORT))\n"; echo "Web-UI: http://$(HOST):$(MAILHOG_UI_PORT)/\n";'
 
 services-up:
 	@echo ""

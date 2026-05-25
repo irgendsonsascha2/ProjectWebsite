@@ -5,7 +5,9 @@ Kurz-Checkliste vor externem Setup. Automatisiert: `make deploy-check` bzw. `mak
 ## Voraussetzungen
 
 - [ ] `make services-up` oder Mongo erreichbar
-- [ ] `.env.local` mit `*_DB_URI`
+- [ ] `make mailhog-check` OK (SMTP 127.0.0.1:1025)
+- [ ] `.env.local` mit `*_DB_URI` und MailHog (`MAIL_SMTP_*`) — siehe [local_mail_setup.md](local_mail_setup.md)
+- [ ] `laravel/.env`: `MAIL_MAILER=smtp`, Host/Port wie MailHog
 - [ ] `make frontend-build` (react-dist/)
 - [ ] PHP: `make php` (mit router.php)
 - [ ] Laravel: `make laravel` (Passwort-Reset)
@@ -14,7 +16,8 @@ Kurz-Checkliste vor externem Setup. Automatisiert: `make deploy-check` bzw. `mak
 
 - [ ] Login → Handoff → Startseite/Grid **mit Styling**
 - [ ] **Handoff-Replay:** dieselbe Handoff-URL ein zweites Mal → Fehler / kein erneuter Login
-- [ ] Registrierung mit Admin-Code **oder** Anfrage-Flow (E-Mail in MailHog/logs)
+- [ ] Registrierung mit Admin-Code **oder** Anfrage-Flow (E-Mail in MailHog + `logs/mail.log`)
+- [ ] **Passwort vergessen:** Login → Link → E-Mail in http://127.0.0.1:8025/ → Reset → Handoff
 - [ ] Projekt anlegen, Bild hochladen, Like oder Kommentar
 - [ ] Admin → DB-Skripte: Re-Auth (Passwort + ggf. TOTP)
 - [ ] Admin → Deploy-Status: keine roten Einträge

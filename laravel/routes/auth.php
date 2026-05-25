@@ -41,6 +41,13 @@ Route::middleware('guest')->group(function () use ($legacySiteUrl) {
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
         ->name('password.email');
 
+    // Ohne Token (z. B. nur /reset-password in der Adresszeile) → kein 405-Debug, sondern Hinweis
+    Route::get('reset-password', function (): RedirectResponse {
+        return redirect()
+            ->route('password.request')
+            ->with('status', 'Der Link ist ungültig oder unvollständig. Bitte fordere unten einen neuen Reset-Link an.');
+    });
+
     Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
         ->name('password.reset');
 

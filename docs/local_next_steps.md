@@ -2,7 +2,7 @@
 
 Arbeitsliste für Entwicklung auf der eigenen Maschine. Reihenfolge: grober Nutzen, wenig externe Voraussetzungen.
 
-1. **E‑Mail-Dev-Setup** — Lokalen SMTP-Test-Posteingang (z. B. [MailHog](https://github.com/mailhog/MailHog)) anbinden: in `.env.local` `MAIL_SMTP_HOST=127.0.0.1` und `MAIL_SMTP_PORT=1025` (oder wie bei deinem Dienst), MailHog/Container muss dabei laufen. `includes/mail.php` nutzt dann SMTP statt `mail()`. Sensible Werte in `logs/mail.log` werden standardmäßig redigiert (`MAIL_LOG_REDACT_SECRETS=0` für vollen Debug-Body). Beispiel (Docker): `docker run --rm -p 1025:1025 -p 8025:8025 mailhog/mailhog` — Web-UI: `http://127.0.0.1:8025/`. Details: `README.md` (Abschnitt Registrierung / Mail).
+1. **E‑Mail-Dev-Setup** — erledigt im Repo: `docs/local_mail_setup.md`, `.env.local.example`, `make mailhog-check`; PHP (`.env.local`) + Laravel (`MAIL_MAILER=smtp`) → MailHog http://127.0.0.1:8025/
 
 2. **Lokalen Lauf bündeln** — Ein `Makefile` oder Skript, das typische Befehle bündelt: MongoDB starten, `cd frontend && npm run build` bzw. `dev`, `php -S 127.0.0.1:8080 -t .` mit festen Ports (127.0.0.1, nicht `localhost` mischen), siehe `AGENTS.md`.
 

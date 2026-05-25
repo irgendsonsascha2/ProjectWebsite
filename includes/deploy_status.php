@@ -255,6 +255,11 @@ if (!function_exists('deploy_status_collect_checks')) {
             $mailCheck['hint']
         );
 
+        $laravelMailDev = deploy_status_laravel_mail_dev_check();
+        if ($laravelMailDev !== null) {
+            $checks[] = $laravelMailDev;
+        }
+
         return $checks;
     }
 }
@@ -381,6 +386,44 @@ if (!function_exists('deploy_status_migration_tracking_check')) {
             'detail' => $applied.' von '.$total.' protokolliert; nicht protokolliert: '.$pendingList,
             'hint' => 'Nur Skripte ausführen, die du brauchst; danach erscheinen sie unter DB-Skripte als „Angewendet“',
         ];
+    }
+}
+
+if (!function_exists('deploy_status_laravel_mail_dev_check')) {
+    /**
+     * Lokal: Hinweis wenn Passwort-Reset nur ins Laravel-Log geht (MAIL_MAILER=log).
+     *
+     * @return array{id: string, label: string, status: string, detail: string, hint: string}|null
+     */
+    function deploy_status_laravel_mail_dev_check(): ?array
+    {
+        if (app_is_production() || app_environment() !== 'local') {
+            return null;
+        }
+
+        $mailer = deploy_status_laravel_env_value('MAIL_MAILER');
+        if ($mailer === null) {
+            return null;
+        }
+
+        $mailer = strtolower(trim($mailer));
+        if ($mailer !== 'log') {
+            return deploy_status_check(
+                'laravel_mail_dev',
+                'Laravel Mail (Passwort-Reset)',
+                'ok',
+                'MAIL_MAILER='.$mailer.' — Reset-Mails gehen nicht nur ins Log',
+                'MailHog-UI: http://127.0.0.1:8025/ (wenn smtp und MailHog läuft)'
+            );
+        }
+
+        return deploy_status_check(
+            'laravel_mail_dev',
+            'Laravel Mail (Passwort-Reset)',
+            'warn',
+            'MAIL_MAILER=log — Erfolgsmeldung ohne Eintrag in MailHog',
+            'laravel/.env: MAIL_MAILER=smtp, MAIL_HOST=127.0.0.1, MAIL_PORT=1025 — siehe docs/local_mail_setup.md'
+        );
     }
 }
 

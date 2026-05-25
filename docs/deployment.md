@@ -17,6 +17,8 @@ docker compose up -d
 | MailHog SMTP | 127.0.0.1:1025 | `MAIL_SMTP_HOST=127.0.0.1`, `MAIL_SMTP_PORT=1025` (ohne TLS) |
 | MailHog UI   | 127.0.0.1:8025 | http://127.0.0.1:8025/ |
 
+**PHP + Laravel auf MailHog:** [local_mail_setup.md](local_mail_setup.md) (zwei Env-Dateien, `make mailhog-check`).
+
 ```bash
 make frontend-build
 make php              # http://127.0.0.1:8080/
