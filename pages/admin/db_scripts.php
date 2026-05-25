@@ -55,6 +55,18 @@ function admin_script_fields($scriptName) {
         ];
     }
 
+    if ($scriptName === '09_db_init_site_settings.php') {
+        $fields = [
+            [
+                'name' => 'reset_site_settings_defaults',
+                'label' => 'Alle Werte auf Standard zurücksetzen (sonst nur fehlende Felder ergänzen, z. B. Website-Name)',
+                'type' => 'checkbox',
+                'required' => false,
+                'placeholder' => '',
+            ],
+        ];
+    }
+
     if ($scriptName === '03_db_init_mongo_roles.php') {
         $fields = [
             ['name' => 'mongo_viewer_db_password', 'label' => 'MongoDB Passwort viewer', 'type' => 'password', 'required' => true, 'placeholder' => 'Passwort setzen'],
@@ -171,6 +183,7 @@ if (isset($_POST['run_script'])) {
                 'mongo_content_manager_db_password' => admin_script_input('mongo_content_manager_db_password'),
                 'mongo_admin_db_password' => admin_script_input('mongo_admin_db_password'),
                 'backfill_migration_log' => admin_script_checkbox('backfill_migration_log'),
+                'reset_site_settings_defaults' => admin_script_checkbox('reset_site_settings_defaults'),
             ];
 
             $cfg = mongo_config();

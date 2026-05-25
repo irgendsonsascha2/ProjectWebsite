@@ -23,6 +23,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_site_settings') {
     $reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
 
     $input = [
+        'site_name' => (string) ($_POST['site_name'] ?? ''),
         'max_image_mb' => (int) ($_POST['max_image_mb'] ?? 0),
         'max_video_mb' => (int) ($_POST['max_video_mb'] ?? 0),
         'max_image_width' => (int) ($_POST['max_image_width'] ?? 0),
@@ -54,7 +55,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_site_settings') {
         site_settings_clear_cache();
         site_settings_apply($adminDb);
         $settings = site_settings_load($adminDb, true);
-        $notice = 'Einstellungen gespeichert. Upload-Limits gelten ab dem nächsten Request.';
+        $notice = 'Einstellungen gespeichert. Website-Name und Upload-Limits gelten ab dem nächsten Request.';
     } catch (Exception $e) {
         $error = 'Datenbankfehler: ' . $e->getMessage();
     }
@@ -76,15 +77,26 @@ admin_render_page('Einstellungen', 'settings', function () use ($notice, $error,
     <?php echo admin_reauth_banner_html($adminReauthFresh, $reauthMinutesLeft); ?>
 
     <p class="field-hint">
-        Werte gelten für Medien-Uploads und einige Anzeige-Limits auf der Website.
+        Werte gelten für Medien-Uploads, Anzeige-Limits und den öffentlichen Website-Namen
+        (Seitentitel, Laravel-Auth-Seiten wie Passwort vergessen, E-Mails, 2FA-Anzeige in Authenticator-Apps).
         Der PHP-Server muss große Uploads weiterhin erlauben (<code>post_max_size</code> / <code>upload_max_filesize</code>).
     </p>
 
     <div class="admin-card admin-card--spaced">
-        <h2>Medien-Uploads</h2>
         <form method="POST" id="site-settings-form">
             <?php echo csrf_field(); ?>
             <input type="hidden" name="action" value="save_site_settings">
+
+            <h2>Website</h2>
+
+            <div class="field">
+                <label for="site_name">Website-Name</label>
+                <input type="text" id="site_name" name="site_name" maxlength="80" required
+                    value="<?php echo htmlspecialchars((string) $settings['site_name'], ENT_QUOTES, 'UTF-8'); ?>">
+                <div class="hint">Erscheint u. a. im Browser-Tab, auf Laravel-Login/Passwort-Seiten und als Absendername in System-E-Mails.</div>
+            </div>
+
+            <h2>Medien-Uploads</h2>
 
             <div class="field">
                 <label for="max_image_mb">Max. Bildgröße (MB)</label>

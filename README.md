@@ -502,7 +502,7 @@ Der Admin-Bereich liegt unter `pages/admin/` und umfasst:
 - `legal_page_edit.php?key=…`
   - Impressum, Datenschutz oder Nutzungsbedingungen einzeln bearbeiten (eigene Admin-Menüpunkte; Datensätze in `site_pages`)
 - `settings.php`
-  - Allgemeine Einstellungen (Medien-Limits, Galerie-Paging, Kommentarlänge; Datensatz `site_settings` in `site_pages`, nur Admin)
+  - Allgemeine Einstellungen (Website-Name, Medien-Limits, Galerie-Paging, Kommentarlänge; Datensatz `site_settings` in `site_pages`, nur Admin). Der Name gilt auch für Laravel-Auth-Seiten (z. B. Passwort vergessen) und System-E-Mails (`laravel/app/Services/SiteDisplayName.php`).
 - `db_scripts.php`
   - Ausführung und Einsicht der Datenbankskripte aus `dbScripts/`
   - Vor Ausführung: CSRF + **frische Admin-Bestätigung** (Passwort, bei aktivem 2FA zusätzlich TOTP; danach 15 Min. gültig — `includes/admin_reauth.php`)
@@ -548,7 +548,7 @@ Die wichtigsten Initialisierungsskripte:
 - `dbScripts/08_db_init_site_nutzungsbedingungen.php`
   - Nutzungsbedingungen in `site_pages` aus `site_page_legal_defaults()` (ersetzt nur diesen Datensatz)
 - `dbScripts/09_db_init_site_settings.php`
-  - Allgemeine Einstellungen (`site_settings` in `site_pages`; ersetzt nur diesen Datensatz)
+  - Allgemeine Einstellungen (`site_settings` in `site_pages`, inkl. `site_name`). Standard: Datensatz anlegen bzw. fehlende Felder ergänzen (bestehende Upload-Limits bleiben). Optional per Checkbox im Admin: alle Werte auf Standard zurücksetzen.
 - `dbScripts/11_db_init_users_two_factor.php`
   - Dokumentation der optionalen `two_factor_*`-Felder auf `users` + sparse Index
 - `dbScripts/13_db_init_users_moderation.php`

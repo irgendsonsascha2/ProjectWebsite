@@ -31,7 +31,7 @@ if ($isAjax) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Mein Portfolio</title>
+    <title><?php echo htmlspecialchars(site_settings_site_name($db), ENT_QUOTES, 'UTF-8'); ?></title>
     <?php echo csrf_meta_script(); ?>
     <?php
         $asset = static function (string $path): string {

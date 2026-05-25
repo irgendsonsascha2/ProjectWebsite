@@ -7,9 +7,11 @@
 if (!function_exists('two_factor_app_label')) {
     function two_factor_app_label(): string
     {
-        $name = getenv('APP_NAME') ?: getenv('APP_DB_NAME') ?: 'Portfolio';
+        if (!function_exists('site_settings_site_name')) {
+            require_once __DIR__ . '/site_settings.php';
+        }
 
-        return is_string($name) && trim($name) !== '' ? trim($name) : 'Portfolio';
+        return site_settings_site_name();
     }
 }
 
