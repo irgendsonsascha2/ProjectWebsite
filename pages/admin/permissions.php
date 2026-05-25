@@ -186,7 +186,7 @@ try {
                 <div class="card-actions">
                     <button type="button" class="icon-button" data-dialog-open="edit-permission-<?php echo htmlspecialchars($permKey); ?>" aria-label="Berechtigung bearbeiten" title="Berechtigung bearbeiten"><?php echo svg_icon_pencil(18); ?></button>
                     <button type="button" class="icon-button" data-dialog-open="info-permission-<?php echo htmlspecialchars($permKey); ?>" aria-label="Berechtigung anzeigen" title="Berechtigung anzeigen">ℹ</button>
-                    <button type="button" class="icon-button danger" data-dialog-open="delete-permission-<?php echo htmlspecialchars($permKey); ?>" aria-label="Berechtigung löschen" title="Berechtigung löschen">🗑</button>
+                    <button type="button" class="icon-button danger" data-dialog-open="delete-permission-<?php echo htmlspecialchars($permKey); ?>" aria-label="Berechtigung löschen" title="Berechtigung löschen"><?php echo svg_icon_trash(18); ?></button>
                 </div>
             </div>
 

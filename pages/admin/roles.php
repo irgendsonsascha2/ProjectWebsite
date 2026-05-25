@@ -359,7 +359,7 @@ try {
                     <button type="button" class="icon-button" data-dialog-open="edit-role-<?php echo htmlspecialchars($roleKey); ?>" aria-label="Rolle bearbeiten" title="Rolle bearbeiten"><?php echo svg_icon_pencil(18); ?></button>
                     <button type="button" class="icon-button" data-dialog-open="info-role-<?php echo htmlspecialchars($roleKey); ?>" aria-label="Berechtigungen anzeigen" title="Berechtigungen anzeigen">ℹ</button>
                     <?php if ($roleKey !== 'admin'): ?>
-                    <button type="button" class="icon-button danger" data-dialog-open="delete-role-<?php echo htmlspecialchars($roleKey); ?>" aria-label="Rolle löschen" title="Rolle löschen">🗑</button>
+                    <button type="button" class="icon-button danger" data-dialog-open="delete-role-<?php echo htmlspecialchars($roleKey); ?>" aria-label="Rolle löschen" title="Rolle löschen"><?php echo svg_icon_trash(18); ?></button>
                     <?php endif; ?>
                 </div>
             </div>

@@ -16,11 +16,13 @@
     font-size: 2rem;
     line-height: 1;
     cursor: pointer;
+    text-decoration: none;
   }
 
   .dialog-close:hover {
     color: var(--primary-color);
     background: var(--surface-hover);
+    text-decoration: none;
   }
 
   .dialog-close:focus,
