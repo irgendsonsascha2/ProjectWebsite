@@ -145,7 +145,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 <div className="relative">
                   {items[1] ? (
                     <div
-                      className={['absolute inset-0 pointer-events-none rounded-3xl shadow-lg', kindClasses(items[1].kind)].join(' ')}
+                      className={['site-toast--stacked', kindClasses(items[1].kind)].join(' ')}
                       style={{
                         transform: 'translateY(10px) scale(0.97)',
                         opacity: 0.75,
@@ -153,8 +153,6 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                         color: isDark ? '#f8fafc' : '#0f172a',
                         mixBlendMode: 'normal',
                         filter: 'none',
-                        borderRadius: '1.5rem',
-                        overflow: 'hidden',
                       }}
                       aria-hidden="true"
                     />
@@ -162,15 +160,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
                   {items[0] ? (
                     <div
-                      className={['relative pointer-events-auto rounded-3xl shadow-lg', kindClasses(items[0].kind)].join(' ')}
+                      className={['site-toast', kindClasses(items[0].kind)].join(' ')}
                       style={{
                         opacity: 1,
                         backgroundColor: isDark ? '#0b1220' : '#ffffff',
                         color: isDark ? '#f8fafc' : '#0f172a',
                         mixBlendMode: 'normal',
                         filter: 'none',
-                        borderRadius: '1.5rem',
-                        overflow: 'hidden',
                       }}
                       role="status"
                       aria-live="polite"
@@ -188,29 +184,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                         </div>
                         <button
                           type="button"
+                          className="site-toast-close"
                           onClick={() => remove(items[0].id)}
-                          className={[
-                            '!w-auto !p-1 !m-0 inline-flex items-center justify-center',
-                            '!bg-transparent !text-current !shadow-none',
-                            'rounded-full opacity-70 hover:opacity-100',
-                            'focus-visible:outline-none',
-                          ].join(' ')}
                           aria-label="Toast schließen"
                           title="Schließen"
                         >
-                          <svg
-                            className="h-4 w-4"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            aria-hidden="true"
-                          >
-                            <path d="M18 6L6 18" />
-                            <path d="M6 6l12 12" />
-                          </svg>
+                          ×
                         </button>
                       </div>
                     </div>

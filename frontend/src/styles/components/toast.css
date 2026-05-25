@@ -1,0 +1,53 @@
+@layer components {
+  .site-toast {
+    position: relative;
+    pointer-events: auto;
+    border-radius: 1.5rem;
+    overflow: hidden;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  }
+
+  .site-toast--stacked {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: 1.5rem;
+    overflow: hidden;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  }
+
+  .site-toast-close {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    margin: 0;
+    border: none;
+    border-radius: 999rem;
+    background: transparent;
+    color: inherit;
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.7;
+    appearance: none;
+    -webkit-appearance: none;
+    box-shadow: none;
+  }
+
+  .site-toast-close:hover {
+    opacity: 1;
+    color: inherit;
+    background: var(--surface-hover);
+  }
+
+  .site-toast-close:focus,
+  .site-toast-close:focus-visible {
+    outline: none;
+    box-shadow: none;
+    border: none;
+  }
+}
