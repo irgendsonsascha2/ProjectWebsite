@@ -156,6 +156,7 @@ if (!function_exists('admin_render_page')) {
         $renderContent();
         echo "    </div>\n";
         echo "    <div id=\"react-root\" data-page=\"admin\"></div>\n";
+        echo '    <script src="'.admin_js_src('dialog-focus.js').'"></script>'."\n";
         echo '    <script src="'.admin_js_src('admin-dialogs.js').'"></script>'."\n";
         echo '    <script src="'.admin_js_src('csrf-forms.js').'"></script>'."\n";
         foreach ($pageScripts as $scriptFile) {

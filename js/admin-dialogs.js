@@ -8,7 +8,7 @@ function adminDialogsInit() {
     var dialog = dialogId ? document.getElementById(dialogId) : null;
     if (!dialog || typeof dialog.showModal !== 'function') return;
     button.addEventListener('click', function () {
-      dialog.showModal();
+      showAppDialog(dialog);
     });
   });
 

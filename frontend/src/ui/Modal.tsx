@@ -37,10 +37,20 @@ export function Modal({
     if (!open) return;
     const el = dialogRef.current;
     if (!el) return;
-    const focusable = el.querySelector<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    const input = el.querySelector<HTMLElement>(
+      'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])',
     );
-    (focusable ?? el).focus();
+    if (input) {
+      input.focus();
+      return;
+    }
+    const buttons = el.querySelectorAll<HTMLButtonElement>('button:not([disabled])');
+    for (const btn of buttons) {
+      if (btn.classList.contains('site-modal-close')) continue;
+      btn.focus();
+      return;
+    }
+    el.focus();
   }, [open]);
 
   const labeledBy = useMemo(() => (title ? 'modal-title' : undefined), [title]);

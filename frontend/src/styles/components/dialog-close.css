@@ -1,0 +1,45 @@
+@layer components {
+  /* X close control in native <dialog> headers (lightbox / React Modal pattern) */
+  .dialog-close {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    margin: 0;
+    border: none;
+    border-radius: 999rem;
+    background: transparent;
+    color: var(--text-main);
+    font-size: 2rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .dialog-close:hover {
+    color: var(--primary-color);
+    background: var(--surface-hover);
+  }
+
+  .dialog-close:focus,
+  .dialog-close:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--primary-color);
+  }
+
+  /* Secondary dismiss in dialog footers (e.g. Abbrechen) */
+  .close-button {
+    @apply inline-flex items-center justify-center rounded-full px-3 py-2 text-sm font-semibold;
+    background: var(--surface-muted);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-main);
+    cursor: pointer;
+  }
+
+  .close-button:hover {
+    background: var(--surface-hover);
+    color: var(--primary-color);
+  }
+}

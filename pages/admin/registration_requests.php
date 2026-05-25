@@ -175,7 +175,7 @@ $verifiedPending = iterator_to_array(
         <div class="dialog-card">
             <div class="dialog-header">
                 <h2>Registrierung freigeben</h2>
-                <button type="button" class="close-button" data-dialog-close>Schließen</button>
+                <button type="button" class="dialog-close" data-dialog-close aria-label="Schließen">×</button>
             </div>
             <form method="POST" action="registration_requests.php" id="approve-request-form" data-dialog-close-on-submit data-confirm-submit="Anfrage freigeben und Code senden?">
                 <?php echo csrf_field(); ?>

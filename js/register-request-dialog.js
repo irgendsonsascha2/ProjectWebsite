@@ -5,7 +5,7 @@
 
   function openDialog() {
     if (typeof dialog.showModal === 'function') {
-      dialog.showModal();
+      showAppDialog(dialog);
     } else {
       window.location.href = 'index.php?page=register#request-code';
     }

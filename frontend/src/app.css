@@ -10,6 +10,7 @@
 @import "./styles/components/fabs.css";
 @import "./styles/components/lightbox.css";
 @import "./styles/components/modal.css";
+@import "./styles/components/dialog-close.css";
 
 @import "./styles/pages/account.css";
 @import "./styles/pages/register.css";

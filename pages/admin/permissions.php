@@ -138,7 +138,7 @@ try {
         <div class="dialog-card">
             <div class="dialog-header">
                 <h2>Neue Berechtigung erstellen</h2>
-                <button type="button" class="close-button" data-dialog-close>Schließen</button>
+                <button type="button" class="dialog-close" data-dialog-close aria-label="Schließen">×</button>
             </div>
             <form method="POST" class="permission-form">
                 <?php echo csrf_field(); ?>
@@ -194,7 +194,7 @@ try {
                 <div class="dialog-card">
                     <div class="dialog-header">
                         <h2>Berechtigung löschen</h2>
-                        <button type="button" class="close-button" data-dialog-close>Schließen</button>
+                        <button type="button" class="dialog-close" data-dialog-close aria-label="Schließen">×</button>
                     </div>
                     <p class="muted">Berechtigung: <strong><?php echo htmlspecialchars($permLabel, ENT_QUOTES, 'UTF-8'); ?></strong> (<?php echo htmlspecialchars($permKey, ENT_QUOTES, 'UTF-8'); ?>)</p>
                     <form method="POST" data-dialog-close-on-submit data-confirm-submit="Berechtigung wirklich löschen?">
@@ -211,7 +211,7 @@ try {
                 <div class="dialog-card">
                     <div class="dialog-header">
                         <h2>Berechtigung</h2>
-                        <button type="button" class="close-button" data-dialog-close>Schließen</button>
+                        <button type="button" class="dialog-close" data-dialog-close aria-label="Schließen">×</button>
                     </div>
                     <p><strong><?php echo htmlspecialchars($permLabel); ?></strong></p>
                     <p><?php echo htmlspecialchars($permDesc ?: 'Keine Beschreibung vorhanden.'); ?></p>
@@ -223,7 +223,7 @@ try {
                 <div class="dialog-card">
                     <div class="dialog-header">
                         <h2>Berechtigung bearbeiten</h2>
-                        <button type="button" class="close-button" data-dialog-close>Schließen</button>
+                        <button type="button" class="dialog-close" data-dialog-close aria-label="Schließen">×</button>
                     </div>
                     <form method="POST" class="permission-form" data-dialog-close-on-submit>
                         <?php echo csrf_field(); ?>

@@ -180,7 +180,7 @@ $autoOpenRequestDialog = $message !== '' && str_contains($message, 'Postfach');
             <div class="dialog-card">
                 <div class="dialog-header">
                     <h2>Registrierungscode anfragen</h2>
-                    <button type="button" class="close-button" data-dialog-close>Schließen</button>
+                    <button type="button" class="dialog-close" data-dialog-close aria-label="Schließen">×</button>
                 </div>
                 <p class="field-hint" style="margin-bottom: 1rem;">
                     Du bekommst zuerst eine E-Mail zum Bestätigen. Nach Freigabe durch den Admin erhältst du deinen Code per E-Mail.
@@ -196,7 +196,7 @@ $autoOpenRequestDialog = $message !== '' && str_contains($message, 'Postfach');
                     </label>
                     <div style="display:flex; gap:0.5rem; margin-top: 1rem; align-items:center;">
                         <button type="submit" name="request_registration_code" value="1">Anfragen</button>
-                        <button type="button" data-dialog-close>Abbrechen</button>
+                        <button type="button" class="close-button" data-dialog-close>Abbrechen</button>
                     </div>
                 </form>
             </div>

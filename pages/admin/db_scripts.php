@@ -248,7 +248,7 @@ admin_render_page('DB-Skripte', 'db_scripts', function () use ($availableScripts
                     <div class="dialog-card">
                         <div class="dialog-header">
                             <h2><?php echo htmlspecialchars(basename($script)); ?></h2>
-                            <button type="button" class="close-button" data-dialog-close>Schließen</button>
+                            <button type="button" class="dialog-close" data-dialog-close aria-label="Schließen">×</button>
                         </div>
                         <div class="code-block"><?php echo htmlspecialchars(file_get_contents($script)); ?></div>
                     </div>
@@ -259,7 +259,7 @@ admin_render_page('DB-Skripte', 'db_scripts', function () use ($availableScripts
                     <div class="dialog-card">
                         <div class="dialog-header">
                             <h2><?php echo htmlspecialchars($scriptName); ?> ausführen</h2>
-                            <button type="button" class="close-button" data-dialog-close>Schließen</button>
+                            <button type="button" class="dialog-close" data-dialog-close aria-label="Schließen">×</button>
                         </div>
                         <form method="POST" data-dialog-close-on-submit data-confirm-submit="Achtung! Sind Sie sicher, dass Sie das Skript <?php echo htmlspecialchars($scriptName, ENT_QUOTES, 'UTF-8'); ?> ausführen möchten? Dies kann Daten löschen.">
                             <?php echo csrf_field(); ?>

@@ -295,7 +295,7 @@ if (! function_exists('admin_reauth_confirm_dialog')) {
         <div class="dialog-card">
             <div class="dialog-header">
                 <h2>Admin-Bestätigung</h2>
-                <button type="button" class="close-button" data-dialog-close>Schließen</button>
+                <button type="button" class="dialog-close" data-dialog-close aria-label="Schließen">×</button>
             </div>
             <?php admin_reauth_dialog_body($fresh, $needs2fa, $minutesLeft, $formId); ?>
             <?php if (! $fresh): ?>

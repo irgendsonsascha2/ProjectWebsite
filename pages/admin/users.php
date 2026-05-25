@@ -219,7 +219,7 @@ try {
                 <div class="dialog-card">
                     <div class="dialog-header">
                         <h2>Status: <?php echo htmlspecialchars($username !== '' ? $username : $email, ENT_QUOTES, 'UTF-8'); ?></h2>
-                        <button type="button" class="close-button" data-dialog-close>Schließen</button>
+                        <button type="button" class="dialog-close" data-dialog-close aria-label="Schließen">×</button>
                     </div>
                     <form method="POST" action="users.php" class="moderation-form">
                         <?php echo csrf_field(); ?>

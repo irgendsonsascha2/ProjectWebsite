@@ -45,19 +45,6 @@
     @apply mb-3 flex items-center justify-between gap-3;
   }
 
-  .page-register #request-code-dialog .close-button {
-    @apply inline-flex items-center justify-center rounded-full px-3 py-2 text-sm font-semibold;
-    background: var(--surface-muted);
-    border: 1px solid var(--border-subtle);
-    color: var(--text-main);
-    cursor: pointer;
-  }
-
-  .page-register #request-code-dialog .close-button:hover {
-    background: var(--surface-hover);
-    color: var(--primary-color);
-  }
-
   .page-register #request-code-dialog form,
   .page-register #request-code-dialog p,
   .page-register #request-code-dialog label {
@@ -68,6 +55,33 @@
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
+  }
+
+  /* Override .container form button — keep Anfragen primary, Abbrechen muted */
+  .page-register #request-code-dialog form button[type='submit'] {
+    margin-top: 0;
+    background: var(--primary-color);
+    color: var(--text-on-primary);
+    border: 0;
+  }
+
+  .page-register #request-code-dialog form button[type='submit']:hover {
+    background: var(--primary-hover);
+    color: var(--text-on-primary);
+  }
+
+  .page-register #request-code-dialog form button.close-button {
+    margin-top: 0;
+    background: transparent;
+    color: var(--secondary-color);
+    border: 1px solid transparent;
+    font-weight: 500;
+  }
+
+  .page-register #request-code-dialog form button.close-button:hover {
+    background: var(--surface-hover);
+    color: var(--text-main);
+    border-color: transparent;
   }
 
   /* Register form: privacy consent should read like flowing text */

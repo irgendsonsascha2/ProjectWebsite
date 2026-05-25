@@ -252,7 +252,7 @@ try {
         <div class="dialog-card">
             <div class="dialog-header">
                 <h2>Neue Rolle erstellen</h2>
-                <button type="button" class="close-button" data-dialog-close>Schließen</button>
+                <button type="button" class="dialog-close" data-dialog-close aria-label="Schließen">×</button>
             </div>
             <form method="POST" class="role-form">
                 <?php echo csrf_field(); ?>
@@ -369,7 +369,7 @@ try {
                 <div class="dialog-card">
                     <div class="dialog-header">
                         <h2>Rolle löschen</h2>
-                        <button type="button" class="close-button" data-dialog-close>Schließen</button>
+                        <button type="button" class="dialog-close" data-dialog-close aria-label="Schließen">×</button>
                     </div>
                     <p class="muted">Rolle: <strong><?php echo htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8'); ?></strong> (<?php echo htmlspecialchars($roleKey, ENT_QUOTES, 'UTF-8'); ?>)</p>
                     <form method="POST" data-dialog-close-on-submit data-confirm-submit="Rolle wirklich löschen?">
@@ -387,7 +387,7 @@ try {
                 <div class="dialog-card">
                     <div class="dialog-header">
                         <h2>Berechtigungen</h2>
-                        <button type="button" class="close-button" data-dialog-close>Schließen</button>
+                        <button type="button" class="dialog-close" data-dialog-close aria-label="Schließen">×</button>
                     </div>
                     <div class="permission-list">
                         <?php if (count($rolePermissions) === 0): ?>
@@ -433,7 +433,7 @@ try {
                 <div class="dialog-card">
                     <div class="dialog-header">
                         <h2>Rolle bearbeiten</h2>
-                        <button type="button" class="close-button" data-dialog-close>Schließen</button>
+                        <button type="button" class="dialog-close" data-dialog-close aria-label="Schließen">×</button>
                     </div>
                     <form method="POST" class="role-form" data-dialog-close-on-submit data-role="<?php echo htmlspecialchars($roleKey); ?>">
                         <?php echo csrf_field(); ?>

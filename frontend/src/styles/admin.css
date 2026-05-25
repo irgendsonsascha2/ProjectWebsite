@@ -361,10 +361,6 @@
     resize: vertical;
   }
 
-  body.admin-page .close-button {
-    background: color-mix(in srgb, var(--text-main) 70%, var(--surface-muted));
-  }
-
   body.admin-page .code-block {
     @apply rounded-2xl border p-4 text-sm;
     background: var(--code-bg);

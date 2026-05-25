@@ -193,7 +193,7 @@ if ($isAjax) {
     <?php
         $pageScripts = [
             'login' => ['login-2fa-alt.js'],
-            'register' => ['register-request-dialog.js'],
+            'register' => ['dialog-focus.js', 'register-request-dialog.js'],
             'project_grid' => ['project-grid-delete.js', 'project-grid-tilt.js'],
             'project_detail' => ['project-detail.js'],
             'create_project' => ['project-media-manager.js'],

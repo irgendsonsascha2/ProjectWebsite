@@ -117,7 +117,7 @@ admin_render_page('Einladungscodes', 'invite_codes', function () use ($message, 
         <div class="dialog-card">
             <div class="dialog-header">
                 <h2>Code generieren</h2>
-                <button type="button" class="close-button" data-dialog-close>Schließen</button>
+                <button type="button" class="dialog-close" data-dialog-close aria-label="Schließen">×</button>
             </div>
             <form method="POST" class="code-form" action="invite_codes.php" data-dialog-close-on-submit>
                 <?php echo csrf_field(); ?>
