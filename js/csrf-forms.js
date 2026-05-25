@@ -41,6 +41,20 @@
     document.querySelectorAll('form').forEach(ensureFormToken);
   }
 
+  function initConfirmForms() {
+    document.querySelectorAll('form[data-confirm-submit]').forEach(function (form) {
+      var message = form.getAttribute('data-confirm-submit') || '';
+      if (!message) {
+        return;
+      }
+      form.addEventListener('submit', function (event) {
+        if (!window.confirm(message)) {
+          event.preventDefault();
+        }
+      });
+    });
+  }
+
   document.addEventListener('submit', function (event) {
     var form = event.target;
     if (form instanceof HTMLFormElement) {
@@ -60,9 +74,14 @@
     };
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initCsrfForms, { once: true });
-  } else {
+  function initForms() {
     initCsrfForms();
+    initConfirmForms();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initForms, { once: true });
+  } else {
+    initForms();
   }
 })();

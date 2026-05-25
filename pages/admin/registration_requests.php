@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../includes/mail.php';
 require_once __DIR__ . '/_layout.php';
+require_once __DIR__ . '/../../includes/admin_reauth.php';
 
 use MongoDB\BSON\UTCDateTime;
 
@@ -44,10 +45,22 @@ function generate_unique_code($db, int $maxAttempts = 10): ?string {
     return null;
 }
 
+admin_require_manage_users();
+
 $message = '';
 $messageClass = 'alert';
+$adminReauthFresh = admin_reauth_is_fresh();
+$adminReauthNeeds2fa = admin_reauth_user_has_2fa();
+$reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
 
 if (isset($_POST['approve_request_id'])) {
+    $reauth = admin_reauth_require_fresh_or_post();
+    if (! $reauth['ok']) {
+        $message = '❌ '.$reauth['error'];
+        $messageClass = 'alert alert--error';
+    } else {
+        $adminReauthFresh = admin_reauth_is_fresh();
+        $reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
     $id = (string)($_POST['approve_request_id'] ?? '');
     try {
         $oid = new \MongoDB\BSON\ObjectId($id);
@@ -96,6 +109,7 @@ if (isset($_POST['approve_request_id'])) {
         $message = '❌ Ungültige Anfrage-ID.';
         $messageClass = 'alert alert--error';
     }
+    }
 }
 
 $verifiedPending = iterator_to_array(
@@ -105,10 +119,12 @@ $verifiedPending = iterator_to_array(
     )
 );
 ?>
-<?php admin_render_page('Registrierungsanfragen', 'registration_requests', function () use ($message, $messageClass, $verifiedPending) { ?>
+<?php admin_render_page('Registrierungsanfragen', 'registration_requests', function () use ($message, $messageClass, $verifiedPending, $adminReauthFresh, $adminReauthNeeds2fa, $reauthMinutesLeft) { ?>
     <div class="page-header">
         <h1>Registrierungsanfragen</h1>
     </div>
+
+    <?php echo admin_reauth_banner_html($adminReauthFresh, $reauthMinutesLeft); ?>
 
     <?php if ($message): ?>
         <div class="<?php echo htmlspecialchars($messageClass, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?></div>
@@ -139,9 +155,12 @@ $verifiedPending = iterator_to_array(
                         <td><?php echo htmlspecialchars($ver, ENT_QUOTES, 'UTF-8'); ?></td>
                         <td><?php echo htmlspecialchars($ip, ENT_QUOTES, 'UTF-8'); ?></td>
                         <td>
-                            <form method="POST" action="registration_requests.php" onsubmit="return confirm('Anfrage freigeben und Code senden?');">
+                            <form method="POST" action="registration_requests.php" data-confirm-submit="Anfrage freigeben und Code senden?">
                                 <?php echo csrf_field(); ?>
                                 <input type="hidden" name="approve_request_id" value="<?php echo htmlspecialchars($rid, ENT_QUOTES, 'UTF-8'); ?>">
+                                <?php if (! $adminReauthFresh) {
+                                    admin_reauth_form_fields($adminReauthNeeds2fa);
+                                } ?>
                                 <button type="submit">Freigeben + Code senden</button>
                             </form>
                         </td>

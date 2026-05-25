@@ -37,6 +37,25 @@ if (!function_exists('admin_require_access')) {
     }
 }
 
+if (!function_exists('admin_require_manage_users')) {
+    function admin_require_manage_users(): void
+    {
+        admin_require_access(['admin']);
+        if (! function_exists('can') || ! can('manage_users')) {
+            die('<h1>Zugriff verweigert</h1><p>Sie haben nicht die Berechtigung „Benutzer verwalten“.</p>');
+        }
+    }
+}
+
+if (!function_exists('admin_panel_visible_for_session')) {
+    function admin_panel_visible_for_session(): bool
+    {
+        $role = (string) ($_SESSION['role'] ?? '');
+
+        return in_array($role, ['admin', 'content_manager'], true);
+    }
+}
+
 if (!function_exists('admin_js_src')) {
     function admin_js_src(string $filename): string
     {
@@ -53,6 +72,7 @@ if (!function_exists('admin_nav_html')) {
     {
         $role = (string)($_SESSION['role'] ?? '');
         $isAdmin = $role === 'admin';
+        $canManageUsers = $isAdmin && function_exists('can') && can('manage_users');
         $items = [];
 
         // Always left-most
@@ -76,20 +96,23 @@ if (!function_exists('admin_nav_html')) {
             $items['invite_codes'] = ['href' => 'invite_codes.php', 'label' => 'Einladungscodes'];
         }
 
-        if ($isAdmin && is_file(__DIR__ . '/registration_requests.php')) {
+        if ($canManageUsers && is_file(__DIR__ . '/registration_requests.php')) {
             $items['registration_requests'] = ['href' => 'registration_requests.php', 'label' => 'Registrierungsanfragen'];
         }
 
-        if ($isAdmin && is_file(__DIR__ . '/users.php')) {
+        if ($canManageUsers && is_file(__DIR__ . '/users.php')) {
             $items['users'] = ['href' => 'users.php', 'label' => 'Nutzer'];
         }
 
         // Access management + maintenance (admin only)
         if ($isAdmin) {
             $items['settings'] = ['href' => 'settings.php', 'label' => 'Einstellungen'];
+            $items['db_scripts'] = ['href' => 'db_scripts.php', 'label' => 'DB-Skripte'];
+        }
+
+        if ($canManageUsers) {
             $items['roles'] = ['href' => 'roles.php', 'label' => 'Rollen'];
             $items['permissions'] = ['href' => 'permissions.php', 'label' => 'Berechtigungen'];
-            $items['db_scripts'] = ['href' => 'db_scripts.php', 'label' => 'DB-Skripte'];
         }
 
         $out = '<div class="admin-nav">';

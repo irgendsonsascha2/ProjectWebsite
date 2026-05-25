@@ -187,3 +187,38 @@ if (!function_exists('admin_reauth_require_fresh_or_post')) {
         return admin_reauth_confirm_from_post();
     }
 }
+
+if (! function_exists('admin_reauth_form_fields')) {
+    function admin_reauth_form_fields(bool $needs2fa): void
+    {
+        ?>
+    <p class="muted">Zum Ausführen sensibler Admin-Aktionen: Passwort<?php echo $needs2fa ? ' und Authenticator-Code' : ''; ?> bestätigen (gültig <?php echo (int) (admin_reauth_ttl_seconds() / 60); ?> Min. nach Erfolg).</p>
+    <p>
+        <label>
+            Dein Admin-Passwort<br>
+            <input type="password" name="admin_confirm_password" autocomplete="current-password" required>
+        </label>
+    </p>
+        <?php if ($needs2fa): ?>
+    <p>
+        <label>
+            Authenticator-Code (6 Ziffern)<br>
+            <input type="text" name="admin_totp_code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required>
+        </label>
+    </p>
+        <?php endif;
+    }
+}
+
+if (! function_exists('admin_reauth_banner_html')) {
+    function admin_reauth_banner_html(bool $fresh, int $minutesLeft): string
+    {
+        if (! $fresh) {
+            return '';
+        }
+
+        return '<p class="alert">Admin-Bestätigung aktiv (noch ca. '
+            .max(1, $minutesLeft)
+            .' Min.) — sensible Aktionen ohne erneute Passwort-Eingabe.</p>';
+    }
+}

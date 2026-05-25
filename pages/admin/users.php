@@ -3,22 +3,34 @@
 require_once __DIR__ . '/_layout.php';
 require_once __DIR__ . '/../../includes/svg_icons.php';
 require_once __DIR__ . '/../../includes/user_moderation.php';
+require_once __DIR__ . '/../../includes/admin_reauth.php';
 
 use MongoDB\BSON\UTCDateTime;
 
-admin_require_access(['admin']);
+admin_require_manage_users();
 
 $message = '';
 $messageClass = 'alert';
 $adminUsername = (string) ($_SESSION['username'] ?? $_SESSION['email'] ?? 'admin');
 $searchQuery = trim((string) ($_GET['q'] ?? ''));
 $reasonOptions = user_moderation_reason_options();
+$adminReauthFresh = admin_reauth_is_fresh();
+$adminReauthNeeds2fa = admin_reauth_user_has_2fa();
+$reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (! csrf_verify()) {
         header('Location: users.php?err=csrf');
         exit;
     }
+
+    $reauth = admin_reauth_require_fresh_or_post();
+    if (! $reauth['ok']) {
+        header('Location: users.php?err=reauth'.($searchQuery !== '' ? '&q='.rawurlencode($searchQuery) : ''));
+        exit;
+    }
+    $adminReauthFresh = admin_reauth_is_fresh();
+    $reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
 
     $action = (string) ($_POST['action'] ?? '');
     $userId = trim((string) ($_POST['user_id'] ?? ''));
@@ -67,6 +79,10 @@ if (isset($_GET['err']) && (string) $_GET['err'] === 'csrf') {
     $message = '❌ Formular abgelaufen — bitte erneut versuchen.';
     $messageClass = 'alert alert--error';
 }
+if (isset($_GET['err']) && (string) $_GET['err'] === 'reauth') {
+    $message = '❌ Admin-Bestätigung fehlgeschlagen oder abgelaufen — Passwort'.($adminReauthNeeds2fa ? ' und Authenticator-Code' : '').' erneut eingeben.';
+    $messageClass = 'alert alert--error';
+}
 if (isset($_GET['ok'])) {
     $message = '✅ Änderung gespeichert.';
     $messageClass = 'alert';
@@ -86,7 +102,10 @@ try {
     $messageClass,
     $searchQuery,
     $users,
-    $reasonOptions
+    $reasonOptions,
+    $adminReauthFresh,
+    $adminReauthNeeds2fa,
+    $reauthMinutesLeft
 ) { ?>
     <div class="page-header">
         <h1>Nutzer</h1>
@@ -96,6 +115,7 @@ try {
     <?php if ($message): ?>
         <div class="<?php echo htmlspecialchars($messageClass, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?></div>
     <?php endif; ?>
+    <?php echo admin_reauth_banner_html($adminReauthFresh, $reauthMinutesLeft); ?>
 
     <form method="GET" action="users.php" class="admin-card" style="margin-bottom: 1rem;">
         <label for="q">Suche (E-Mail oder Username)</label>
@@ -256,18 +276,25 @@ try {
                             <span>Grund dem Nutzer anzeigen</span>
                         </label>
 
+                        <?php if (! $adminReauthFresh) {
+                            admin_reauth_form_fields($adminReauthNeeds2fa);
+                        } ?>
+
                         <div class="actions" style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
                             <button type="submit">Speichern</button>
                             <?php if ($currentStatus !== 'active'): ?>
-                            <button type="submit" class="button-secondary" form="clear-<?php echo htmlspecialchars($dialogId, ENT_QUOTES, 'UTF-8'); ?>" onclick="return confirm('Sperre wirklich aufheben?');">Freigeben</button>
+                            <button type="submit" class="button-secondary" form="clear-<?php echo htmlspecialchars($dialogId, ENT_QUOTES, 'UTF-8'); ?>">Freigeben</button>
                             <?php endif; ?>
                         </div>
                     </form>
                     <?php if ($currentStatus !== 'active'): ?>
-                    <form method="POST" action="users.php" id="clear-<?php echo htmlspecialchars($dialogId, ENT_QUOTES, 'UTF-8'); ?>" hidden>
+                    <form method="POST" action="users.php" id="clear-<?php echo htmlspecialchars($dialogId, ENT_QUOTES, 'UTF-8'); ?>" hidden data-confirm-submit="Sperre wirklich aufheben?">
                         <?php echo csrf_field(); ?>
                         <input type="hidden" name="user_id" value="<?php echo htmlspecialchars($uid, ENT_QUOTES, 'UTF-8'); ?>">
                         <input type="hidden" name="action" value="clear_moderation">
+                        <?php if (! $adminReauthFresh) {
+                            admin_reauth_form_fields($adminReauthNeeds2fa);
+                        } ?>
                     </form>
                     <?php endif; ?>
                 </div>

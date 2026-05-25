@@ -59,7 +59,7 @@ function handle_media_uploads($files, $contentImageDir, $contentVideoDir) {
             $uploadErrors[] = "Ungültiger Dateityp: " . htmlspecialchars($files['name'][$i]);
             continue;
         }
-        $validationError = validate_media_upload($tmpPath, $files['size'][$i], $type);
+        $validationError = validate_media_upload($tmpPath, $files['size'][$i], $type, $files['name'][$i]);
         if ($validationError) {
             $uploadErrors[] = htmlspecialchars($files['name'][$i]) . ": " . $validationError;
             continue;
@@ -298,6 +298,14 @@ if ($draftObjectId && isset($_POST['reorder_media']) && isset($_POST['order']) &
 
 // --- LOGIK: DRAFT MEDIA UPLOAD ---
 if (isset($_POST['upload_media_draft']) && isset($_FILES['draft_gallery_files'])) {
+    if (! rate_limit_media_upload_allow()) {
+        $message = 'Zu viele Uploads — bitte einige Minuten warten.';
+        if (request_is_ajax()) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['ok' => false, 'message' => $message]);
+            exit();
+        }
+    } else {
     if (!$draftObjectId) {
         $now = new UTCDateTime();
         $draftDocument = [
@@ -355,6 +363,7 @@ if (isset($_POST['upload_media_draft']) && isset($_FILES['draft_gallery_files'])
     }
     if (!empty($uploadErrors)) {
         $message .= "<br>" . implode("<br>", $uploadErrors);
+    }
     }
 }
 

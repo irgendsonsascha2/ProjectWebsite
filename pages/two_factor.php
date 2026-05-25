@@ -92,7 +92,7 @@ $twoFactorHelpTitle = 'Was ist Zwei-Faktor-Authentifizierung?';
                 </div>
                 <button type="submit" class="btn-secondary">Neue Backup-Codes erzeugen</button>
             </form>
-            <form method="POST" action="<?php echo htmlspecialchars($twoFactorPageUrl, ENT_QUOTES, 'UTF-8'); ?>" class="account-2fa-form two-factor-disable-form" onsubmit="return confirm('2FA wirklich deaktivieren?');">
+            <form method="POST" action="<?php echo htmlspecialchars($twoFactorPageUrl, ENT_QUOTES, 'UTF-8'); ?>" class="account-2fa-form two-factor-disable-form" data-confirm-submit="2FA wirklich deaktivieren?">
                 <?php echo csrf_field(); ?>
                 <input type="hidden" name="two_factor_disable" value="1">
                 <div class="field">

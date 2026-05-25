@@ -253,6 +253,22 @@ if (isset($_POST['interaction'])) {
     authz_require_can('like_dislike');
     authz_require_login();
     authz_require_active_account();
+    if (! rate_limit_interaction_allow()) {
+        if ($isAjax) {
+            if (ob_get_length()) {
+                ob_clean();
+            }
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'ok' => false,
+                'action' => 'interaction',
+                'message' => 'Zu viele Aktionen — bitte kurz warten.',
+            ]);
+            exit();
+        }
+        header('Location: '.$_SERVER['REQUEST_URI'].'&interaction_err=throttle');
+        exit();
+    }
     $userId = new ObjectId($_SESSION['user_id']);
     $type = $_POST['interaction']; // 'like' or 'dislike'
     $mediaObjectId = parse_media_id($_POST['media_id'] ?? '');

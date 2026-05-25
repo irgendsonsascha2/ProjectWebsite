@@ -1,11 +1,15 @@
 <?php
 require_once __DIR__ . '/_layout.php';
 require_once __DIR__ . '/../../includes/svg_icons.php';
+require_once __DIR__ . '/../../includes/admin_reauth.php';
 
-// Admin access is enforced by the admin layout.
+admin_require_manage_users();
 
 $notice = '';
 $error = '';
+$adminReauthFresh = admin_reauth_is_fresh();
+$adminReauthNeeds2fa = admin_reauth_user_has_2fa();
+$reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
 
 $defaultPermissions = [
     ['key' => 'view_projects', 'label' => 'Projekte ansehen', 'description' => 'Projekte im Frontend ansehen'],
@@ -71,13 +75,20 @@ if (isset($_POST['action'])) {
             $notice = 'Berechtigung wurde aktualisiert.';
         }
     } elseif ($action === 'delete_permission') {
-        $permKey = normalize_perm_key($_POST['perm_key'] ?? '');
-        $roleUsage = $db->roles_config->countDocuments(['permissions' => $permKey]);
-        if ($roleUsage > 0) {
-            $error = 'Berechtigung ist noch Rollen zugeordnet.';
+        $reauth = admin_reauth_require_fresh_or_post();
+        if (! $reauth['ok']) {
+            $error = $reauth['error'];
         } else {
-            $db->permissions_config->deleteOne(['key' => $permKey]);
-            $notice = 'Berechtigung wurde gelöscht.';
+            $adminReauthFresh = admin_reauth_is_fresh();
+            $reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
+            $permKey = normalize_perm_key($_POST['perm_key'] ?? '');
+            $roleUsage = $db->roles_config->countDocuments(['permissions' => $permKey]);
+            if ($roleUsage > 0) {
+                $error = 'Berechtigung ist noch Rollen zugeordnet.';
+            } else {
+                $db->permissions_config->deleteOne(['key' => $permKey]);
+                $notice = 'Berechtigung wurde gelöscht.';
+            }
         }
     }
 }
@@ -98,10 +109,12 @@ try {
     $usageCounts = [];
 }
 ?>
-<?php admin_render_page('Berechtigungen verwalten', 'permissions', function () use ($error, $notice, $permissions, $usageCounts) { ?>
+<?php admin_render_page('Berechtigungen verwalten', 'permissions', function () use ($error, $notice, $permissions, $usageCounts, $adminReauthFresh, $adminReauthNeeds2fa, $reauthMinutesLeft) { ?>
     <div class="page-header">
         <h1>Berechtigungen verwalten</h1>
     </div>
+
+    <?php echo admin_reauth_banner_html($adminReauthFresh, $reauthMinutesLeft); ?>
 
     <?php if ($error): ?>
         <div class="alert error"><?php echo htmlspecialchars($error); ?></div>
@@ -166,10 +179,13 @@ try {
                 <div class="card-actions">
                     <button type="button" class="icon-button" data-dialog-open="edit-permission-<?php echo htmlspecialchars($permKey); ?>" aria-label="Berechtigung bearbeiten" title="Berechtigung bearbeiten"><?php echo svg_icon_pencil(18); ?></button>
                     <button type="button" class="icon-button" data-dialog-open="info-permission-<?php echo htmlspecialchars($permKey); ?>" aria-label="Berechtigung anzeigen" title="Berechtigung anzeigen">ℹ</button>
-                    <form method="POST" onsubmit="return confirm('Berechtigung wirklich löschen?');">
+                    <form method="POST" data-confirm-submit="Berechtigung wirklich löschen?">
                         <?php echo csrf_field(); ?>
                         <input type="hidden" name="action" value="delete_permission">
                         <input type="hidden" name="perm_key" value="<?php echo htmlspecialchars($permKey); ?>">
+                        <?php if (! $adminReauthFresh) {
+                            admin_reauth_form_fields($adminReauthNeeds2fa);
+                        } ?>
                         <button type="submit" class="icon-button danger" aria-label="Berechtigung löschen" title="Berechtigung löschen">🗑</button>
                     </form>
                 </div>

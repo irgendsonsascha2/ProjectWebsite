@@ -41,8 +41,9 @@ Damit die klassische PHP-Seite sichtbares Styling (Tailwind/React-Bundle aus `re
 1. Eine gültige **`.env.local`** im **Projektroot** (lokal, nicht committen) mit den MongoDB-URIs, siehe `README.md`.
 2. **Frontend bauen** (erzeugt `react-dist/` inkl. `manifest.json` und CSS/JS-Hashes; der Ordner ist **kein** Git-Bestandteil — nach Klon o. ä. zwingend bauen):
    - `cd frontend && npm install && npm run build`
-3. **PHP eingebauten Server** im **Projektroot** starten:
-   - `php -S 127.0.0.1:8080 -t .`
+3. **PHP eingebauten Server** im **Projektroot** starten (mit Medien-Router):
+   - `make php` oder `./serve-php.sh` (empfohlen, inkl. `router.php` für geschützte `content/`-URLs)
+   - alternativ: `php -S 127.0.0.1:8080 -t . router.php`
 4. Im Browser öffnen: `http://127.0.0.1:8080/` (Host einheitlich **127.0.0.1** verwenden, nicht wahlweise `localhost` mischen, siehe Doku)
 
 **Optional: HMR (Vite-Dev) für schnellere Frontend-Iteration**

@@ -3,6 +3,11 @@ require_once __DIR__ . '/_layout.php';
 require_once __DIR__ . '/../../includes/db.php';
 // Dashboard keeps only overview + metrics (DB scripts moved to db_scripts.php).
 
+if (($_SESSION['role'] ?? '') === 'content_manager') {
+    header('Location: home_profile.php');
+    exit;
+}
+
 function env_is_set($key) {
     $v = getenv($key);
     return $v !== false && trim((string)$v) !== '';

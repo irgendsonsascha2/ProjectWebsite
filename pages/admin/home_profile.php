@@ -111,7 +111,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_home_profile') {
                 if ($type !== 'image') {
                     $error = 'Bitte nur ein Bild als Portrait hochladen.';
                 } else {
-                    $validationError = validate_media_upload($tmp, (int)($_FILES['portrait_file']['size'] ?? 0), 'image');
+                    $validationError = validate_media_upload($tmp, (int)($_FILES['portrait_file']['size'] ?? 0), 'image', (string) ($_FILES['portrait_file']['name'] ?? ''));
                     if ($validationError) {
                         $error = $validationError;
                     } else {

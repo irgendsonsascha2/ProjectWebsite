@@ -192,25 +192,6 @@ if (isset($_POST['run_script'])) {
     }
 }
 
-function admin_reauth_form_fields(bool $needs2fa): void {
-    ?>
-    <p class="muted">Zum Ausführen destruktiver Skripte: Passwort<?php echo $needs2fa ? ' und Authenticator-Code' : ''; ?> bestätigen (gültig <?php echo (int) (admin_reauth_ttl_seconds() / 60); ?> Min. nach Erfolg).</p>
-    <p>
-        <label>
-            Dein Admin-Passwort<br>
-            <input type="password" name="admin_confirm_password" autocomplete="current-password" required>
-        </label>
-    </p>
-    <?php if ($needs2fa): ?>
-    <p>
-        <label>
-            Authenticator-Code (6 Ziffern)<br>
-            <input type="text" name="admin_totp_code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required>
-        </label>
-    </p>
-    <?php endif;
-}
-
 admin_render_page('DB-Skripte', 'db_scripts', function () use ($availableScripts, $message, $adminReauthFresh, $adminReauthNeeds2fa, $reauthMinutesLeft) { ?>
     <div class="page-header">
         <h1>DB-Skripte</h1>

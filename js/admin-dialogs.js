@@ -34,13 +34,6 @@ function adminDialogsInit() {
     },
   );
 
-  Array.from(document.querySelectorAll('form[data-confirm-submit]')).forEach(function (form) {
-    var message = form.getAttribute('data-confirm-submit') || '';
-    if (!message) return;
-    form.addEventListener('submit', function (event) {
-      if (!window.confirm(message)) event.preventDefault();
-    });
-  });
 }
 
 if (document.readyState === 'loading') {

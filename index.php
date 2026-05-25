@@ -58,7 +58,11 @@ if ($isAjax) {
         <div class="nav-main">
             <a href="index.php">Start</a>
             <a href="index.php?page=project_grid">Projekte</a>
-            <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+            <?php
+                $navRole = (string) ($_SESSION['role'] ?? '');
+                $showAdminLink = in_array($navRole, ['admin', 'content_manager'], true);
+            ?>
+            <?php if ($showAdminLink): ?>
                 <a href="pages/admin/index.php" style="color: red;">Admin</a>
             <?php endif; ?>
 
@@ -117,7 +121,8 @@ if ($isAjax) {
     <?php
         $isProjectArea = in_array($safe_page, ['project_grid', 'project_detail', 'create_project', 'edit_project'], true);
         $isHome = $safe_page === 'home';
-        $isAdmin = isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
+        $navRoleBottom = (string) ($_SESSION['role'] ?? '');
+        $isAdmin = in_array($navRoleBottom, ['admin', 'content_manager'], true);
     ?>
     <nav class="bottom-nav" aria-label="Bottom Navigation">
         <a

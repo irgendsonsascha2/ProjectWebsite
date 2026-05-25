@@ -95,3 +95,19 @@ if (!function_exists('rate_limit_registration_code_request_allow')) {
         return rate_limit_allow('registration_code_request', 5, 3600);
     }
 }
+
+if (! function_exists('rate_limit_interaction_allow')) {
+    function rate_limit_interaction_allow(): bool
+    {
+        return rate_limit_allow('interaction_post', 60, 600);
+    }
+}
+
+if (! function_exists('rate_limit_media_upload_allow')) {
+    function rate_limit_media_upload_allow(): bool
+    {
+        $userId = isset($_SESSION['user_id']) ? (string) $_SESSION['user_id'] : 'guest';
+
+        return rate_limit_allow('media_upload', 30, 600, $userId);
+    }
+}

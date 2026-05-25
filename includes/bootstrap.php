@@ -129,36 +129,118 @@ if (!function_exists('sanitize_extension')) {
     }
 }
 
-if (!function_exists('detect_media_type')) {
-    function detect_media_type($tmpPath, $originalName = null) {
+if (!function_exists('media_allowed_extensions')) {
+    /**
+     * @return array{image: string[], video: string[]}
+     */
+    function media_allowed_extensions(): array
+    {
+        return [
+            'image' => ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'bmp'],
+            'video' => ['mp4', 'webm', 'ogg', 'ogv', 'mov', 'avi', 'mkv'],
+        ];
+    }
+}
+
+if (!function_exists('media_extension_for_type')) {
+    function media_extension_for_type(?string $originalName, string $type): ?string
+    {
+        if ($originalName === null || $originalName === '') {
+            return null;
+        }
+        $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        $allowed = media_allowed_extensions();
+        if (! isset($allowed[$type]) || ! in_array($ext, $allowed[$type], true)) {
+            return null;
+        }
+
+        return $ext;
+    }
+}
+
+if (!function_exists('media_validate_video_file')) {
+    function media_validate_video_file(string $tmpPath): ?string
+    {
         if (function_exists('mime_content_type')) {
             $mime = mime_content_type($tmpPath);
-            if ($mime) {
-                if (strpos($mime, 'image/') === 0) {
-                    return 'image';
-                }
-                if (strpos($mime, 'video/') === 0) {
-                    return 'video';
-                }
+            if (is_string($mime) && strpos($mime, 'video/') === 0) {
+                return null;
+            }
+        }
+        $handle = @fopen($tmpPath, 'rb');
+        if ($handle === false) {
+            return 'Video konnte nicht gelesen werden.';
+        }
+        $header = fread($handle, 12);
+        fclose($handle);
+        if ($header === false || strlen($header) < 4) {
+            return 'Ungültige Videodatei.';
+        }
+        // ftyp (MP4/MOV), EBML (WebM/MKV), OggS
+        if (strncmp($header, 'ftyp', 4) === 0
+            || strncmp($header, "\x1A\x45\xDF\xA3", 4) === 0
+            || strncmp($header, 'OggS', 4) === 0
+            || strncmp($header, 'RIFF', 4) === 0) {
+            return null;
+        }
+
+        return 'Datei ist kein unterstütztes Videoformat.';
+    }
+}
+
+if (!function_exists('detect_media_type')) {
+    function detect_media_type($tmpPath, $originalName = null) {
+        $ext = null;
+        if ($originalName) {
+            $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+            $dangerous = ['php', 'phtml', 'phar', 'cgi', 'pl', 'asp', 'aspx', 'jsp', 'svg', 'htm', 'html', 'js'];
+            if (in_array($ext, $dangerous, true)) {
+                return null;
             }
         }
 
         if (function_exists('getimagesize')) {
             $imgInfo = @getimagesize($tmpPath);
             if ($imgInfo !== false) {
+                if ($ext !== null && media_extension_for_type($originalName, 'image') === null) {
+                    return null;
+                }
+
                 return 'image';
             }
         }
 
-        if ($originalName) {
-            $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
-            $imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'bmp'];
-            $videoExts = ['mp4', 'webm', 'ogg', 'ogv', 'mov', 'avi', 'mkv'];
-            if (in_array($ext, $imageExts, true)) {
-                return 'image';
+        if (function_exists('mime_content_type')) {
+            $mime = mime_content_type($tmpPath);
+            if ($mime) {
+                if (strpos($mime, 'image/') === 0) {
+                    if ($ext !== null && media_extension_for_type($originalName, 'image') === null) {
+                        return null;
+                    }
+
+                    return 'image';
+                }
+                if (strpos($mime, 'video/') === 0) {
+                    if ($ext !== null && media_extension_for_type($originalName, 'video') === null) {
+                        return null;
+                    }
+                    if (media_validate_video_file($tmpPath) !== null) {
+                        return null;
+                    }
+
+                    return 'video';
+                }
             }
-            if (in_array($ext, $videoExts, true)) {
-                return 'video';
+        }
+
+        if ($originalName && $ext !== null) {
+            if (media_extension_for_type($originalName, 'image') !== null) {
+                return null;
+            }
+            if (media_extension_for_type($originalName, 'video') !== null) {
+                if (media_validate_video_file($tmpPath) === null) {
+                    return 'video';
+                }
             }
         }
 
@@ -264,7 +346,7 @@ if (!function_exists('validate_image_resolution')) {
 }
 
 if (!function_exists('validate_media_upload')) {
-    function validate_media_upload($tmpPath, $sizeBytes, $type) {
+    function validate_media_upload($tmpPath, $sizeBytes, $type, $originalName = null) {
         $limits = [
             'image' => MEDIA_UPLOAD_MAX_IMAGE_BYTES,
             'video' => MEDIA_UPLOAD_MAX_VIDEO_BYTES,
@@ -272,13 +354,25 @@ if (!function_exists('validate_media_upload')) {
         if (!isset($limits[$type])) {
             return "Ungültiger Medientyp.";
         }
+        if ($originalName !== null && media_extension_for_type($originalName, $type) === null) {
+            return 'Dateiendung passt nicht zum erkannten Medientyp.';
+        }
         if ($sizeBytes > $limits[$type]) {
             return "Datei zu groß (max. " . media_upload_limit_label($limits[$type]) . ").";
         }
         if ($type === 'image') {
+            if (! function_exists('getimagesize') || @getimagesize($tmpPath) === false) {
+                return 'Keine gültige Bilddatei.';
+            }
             $resolutionError = validate_image_resolution($tmpPath);
             if ($resolutionError !== null) {
                 return $resolutionError;
+            }
+        }
+        if ($type === 'video') {
+            $videoError = media_validate_video_file($tmpPath);
+            if ($videoError !== null) {
+                return $videoError;
             }
         }
         if (!is_uploaded_file($tmpPath)) {

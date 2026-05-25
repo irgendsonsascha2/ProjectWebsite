@@ -72,7 +72,7 @@ Kurzüberblick zum Weitermachen — Zielbild, erledigt, offen, Test.
 - ✅ Projekt-Detail: weniger `padding-right` auf Hover-Kommentaren bei schmalen Viewports.
 - ✅ Inline-Skripte nach `js/`; CSP `script-src 'self'`; CSRF nur Meta-Tag.
 - ✅ Responsive Lightbox/FABs/Account; CopyField-Abstände Account.
-- **Optional:** Admin-`onclick` entfernen (`script-src-attr` ohne `unsafe-inline`).
+- ✅ Security-Iteration (2026-05): Medien-Proxy, CSP, Admin-Re-Auth, `manage_users`, Rate-Limits, Upload-Härtung — `docs/security_local_checklist.md` (manuelle Tests offen).
 
 ## Lokaler Test (kurz)
 

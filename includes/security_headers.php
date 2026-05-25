@@ -37,7 +37,6 @@ if (! function_exists('security_headers_send')) {
         $csp = implode('; ', [
             "default-src 'self'",
             "script-src {$scriptSrc}",
-            "script-src-attr 'unsafe-inline'",
             "style-src 'self' 'unsafe-inline'",
             "img-src 'self' data: blob:",
             "media-src 'self' blob:",

@@ -1,11 +1,15 @@
 <?php
 require_once __DIR__ . '/_layout.php';
 require_once __DIR__ . '/../../includes/svg_icons.php';
+require_once __DIR__ . '/../../includes/admin_reauth.php';
 
-// Admin access is enforced by the admin layout.
+admin_require_manage_users();
 
 $notice = '';
 $error = '';
+$adminReauthFresh = admin_reauth_is_fresh();
+$adminReauthNeeds2fa = admin_reauth_user_has_2fa();
+$reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
 
 $defaultPermissions = [
     ['key' => 'view_projects', 'label' => 'Projekte ansehen', 'description' => 'Projekte im Frontend ansehen'],
@@ -118,6 +122,12 @@ if (isset($_POST['action'])) {
             $notice = 'Rolle wurde aktualisiert.';
         }
     } elseif ($action === 'delete_role') {
+        $reauth = admin_reauth_require_fresh_or_post();
+        if (! $reauth['ok']) {
+            $error = $reauth['error'];
+        } else {
+            $adminReauthFresh = admin_reauth_is_fresh();
+            $reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
         $roleKey = strtolower(trim($_POST['role_key'] ?? ''));
         if ($roleKey === 'admin') {
             $error = 'Die Admin-Rolle kann nicht gelöscht werden.';
@@ -130,6 +140,7 @@ if (isset($_POST['action'])) {
                 $db->registration_codes->deleteMany(['role' => $roleKey]);
                 $notice = 'Rolle wurde gelöscht.';
             }
+        }
         }
     }
 }
@@ -212,10 +223,12 @@ try {
 }
 ?>
 
-<?php admin_render_page('Rollen verwalten', 'roles', function () use ($error, $notice, $groupedPermissions, $roles, $permissionMap, $rolesMap, $roleCounts) { ?>
+<?php admin_render_page('Rollen verwalten', 'roles', function () use ($error, $notice, $groupedPermissions, $roles, $permissionMap, $rolesMap, $roleCounts, $adminReauthFresh, $adminReauthNeeds2fa, $reauthMinutesLeft) { ?>
     <div class="page-header">
         <h1>Rollen verwalten</h1>
     </div>
+
+    <?php echo admin_reauth_banner_html($adminReauthFresh, $reauthMinutesLeft); ?>
 
     <?php if ($error): ?>
         <div class="alert error"><?php echo htmlspecialchars($error); ?></div>
@@ -338,10 +351,13 @@ try {
                 <div class="card-actions">
                     <button type="button" class="icon-button" data-dialog-open="edit-role-<?php echo htmlspecialchars($roleKey); ?>" aria-label="Rolle bearbeiten" title="Rolle bearbeiten"><?php echo svg_icon_pencil(18); ?></button>
                     <button type="button" class="icon-button" data-dialog-open="info-role-<?php echo htmlspecialchars($roleKey); ?>" aria-label="Berechtigungen anzeigen" title="Berechtigungen anzeigen">ℹ</button>
-                    <form method="POST" onsubmit="return confirm('Rolle wirklich löschen?');">
+                    <form method="POST" data-confirm-submit="Rolle wirklich löschen?">
                     <?php echo csrf_field(); ?>
                     <input type="hidden" name="action" value="delete_role">
                     <input type="hidden" name="role_key" value="<?php echo htmlspecialchars($roleKey); ?>">
+                        <?php if (! $adminReauthFresh) {
+                            admin_reauth_form_fields($adminReauthNeeds2fa);
+                        } ?>
                         <button type="submit" class="icon-button danger" aria-label="Rolle löschen" title="Rolle löschen">🗑</button>
                     </form>
                 </div>

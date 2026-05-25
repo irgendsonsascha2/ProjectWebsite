@@ -62,9 +62,9 @@ Parallel zur klassischen PHP-App liegt eine **Laravel-13-Anwendung** mit **Mongo
 
 **E-Mail-Nachweis:** Kein Login-Gate über Laravel `/verify-email`. Registrierung setzt `email_verified_at` über **`RegisterInvitedUser`** (Invite-Code / verifizierte Anfrage). E-Mail-Bestätigung vor Code-Vergabe: `verify_registration_request` + Admin (`docs/next_session_plan.md`).
 
-**Sicherheit (Auszug):** Kein SVG-Upload; Security-Header (CSP, X-Frame-Options); Kommentar- und Handoff-Rate-Limits; Docker-Mongo/MailHog nur `127.0.0.1`. Details: `docs/security_roadmap.md`.
+**Sicherheit (Auszug):** Kein SVG-Upload; Medien nur über Auth-Proxy (`router.php` / `media.php`); Security-Header (CSP ohne `script-src-attr`); Rate-Limits (Kommentare, Handoff, Likes, Uploads); Admin-Re-Auth für sensible Aktionen; Docker-Mongo/MailHog nur `127.0.0.1`. Details: `docs/security.md`, Roadmap `docs/security_roadmap.md`, lokale Tests `docs/security_local_checklist.md`.
 
-**Wichtig beim Testen:** Laravel (`php artisan serve`, z. B. Port **8000**) und die **alte Website** sind zwei URLs. `LEGACY_SITE_URL` muss **genau** die Basis-URL sein, unter der `index.php` und `laravel_handoff.php` erreichbar sind (inkl. Port, z. B. `http://127.0.0.1:8080`, wenn die alte App mit `php -S 127.0.0.1:8080 -t .` im Projektroot läuft). Ohne laufenden Webserver auf dieser URL schlägt der Sprung nach dem Login fehl.
+**Wichtig beim Testen:** Laravel (`php artisan serve`, z. B. Port **8000**) und die **alte Website** sind zwei URLs. `LEGACY_SITE_URL` muss **genau** die Basis-URL sein, unter der `index.php` und `laravel_handoff.php` erreichbar sind (inkl. Port, z. B. `http://127.0.0.1:8080`, wenn die alte App mit `make php` / `./serve-php.sh` bzw. `php -S … router.php` im Projektroot läuft). Ohne laufenden Webserver auf dieser URL schlägt der Sprung nach dem Login fehl.
 
 **Lokal starten (nach Installation der Frontend-Assets, siehe unten):**
 
@@ -179,7 +179,7 @@ npm run dev -- --host 127.0.0.1 --port 5173
 Terminal 2 (PHP im Projektroot, dieselbe Variable muss im PHP-Prozess stehen, z. B. per `.env.local` wie oben):
 
 ```bash
-php -S 127.0.0.1:8080 -t .
+php -d upload_max_filesize=2048M -d post_max_size=2100M -S 127.0.0.1:8080 -t . router.php
 ```
 
 Ohne `VITE_HMR=1` reicht `npm run build` — **kein** laufendes Vite, **kein** `VITE_DEV_SERVER_URL` nötig.
@@ -197,7 +197,7 @@ npm install
 npm run build
 
 cd ..
-php -S 127.0.0.1:8080 -t .
+php -d upload_max_filesize=2048M -d post_max_size=2100M -S 127.0.0.1:8080 -t . router.php
 ```
 
 Dann öffnen: `http://127.0.0.1:8080/`
@@ -593,5 +593,6 @@ Falls das Projekt weiter wächst, wären diese Ergänzungen sinnvoll:
 - `docs/architecture.md` für Seitenfluss und Rechtekonzept
 - `docs/database.md` für Collections und Felder
 - `docs/deployment.md` für lokale Docker-Dienste und Entwurf Server/DynDNS
-- `docs/security.md` für Invite-System, Uploads und Härtung
+- `docs/security.md` für Invite-System, Medien-Proxy, Uploads und Härtung
+- `docs/security_local_checklist.md` für iterative lokale Security-Tests (abhackbar)
 - `docs/current_status.md` für aktuelle Blocker und den letzten technischen Zwischenstand
