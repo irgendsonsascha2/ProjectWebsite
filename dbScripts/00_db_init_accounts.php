@@ -58,7 +58,7 @@ try {
         [
             'role' => 'content_manager',
             'label' => 'Content Manager',
-            'permissions' => ['view_projects', 'view_comments', 'view_likes', 'create_project', 'edit_own', 'comment', 'like_dislike', 'delete_comments'],
+            'permissions' => ['view_projects', 'view_comments', 'view_likes', 'create_project', 'edit_all', 'comment', 'like_dislike', 'delete_comments'],
             'comment_delete_roles' => ['content_manager', 'community_member', 'viewer'],
             'comment_limit' => 0
         ],

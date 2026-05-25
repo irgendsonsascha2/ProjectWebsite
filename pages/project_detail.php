@@ -17,7 +17,7 @@ if (!$projectId) {
     echo "Projekt nicht gefunden.";
     return;
 }
-$ajaxActionUrl = 'pages/project_detail.php?id=' . urlencode($projectId);
+$ajaxActionUrl = 'index.php?page=project_detail&id=' . urlencode($projectId);
 
 try {
     $projectObjectId = new ObjectId($projectId);
@@ -136,7 +136,7 @@ function render_comment_items($comments, $commentLimitReached, $commentLimit, $a
         $canDelete = $isOwnComment || ($canDeleteOthers && ($deleteRolesAllowed === ['*'] || in_array($authorRole, $deleteRolesAllowed, true)));
         ?>
         <div class="comment" data-comment-id="<?php echo htmlspecialchars($commentId); ?>">
-            <p class="author"><?php echo htmlspecialchars($comment['user_info']['username'] ?? $comment['user_info']['email']); ?></p>
+            <p class="author"><?php echo comment_author_display_html($comment); ?></p>
             <p class="date"><?php echo $comment['created_at']->toDateTime()->format('d.m.Y H:i'); ?></p>
             <p class="comment-text"><?php echo nl2br(htmlspecialchars($comment['text'])); ?></p>
             <?php if ($canDelete): ?>
@@ -176,7 +176,7 @@ function render_comment_items($comments, $commentLimitReached, $commentLimit, $a
                     $replyCanDelete = $replyIsOwn || ($canDeleteOthers && ($deleteRolesAllowed === ['*'] || in_array($replyAuthorRole, $deleteRolesAllowed, true)));
                     ?>
                     <div class="comment comment-reply" data-comment-id="<?php echo htmlspecialchars($replyId); ?>">
-                        <p class="author"><?php echo htmlspecialchars($reply['user_info']['username'] ?? $reply['user_info']['email']); ?></p>
+                        <p class="author"><?php echo comment_author_display_html($reply); ?></p>
                         <p class="date"><?php echo $reply['created_at']->toDateTime()->format('d.m.Y H:i'); ?></p>
                         <p class="comment-text"><?php echo nl2br(htmlspecialchars($reply['text'])); ?></p>
                         <?php if ($replyCanDelete): ?>
@@ -212,10 +212,11 @@ function render_hover_comment_items($comments) {
     ob_start();
     foreach ($comments as $comment) {
         $author = $comment['user_info']['username'] ?? $comment['user_info']['email'] ?? 'User';
+        $hoverRoleKey = comment_author_role_key($comment);
         $text = $comment['text'] ?? '';
         ?>
         <div class="hover-comment">
-            <span class="hover-author"><?php echo htmlspecialchars($author); ?></span>
+            <span class="hover-author"><?php echo htmlspecialchars($author); ?><?php if ($hoverRoleKey !== ''): ?> <span class="comment-role"><?php echo htmlspecialchars(role_display_label($hoverRoleKey)); ?></span><?php endif; ?></span>
             <span class="hover-text"><?php echo htmlspecialchars($text); ?></span>
         </div>
         <?php
@@ -649,7 +650,28 @@ if (isset($_POST['submit_comment'])) {
         $payload['parent_comment_id'] = $parentCommentId;
     }
 
-    $db->comments->insertOne($payload);
+    try {
+        $db->comments->insertOne($payload);
+    } catch (Throwable $insertError) {
+        $failMessage = 'Kommentar konnte nicht gespeichert werden.';
+        if (app_debug_enabled()) {
+            $failMessage .= ' (' . $insertError->getMessage() . ')';
+        }
+        if ($isAjax) {
+            if (ob_get_length()) {
+                ob_clean();
+            }
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'ok' => false,
+                'action' => 'comment',
+                'message' => $failMessage,
+            ]);
+            exit();
+        }
+        header('Location: ' . $_SERVER['REQUEST_URI']);
+        exit();
+    }
     $message = "Kommentar gespeichert!";
     if ($isAjax) {
         $comments = fetch_comments_with_users($db, $projectObjectId, $mediaObjectId);

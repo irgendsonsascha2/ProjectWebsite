@@ -79,6 +79,109 @@ if (!function_exists('comment_author_snapshot_from_session')) {
     }
 }
 
+if (!function_exists('roles_config_labels_by_role')) {
+    /**
+     * @return array<string, string> role key => Anzeigename aus roles_config
+     */
+    function roles_config_labels_by_role(): array
+    {
+        static $cache = null;
+        if ($cache !== null) {
+            return $cache;
+        }
+
+        $cache = [];
+        try {
+            require_once __DIR__ . '/db.php';
+            [, $adminDb] = get_admin_mongo_connection();
+            foreach ($adminDb->roles_config->find() as $roleDoc) {
+                $key = (string) ($roleDoc['role'] ?? '');
+                if ($key === '') {
+                    continue;
+                }
+                $cache[$key] = (string) ($roleDoc['label'] ?? $key);
+            }
+        } catch (Throwable) {
+            // Leerer Cache – Fallback auf Rollen-Schlüssel
+        }
+
+        return $cache;
+    }
+}
+
+if (!function_exists('role_display_label')) {
+    function role_display_label(string $roleKey): string
+    {
+        if ($roleKey === '') {
+            return '';
+        }
+        $labels = roles_config_labels_by_role();
+
+        return $labels[$roleKey] ?? $roleKey;
+    }
+}
+
+if (!function_exists('comment_document_to_array')) {
+    /**
+     * Mongo find() liefert BSONDocument — für Kommentar-Helfer in Arrays umwandeln.
+     *
+     * @param array<string, mixed>|object $comment
+     * @return array<string, mixed>
+     */
+    function comment_document_to_array($comment): array
+    {
+        if (is_array($comment)) {
+            return $comment;
+        }
+        if ($comment instanceof MongoDB\Model\BSONDocument || $comment instanceof MongoDB\Model\BSONArray) {
+            return $comment->getArrayCopy();
+        }
+        if ($comment instanceof ArrayObject) {
+            return $comment->getArrayCopy();
+        }
+
+        return (array) $comment;
+    }
+}
+
+if (!function_exists('comment_author_role_key')) {
+    /**
+     * @param array<string, mixed>|object $comment
+     */
+    function comment_author_role_key($comment): string
+    {
+        $comment = comment_document_to_array($comment);
+        $info = $comment['user_info'] ?? null;
+        if (is_array($info) && ($info['role'] ?? '') !== '') {
+            return (string) $info['role'];
+        }
+
+        return (string) ($comment['author_role'] ?? '');
+    }
+}
+
+if (!function_exists('comment_author_display_html')) {
+    /**
+     * Name + Rollen-Label (escaped) für Kommentar-Kopfzeile.
+     *
+     * @param array<string, mixed> $comment
+     */
+    function comment_author_display_html($comment): string
+    {
+        $comment = comment_document_to_array($comment);
+        $info = is_array($comment['user_info'] ?? null) ? $comment['user_info'] : [];
+        $name = (string) ($info['username'] ?? $info['email'] ?? $comment['author_username'] ?? 'Unbekannt');
+        $nameEsc = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+        $roleKey = comment_author_role_key($comment);
+        if ($roleKey === '') {
+            return $nameEsc;
+        }
+        $roleLabel = htmlspecialchars(role_display_label($roleKey), ENT_QUOTES, 'UTF-8');
+
+        return $nameEsc.' <span class="comment-role">'.$roleLabel.'</span>';
+    }
+}
+
 if (!function_exists('comment_attach_user_info')) {
     /**
      * Ergänzt Kommentar-Dokumente um user_info (ohne Passwort), nutzt Snapshot oder Admin-Lesen.
@@ -95,6 +198,7 @@ if (!function_exists('comment_attach_user_info')) {
         require_once __DIR__ . '/db.php';
 
         foreach ($comments as &$comment) {
+            $comment = comment_document_to_array($comment);
             if (!empty($comment['author_username'])) {
                 $comment['user_info'] = [
                     'username' => (string) $comment['author_username'],

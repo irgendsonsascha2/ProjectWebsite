@@ -67,10 +67,29 @@
     let scrollYBeforeLock = 0;
     let activeMediaId = null;
 
+    function readCsrfToken() {
+        if (window.PORTFOLIO_CSRF) {
+            return window.PORTFOLIO_CSRF;
+        }
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        if (meta) {
+            const fromMeta = meta.getAttribute('content') || '';
+            if (fromMeta) {
+                window.PORTFOLIO_CSRF = fromMeta;
+                return fromMeta;
+            }
+        }
+        return '';
+    }
+
     async function submitAjaxForm(form, submitter) {
         const formData = new FormData(form);
         if (submitter && submitter.name) {
             formData.append(submitter.name, submitter.value);
+        }
+        const csrf = readCsrfToken();
+        if (csrf && !formData.has('_token')) {
+            formData.set('_token', csrf);
         }
         const actionUrl = form.dataset.ajaxAction || form.action || window.location.href;
         const response = await fetch(actionUrl, {
@@ -79,21 +98,28 @@
                 'X-Requested-With': 'XMLHttpRequest',
                 'Accept': 'application/json'
             },
-            body: formData
+            body: formData,
+            credentials: 'same-origin'
         });
+        const contentType = response.headers.get('content-type') || '';
+        let data = null;
+        if (contentType.includes('application/json')) {
+            data = await response.json();
+        } else {
+            const text = await response.text();
+            try {
+                data = JSON.parse(text);
+            } catch (error) {
+                throw new Error('Ungültige Antwort vom Server');
+            }
+        }
+        if (!response.ok && data && typeof data === 'object') {
+            return data;
+        }
         if (!response.ok) {
             throw new Error('Serverfehler');
         }
-        const contentType = response.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-            return response.json();
-        }
-        const text = await response.text();
-        try {
-            return JSON.parse(text);
-        } catch (error) {
-            throw new Error('Ungültige Antwort vom Server');
-        }
+        return data;
     }
 
     function setActiveMediaId(mediaId) {
@@ -201,7 +227,11 @@
             const submitter = event.submitter || (lastSubmitter && form.contains(lastSubmitter) ? lastSubmitter : null);
             const data = await submitAjaxForm(form, submitter);
             if (data.ok === false) {
-                if (statusEl) statusEl.textContent = data.message || 'Fehler beim Speichern.';
+                const errMsg = data.message
+                    || (data.error === 'csrf' ? 'Sitzung abgelaufen — Seite neu laden und erneut versuchen.' : '')
+                    || (data.error === 'forbidden' ? 'Keine Berechtigung — bitte neu anmelden.' : '')
+                    || 'Fehler beim Speichern.';
+                if (statusEl) statusEl.textContent = errMsg;
                 return;
             }
             if (data.action === 'interaction') {

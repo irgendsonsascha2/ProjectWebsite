@@ -436,6 +436,23 @@
     color: var(--text-main);
   }
 
+  .page-project_detail .comment-role {
+    font-weight: 500;
+    font-size: 0.85em;
+    color: var(--secondary-color);
+  }
+
+  .page-project_detail .comment-role::before {
+    content: '·';
+    margin: 0 0.35em;
+    font-weight: 400;
+  }
+
+  .page-project_detail .hover-comment .comment-role::before {
+    content: '·';
+    margin: 0 0.25em;
+  }
+
   .page-project_detail .comment .date {
     font-size: 0.8em;
     color: var(--secondary-color);

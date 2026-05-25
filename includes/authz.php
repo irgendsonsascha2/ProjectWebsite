@@ -79,7 +79,8 @@ if (!function_exists('authz_apply_user_to_session')) {
         $roleData = $db->roles_config->findOne(['role' => $_SESSION['role']]);
         if ($roleData && isset($roleData['permissions'])) {
             $perms = $roleData['permissions'];
-            $_SESSION['permissions'] = is_array($perms) ? $perms : iterator_to_array($perms);
+            $perms = is_array($perms) ? $perms : iterator_to_array($perms);
+            $_SESSION['permissions'] = array_values(array_map('strval', $perms));
         } else {
             $_SESSION['permissions'] = [];
         }
@@ -248,8 +249,13 @@ if (!function_exists('authz_can_delete_comment')) {
      * @param string|null $currentUserId
      * @param array<int, string>|iterable $deleteRolesAllowed
      */
-    function authz_can_delete_comment(array $comment, ?string $currentUserId, $deleteRolesAllowed, bool $canDeleteOthers): bool
+    function authz_can_delete_comment($comment, ?string $currentUserId, $deleteRolesAllowed, bool $canDeleteOthers): bool
     {
+        if (function_exists('comment_document_to_array')) {
+            $comment = comment_document_to_array($comment);
+        } elseif (! is_array($comment)) {
+            return false;
+        }
         if ($currentUserId === null || $currentUserId === '') {
             return false;
         }

@@ -377,8 +377,9 @@ Standardrollen:
   - Zusätzlich Kommentare schreiben und Likes/Dislikes setzen
   - Hat standardmäßig ein Kommentar-Limit von 10
 - `content_manager`
-  - Darf eigene Projekte erstellen/bearbeiten
+  - Darf Projekte erstellen und **alle** Projekte bearbeiten (`edit_all`, wie Admin für Bearbeitung – ohne `delete_all` / Nutzerverwaltung)
   - Darf kommentieren, liken/disliken und bestimmte Kommentare löschen
+  - In der Projekt-Detailansicht wird bei Kommentaren die **Rolle** des Autors angezeigt (Label aus `roles_config`)
 - `admin`
   - Vollzugriff auf Inhalte, Löschfunktionen, Invite-Codes, Rollen/Berechtigungen und Initialisierungsskripte
 

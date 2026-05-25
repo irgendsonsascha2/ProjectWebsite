@@ -27,8 +27,11 @@ try {
                     'parent_comment_id' => ['bsonType' => 'objectId'],
                     'text' => ['bsonType' => 'string', 'maxLength' => 400],
                     'created_at' => ['bsonType' => 'date'],
-                    'updated_at' => ['bsonType' => 'date']
-                ]
+                    'updated_at' => ['bsonType' => 'date'],
+                    'author_username' => ['bsonType' => 'string'],
+                    'author_role' => ['bsonType' => 'string'],
+                ],
+                'additionalProperties' => true,
             ]
         ]
     ]);

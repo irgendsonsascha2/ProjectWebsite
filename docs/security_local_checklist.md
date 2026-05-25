@@ -83,7 +83,7 @@
 
 ## Phase 3 — Admin-Re-Auth ausweiten
 
-**Status:** 🧪 Manueller Test (du) — **jetzt**
+**Status:** ✅ erledigt
 
 ### Implementierung (Agent)
 
@@ -93,18 +93,18 @@
 
 ### Manueller Test (du)
 
-- [ ] Erste sensible Aktion: Passwort (+ TOTP wenn 2FA aktiv)
-- [ ] Zweite Aktion innerhalb ~15 Min.: ohne erneutes Passwort
-- [ ] Nach Logout / Ablauf: wieder Passwort nötig
-- [ ] Falsches Passwort blockiert Aktion
+- [x] Erste sensible Aktion: Passwort (+ TOTP wenn 2FA aktiv)
+- [x] Zweite Aktion innerhalb ~15 Min.: ohne erneutes Passwort
+- [x] Nach Logout / Ablauf: wieder Passwort nötig
+- [x] Falsches Passwort blockiert Aktion
 
-**Notizen / Datum:**
+**Notizen / Datum:** 2026-05-25 — OK
 
 ---
 
 ## Phase 4 — Admin Permissions (`manage_users`)
 
-**Status:** 🧪 Manueller Test (du)
+**Status:** 🧪 Manueller Test (du) — **jetzt**
 
 ### Implementierung (Agent)
 
