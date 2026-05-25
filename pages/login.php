@@ -103,11 +103,11 @@ if (isset($_SESSION['user_id']) && ! $show2faStep && (! isset($_GET['err']) || $
     <?php if ($show2faStep): ?>
     <section class="login-2fa-section">
         <p class="field-hint" style="margin-bottom:1rem;">Passwort OK — gib den 6-stelligen Code aus deiner Authenticator-App ein.</p>
-        <form method="POST" id="login-2fa-form" action="<?php echo htmlspecialchars($bridgeAuth2faUrl, ENT_QUOTES, 'UTF-8'); ?>">
+        <form method="POST" id="login-2fa-form" action="<?php echo htmlspecialchars($bridgeAuth2faUrl, ENT_QUOTES, 'UTF-8'); ?>" autocomplete="off">
             <?php echo csrf_field(); ?>
             <div class="field">
                 <label for="totp_code">Authenticator-Code</label>
-                <input type="text" id="totp_code" name="totp_code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="123456" autocomplete="one-time-code" autofocus>
+                <input type="text" id="totp_code" name="totp_code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="123456" autocomplete="off" autofocus>
             </div>
 
             <p class="field-hint login-2fa-alt-link">
