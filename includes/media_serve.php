@@ -201,6 +201,13 @@ if (! function_exists('media_serve_may_access_tmp')) {
 if (! function_exists('media_serve_may_access')) {
     function media_serve_may_access($db, string $relativePath): bool
     {
+        if (! function_exists('stress_mode_blocks_guest_content')) {
+            require_once __DIR__.'/stress_mode.php';
+        }
+        if (stress_mode_blocks_guest_content()) {
+            return false;
+        }
+
         if (media_serve_is_tmp_path($relativePath)) {
             return media_serve_may_access_tmp($db, $relativePath);
         }

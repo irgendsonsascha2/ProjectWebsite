@@ -116,6 +116,10 @@ if (!function_exists('can')) {
 $GLOBALS['effective_role'] = $effectiveRole;
 $GLOBALS['effective_permissions'] = $effectivePermissions;
 
+require_once __DIR__.'/stress_mode.php';
+stress_mode_auto_tick();
+stress_mode_enforce_for_current_request();
+
 if (!function_exists('can_edit_project')) {
     function can_edit_project($project) {
         return authz_can_edit_project($project);

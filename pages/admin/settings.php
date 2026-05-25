@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/_layout.php';
 require_once __DIR__ . '/../../includes/site_settings.php';
+require_once __DIR__ . '/../../includes/stress_mode.php';
 require_once __DIR__ . '/../../includes/admin_reauth.php';
 
 use MongoDB\BSON\UTCDateTime;
@@ -13,6 +14,7 @@ $adminReauthFresh = admin_reauth_is_fresh();
 $adminReauthNeeds2fa = admin_reauth_user_has_2fa();
 $reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
 $settings = site_settings_load($db);
+$stressAutoStatus = stress_mode_auto_status();
 
 if (isset($_POST['action']) && $_POST['action'] === 'save_site_settings') {
     $reauth = admin_reauth_require_fresh_or_post();
@@ -31,6 +33,11 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_site_settings') {
         'max_files_per_upload' => (int) ($_POST['max_files_per_upload'] ?? 0),
         'project_detail_media_limit' => (int) ($_POST['project_detail_media_limit'] ?? 0),
         'comment_text_max_length' => (int) ($_POST['comment_text_max_length'] ?? 0),
+        'stress_mode_enabled' => isset($_POST['stress_mode_enabled']),
+        'stress_auto_enabled' => isset($_POST['stress_auto_enabled']),
+        'stress_auto_activate_rpm' => (int) ($_POST['stress_auto_activate_rpm'] ?? 0),
+        'stress_auto_release_rpm' => (int) ($_POST['stress_auto_release_rpm'] ?? 0),
+        'stress_auto_hold_minutes' => (int) ($_POST['stress_auto_hold_minutes'] ?? 0),
     ];
     $settings = site_settings_normalize($input);
 
@@ -55,14 +62,15 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_site_settings') {
         site_settings_clear_cache();
         site_settings_apply($adminDb);
         $settings = site_settings_load($adminDb, true);
-        $notice = 'Einstellungen gespeichert. Website-Name und Upload-Limits gelten ab dem nächsten Request.';
+        $stressAutoStatus = stress_mode_auto_status();
+        $notice = 'Einstellungen gespeichert. Website-Name, Schutzmodus und Upload-Limits gelten ab dem nächsten Request.';
     } catch (Exception $e) {
         $error = 'Datenbankfehler: ' . $e->getMessage();
     }
     }
 }
 
-admin_render_page('Einstellungen', 'settings', function () use ($notice, $error, $settings, $adminReauthFresh, $adminReauthNeeds2fa, $reauthMinutesLeft) { ?>
+admin_render_page('Einstellungen', 'settings', function () use ($notice, $error, $settings, $stressAutoStatus, $adminReauthFresh, $adminReauthNeeds2fa, $reauthMinutesLeft) { ?>
     <div class="page-header">
         <h1>Allgemeine Einstellungen</h1>
     </div>
@@ -88,6 +96,67 @@ admin_render_page('Einstellungen', 'settings', function () use ($notice, $error,
             <input type="hidden" name="action" value="save_site_settings">
 
             <h2>Website</h2>
+
+            <h2>Schutzmodus</h2>
+
+            <?php
+                $autoActive = ! empty($stressAutoStatus['active']);
+                $currentRpm = (int) ($stressAutoStatus['rpm'] ?? 0);
+                $activateRpm = (int) ($settings['stress_auto_activate_rpm'] ?? 600);
+                $releaseRpm = (int) ($settings['stress_auto_release_rpm'] ?? 250);
+                $activeUntil = (int) ($stressAutoStatus['active_until'] ?? 0);
+            ?>
+            <p class="field-hint">
+                Aktuelle Last (geschätzt): <strong><?php echo $currentRpm; ?></strong> Requests/min. (alle PHP-Seiten mit Bootstrap).
+                <?php if ($autoActive && $activeUntil > time()): ?>
+                    <br><strong>Automatischer Schutzmodus ist aktiv</strong> bis <?php echo htmlspecialchars(date('Y-m-d H:i:s', $activeUntil), ENT_QUOTES, 'UTF-8'); ?>.
+                <?php elseif (! empty($settings['stress_auto_enabled'])): ?>
+                    <br>Automatik eingeschaltet — bei ≥ <?php echo $activateRpm; ?> Requests/min wird der Schutzmodus für Gäste ausgelöst.
+                <?php endif; ?>
+            </p>
+
+            <div class="field">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="stress_auto_enabled" name="stress_auto_enabled" value="1"
+                        <?php echo ! empty($settings['stress_auto_enabled']) ? 'checked' : ''; ?>>
+                    Automatisch bei Überlastung aktivieren
+                </label>
+                <div class="hint">
+                    Zählt eingehende Requests (Datei unter <code>logs/</code>). Überschreitung der Aktivierungsschwelle → Schutzmodus für Gäste;
+                    Ende erst nach Mindestdauer und wenn die Last unter die Freigabe-Schwelle fällt (Hysterese gegen Flackern).
+                </div>
+            </div>
+
+            <div class="field">
+                <label for="stress_auto_activate_rpm">Aktivierung ab (Requests/min.)</label>
+                <input type="number" id="stress_auto_activate_rpm" name="stress_auto_activate_rpm" min="10" max="10000" step="1"
+                    value="<?php echo (int) $settings['stress_auto_activate_rpm']; ?>" required>
+            </div>
+
+            <div class="field">
+                <label for="stress_auto_release_rpm">Freigabe unter (Requests/min.)</label>
+                <input type="number" id="stress_auto_release_rpm" name="stress_auto_release_rpm" min="1" max="10000" step="1"
+                    value="<?php echo (int) $settings['stress_auto_release_rpm']; ?>" required>
+                <div class="hint">Muss unter der Aktivierungsschwelle liegen (wird beim Speichern ggf. angepasst). Aktuell: Freigabe &lt; <?php echo $releaseRpm; ?>, Aktivierung ≥ <?php echo $activateRpm; ?>.</div>
+            </div>
+
+            <div class="field">
+                <label for="stress_auto_hold_minutes">Mindestdauer nach Auslösung (Minuten)</label>
+                <input type="number" id="stress_auto_hold_minutes" name="stress_auto_hold_minutes" min="1" max="1440" step="1"
+                    value="<?php echo (int) $settings['stress_auto_hold_minutes']; ?>" required>
+            </div>
+
+            <div class="field">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="stress_mode_enabled" name="stress_mode_enabled" value="1"
+                        <?php echo ! empty($settings['stress_mode_enabled']) ? 'checked' : ''; ?>>
+                    Schutzmodus dauerhaft (manuell) — Gäste von Projekten und Medien ausschließen
+                </label>
+                <div class="hint">
+                    Unabhängig von der Last; hat Vorrang vor der Automatik. Notfall ohne Admin-UI: <code>STRESS_MODE=1</code> in <code>.env.local</code>.
+                    Startseite, Login, Registrierung und Rechtstexte bleiben erreichbar.
+                </div>
+            </div>
 
             <div class="field">
                 <label for="site_name">Website-Name</label>

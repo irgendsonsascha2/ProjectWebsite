@@ -29,6 +29,11 @@ if (!function_exists('site_settings_defaults')) {
             'max_files_per_upload' => 50,
             'project_detail_media_limit' => 30,
             'comment_text_max_length' => 400,
+            'stress_mode_enabled' => false,
+            'stress_auto_enabled' => true,
+            'stress_auto_activate_rpm' => 600,
+            'stress_auto_release_rpm' => 250,
+            'stress_auto_hold_minutes' => 10,
         ];
     }
 }
@@ -78,7 +83,7 @@ if (!function_exists('site_settings_document_id')) {
 if (!function_exists('site_settings_normalize')) {
     /**
      * @param array<string, mixed>|null $doc
-     * @return array<string, int|string>
+     * @return array<string, bool|int|string>
      */
     function site_settings_normalize(?array $doc): array
     {
@@ -102,13 +107,23 @@ if (!function_exists('site_settings_normalize')) {
             'max_files_per_upload' => $readInt('max_files_per_upload', 1, 100),
             'project_detail_media_limit' => $readInt('project_detail_media_limit', 1, 200),
             'comment_text_max_length' => $readInt('comment_text_max_length', 50, 2000),
+            'stress_mode_enabled' => ! empty($doc['stress_mode_enabled']),
+            'stress_auto_enabled' => array_key_exists('stress_auto_enabled', $doc ?? [])
+                ? ! empty($doc['stress_auto_enabled'])
+                : (bool) $defaults['stress_auto_enabled'],
+            'stress_auto_activate_rpm' => $activateRpm = $readInt('stress_auto_activate_rpm', 10, 10000),
+            'stress_auto_release_rpm' => min(
+                $readInt('stress_auto_release_rpm', 1, 10000),
+                max(1, $activateRpm - 1)
+            ),
+            'stress_auto_hold_minutes' => $readInt('stress_auto_hold_minutes', 1, 1440),
         ];
     }
 }
 
 if (!function_exists('site_settings_load')) {
     /**
-     * @return array<string, int|string>
+     * @return array<string, bool|int|string>
      */
     function site_settings_load($db = null, bool $forceReload = false): array
     {
@@ -192,10 +207,66 @@ if (!function_exists('site_settings_build_document')) {
             'max_files_per_upload' => $normalized['max_files_per_upload'],
             'project_detail_media_limit' => $normalized['project_detail_media_limit'],
             'comment_text_max_length' => $normalized['comment_text_max_length'],
+            'stress_mode_enabled' => (bool) ($normalized['stress_mode_enabled'] ?? false),
+            'stress_auto_enabled' => (bool) ($normalized['stress_auto_enabled'] ?? false),
+            'stress_auto_activate_rpm' => (int) ($normalized['stress_auto_activate_rpm'] ?? 600),
+            'stress_auto_release_rpm' => (int) ($normalized['stress_auto_release_rpm'] ?? 250),
+            'stress_auto_hold_minutes' => (int) ($normalized['stress_auto_hold_minutes'] ?? 10),
             'created_at' => $now,
             'updated_at' => $now,
             'updated_by' => '',
         ];
+    }
+}
+
+if (!function_exists('site_settings_stress_field_keys')) {
+    /**
+     * @return string[]
+     */
+    function site_settings_stress_field_keys(): array
+    {
+        return [
+            'stress_mode_enabled',
+            'stress_auto_enabled',
+            'stress_auto_activate_rpm',
+            'stress_auto_release_rpm',
+            'stress_auto_hold_minutes',
+        ];
+    }
+}
+
+if (!function_exists('site_settings_keys_missing_from_defaults')) {
+    /**
+     * @param array<string, mixed> $doc
+     * @return string[]
+     */
+    function site_settings_keys_missing_from_defaults(array $doc): array
+    {
+        $missing = [];
+        foreach (site_settings_defaults() as $key => $_default) {
+            if (! array_key_exists($key, $doc)) {
+                $missing[] = $key;
+            }
+        }
+
+        return $missing;
+    }
+}
+
+if (!function_exists('site_settings_merge_missing_from_defaults')) {
+    /**
+     * @param array<string, mixed> $doc
+     * @return array<string, mixed>
+     */
+    function site_settings_merge_missing_from_defaults(array $doc): array
+    {
+        foreach (site_settings_defaults() as $key => $value) {
+            if (! array_key_exists($key, $doc)) {
+                $doc[$key] = $value;
+            }
+        }
+
+        return $doc;
     }
 }
 
@@ -232,6 +303,7 @@ if (!function_exists('site_settings_seed')) {
             $settings = site_settings_normalize(site_settings_defaults());
         } else {
             $docArray = is_array($existing) ? $existing : iterator_to_array($existing);
+            $docArray = site_settings_merge_missing_from_defaults($docArray);
             $settings = site_settings_normalize($docArray);
         }
 
@@ -241,6 +313,7 @@ if (!function_exists('site_settings_seed')) {
         }
 
         $db->site_pages->replaceOne(['_id' => site_settings_document_id()], $doc, ['upsert' => true]);
+        site_settings_clear_cache();
 
         if (!$existing) {
             return 'inserted';

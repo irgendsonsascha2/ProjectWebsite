@@ -49,6 +49,22 @@ Lokal: `make php` oder `./serve-php.sh` (beide nutzen `router.php`).
 | `interaction_post` | 60 / 10 Min. | Likes/Dislikes |
 | `media_upload` | 30 / 10 Min. pro User | Medien-Upload |
 
+## Schutzmodus (Stress-Modus)
+
+Lockdown für Gäste bei Last oder Bot-Traffic (`includes/stress_mode.php`):
+
+| Aktivierung | Beschreibung |
+|-------------|--------------|
+| **Automatik** (Standard an) | Admin → Einstellungen: Request-Zähler (60 s Fenster, global). Ab `stress_auto_activate_rpm` (Default 600/min.) → Schutz aktiv; Ende nach `stress_auto_hold_minutes` (Default 10) **und** Last unter `stress_auto_release_rpm` (Default 250/min.) für ≥ 2 Min. State: `logs/stress_mode_auto.json` |
+| Admin → Einstellungen | Checkbox *Schutzmodus dauerhaft (manuell)* — `stress_mode_enabled` |
+| `STRESS_MODE=1` | Root-`.env` — erzwingt aktiv (Notfall) |
+
+Env (optional): `STRESS_AUTO_ENABLED`, `STRESS_AUTO_ACTIVATE_RPM`, `STRESS_AUTO_RELEASE_RPM`, `STRESS_AUTO_HOLD_MINUTES`.
+
+**Mongo (einmalig nach Upgrade):** `dbScripts/09_db_init_site_settings.php` — legt `site_settings` an bzw. ergänzt fehlende Felder inkl. `stress_auto_*` (idempotent, kein separates Stress-Skript).
+
+**Gäste ohne Login:** kein Zugriff auf Projektseiten und `media.php` / `content/*` (403 bzw. Redirect Login `err=stress` / `err=stress_auto`). **Eingeloggte Nutzer:** unverändert. **Erlaubt für Gäste:** `home`, `login`, `register`, Rechtstexte, `verify_registration_request`, Auth-Brücken.
+
 ## Admin — Re-Auth
 
 - **15 Minuten** gültiges Fenster nach Passwort (+ TOTP wenn 2FA aktiv): `includes/admin_reauth.php`.

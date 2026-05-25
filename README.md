@@ -62,7 +62,7 @@ Parallel zur klassischen PHP-App liegt eine **Laravel-13-Anwendung** mit **Mongo
 
 **E-Mail-Nachweis:** Kein Login-Gate über Laravel `/verify-email`. Registrierung setzt `email_verified_at` über **`RegisterInvitedUser`** (Invite-Code / verifizierte Anfrage). E-Mail-Bestätigung vor Code-Vergabe: `verify_registration_request` + Admin (`docs/next_session_plan.md`).
 
-**Sicherheit (Auszug):** Kein SVG-Upload; Medien nur über Auth-Proxy (`router.php` / `media.php`, inkl. Bearbeitungs-`content/tmp/`); `logs/` nicht öffentlich; Security-Header (CSP ohne `script-src-attr`); Rate-Limits (Kommentare, Handoff, Likes, Uploads); Admin-Re-Auth für sensible Aktionen (DB-Skripte, Nutzer, Codes, Startseite, Rechtstexte, Einstellungen); idempotentes `dbScripts/15_db_init_security_baseline.php`. Details: `docs/security.md`, Roadmap `docs/security_roadmap.md`, lokale Tests `docs/security_local_checklist.md`.
+**Sicherheit (Auszug):** Kein SVG-Upload; Medien nur über Auth-Proxy (`router.php` / `media.php`, inkl. Bearbeitungs-`content/tmp/`); `logs/` nicht öffentlich; Security-Header (CSP ohne `script-src-attr`); Rate-Limits (Kommentare, Handoff, Likes, Uploads); **Schutzmodus** (Admin-Toggle oder `STRESS_MODE=1`: Gäste ohne Login von Projekten/Medien ausschließen, siehe unten); Admin-Re-Auth für sensible Aktionen (DB-Skripte, Nutzer, Codes, Startseite, Rechtstexte, Einstellungen); idempotentes `dbScripts/15_db_init_security_baseline.php`. Details: `docs/security.md`, Roadmap `docs/security_roadmap.md`, lokale Tests `docs/security_local_checklist.md`.
 
 **Wichtig beim Testen:** Laravel (`php artisan serve`, z. B. Port **8000**) und die **alte Website** sind zwei URLs. `LEGACY_SITE_URL` muss **genau** die Basis-URL sein, unter der `index.php` und `laravel_handoff.php` erreichbar sind (inkl. Port, z. B. `http://127.0.0.1:8080`, wenn die alte App mit `make php` / `./serve-php.sh` bzw. `php -S … router.php` im Projektroot läuft). Ohne laufenden Webserver auf dieser URL schlägt der Sprung nach dem Login fehl.
 
@@ -502,7 +502,9 @@ Der Admin-Bereich liegt unter `pages/admin/` und umfasst:
 - `legal_page_edit.php?key=…`
   - Impressum, Datenschutz oder Nutzungsbedingungen einzeln bearbeiten (eigene Admin-Menüpunkte; Datensätze in `site_pages`)
 - `settings.php`
-  - Allgemeine Einstellungen (Website-Name, Medien-Limits, Galerie-Paging, Kommentarlänge; Datensatz `site_settings` in `site_pages`, nur Admin). Der Name gilt auch für Laravel-Auth-Seiten (z. B. Passwort vergessen) und System-E-Mails (`laravel/app/Services/SiteDisplayName.php`).
+  - Allgemeine Einstellungen (Website-Name, **Schutzmodus**, Medien-Limits, Galerie-Paging, Kommentarlänge; Datensatz `site_settings` in `site_pages`, nur Admin). Der Name gilt auch für Laravel-Auth-Seiten (z. B. Passwort vergessen) und System-E-Mails (`laravel/app/Services/SiteDisplayName.php`).
+
+**Schutzmodus (Stress-Modus):** Nach Upgrade einmal **`dbScripts/09_db_init_site_settings.php`** (Admin → DB-Skripte), damit `stress_auto_*` in Mongo stehen. In Admin → **Einstellungen** — **automatisch** bei Überlastung (Standard: ≥ 600 Requests/min. über alle PHP-Seiten mit Bootstrap, Mindestdauer 10 Min., Freigabe unter 250/min.) oder **manuell** dauerhaft; Notfall: **`STRESS_MODE=1`** in der Root-`.env`. Wenn aktiv, dürfen **nicht eingeloggte** Besucher keine Projektseiten und keine Medien unter `content/` laden; Startseite, Login, Registrierung, Rechtstexte und Auth-Brücken bleiben offen. Eingeloggte Nutzer unverändert. Zähler/Auto-Status: `logs/rate_limit_stress_site_load.json`, `logs/stress_mode_auto.json`. Technik: `includes/stress_mode.php`, `includes/bootstrap.php`, `includes/media_serve.php`. Env-Overrides: `STRESS_AUTO_ENABLED`, `STRESS_AUTO_ACTIVATE_RPM`, `STRESS_AUTO_RELEASE_RPM`, `STRESS_AUTO_HOLD_MINUTES`.
 - `db_scripts.php`
   - Ausführung und Einsicht der Datenbankskripte aus `dbScripts/`
   - Vor Ausführung: CSRF + **frische Admin-Bestätigung** (Passwort, bei aktivem 2FA zusätzlich TOTP; danach 15 Min. gültig — `includes/admin_reauth.php`)
@@ -548,7 +550,7 @@ Die wichtigsten Initialisierungsskripte:
 - `dbScripts/08_db_init_site_nutzungsbedingungen.php`
   - Nutzungsbedingungen in `site_pages` aus `site_page_legal_defaults()` (ersetzt nur diesen Datensatz)
 - `dbScripts/09_db_init_site_settings.php`
-  - Allgemeine Einstellungen (`site_settings` in `site_pages`, inkl. `site_name`). Standard: Datensatz anlegen bzw. fehlende Felder ergänzen (bestehende Upload-Limits bleiben). Optional per Checkbox im Admin: alle Werte auf Standard zurücksetzen.
+  - Allgemeine Einstellungen (`site_settings` in `site_pages`, inkl. `site_name` und **Schutzmodus**: `stress_mode_enabled`, `stress_auto_*`). Standard: Datensatz anlegen bzw. fehlende Felder ergänzen (bestehende Werte bleiben). Nach Upgrade einmal ausführen, wenn Schutzmodus-Felder in Mongo noch fehlen. Optional per Checkbox im Admin: alle Werte auf Standard zurücksetzen.
 - `dbScripts/11_db_init_users_two_factor.php`
   - Dokumentation der optionalen `two_factor_*`-Felder auf `users` + sparse Index
 - `dbScripts/13_db_init_users_moderation.php`

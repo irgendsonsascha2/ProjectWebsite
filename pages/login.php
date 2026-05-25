@@ -38,6 +38,18 @@ if (isset($_GET['err']) && $_GET['err'] === 'forbidden') {
         $messageIsHtml = true;
     }
 }
+if (isset($_GET['err']) && ($_GET['err'] === 'stress' || $_GET['err'] === 'stress_auto')) {
+    $message = isset($_GET['err']) && $_GET['err'] === 'stress_auto'
+        ? '⚠️ Hohe Last auf der Website — der Schutzmodus ist aktiv. Bitte melde dich an, um Projekte und Medien zu sehen.'
+        : '⚠️ Hohe Last — bitte melde dich an, um Projekte und Medien zu sehen.';
+    $messageClass = 'alert alert--error';
+    $next = isset($_GET['next']) ? trim((string) $_GET['next']) : '';
+    if ($next !== '' && strpos($next, '..') === false && $next[0] === '/') {
+        $safeNext = htmlspecialchars($next, ENT_QUOTES, 'UTF-8');
+        $message .= ' <a href="'.$safeNext.'">Zurück zur gewünschten Seite</a>';
+        $messageIsHtml = true;
+    }
+}
 if (isset($_GET['err']) && $_GET['err'] === '2fa') {
     $message = '❌ Ungültiger Authenticator- oder Backup-Code.';
     $messageClass = 'alert alert--error';

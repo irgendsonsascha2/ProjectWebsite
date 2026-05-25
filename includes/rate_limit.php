@@ -75,6 +75,48 @@ if (!function_exists('rate_limit_allow')) {
     }
 }
 
+if (! function_exists('rate_limit_record_and_count')) {
+    /**
+     * Zählt Treffer im Fenster, legt den aktuellen Request an und gibt die Anzahl zurück.
+     */
+    function rate_limit_record_and_count(string $bucket, int $windowSeconds, ?string $key = null): int
+    {
+        if ($windowSeconds < 1) {
+            return 0;
+        }
+
+        $key = $key ?? rate_limit_client_ip();
+        $path = rate_limit_storage_path($bucket);
+        $now = time();
+        $cutoff = $now - $windowSeconds;
+
+        $data = [];
+        if (is_file($path)) {
+            $raw = @file_get_contents($path);
+            $decoded = is_string($raw) ? json_decode($raw, true) : null;
+            if (is_array($decoded)) {
+                $data = $decoded;
+            }
+        }
+
+        $hits = [];
+        if (isset($data[$key]) && is_array($data[$key])) {
+            foreach ($data[$key] as $ts) {
+                if (is_int($ts) && $ts >= $cutoff) {
+                    $hits[] = $ts;
+                }
+            }
+        }
+
+        $hits[] = $now;
+        $data[$key] = $hits;
+
+        @file_put_contents($path, json_encode($data), LOCK_EX);
+
+        return count($hits);
+    }
+}
+
 if (! function_exists('rate_limit_comment_allow')) {
     function rate_limit_comment_allow(): bool
     {
