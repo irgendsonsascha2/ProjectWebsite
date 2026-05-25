@@ -51,6 +51,8 @@ Offene Punkte vor Go-Live: Firewall (nur 80/443 öffentlich), Rate-Limits, Log-R
 
 ## Checkliste vor erstem Server-Deploy
 
+Nach dem Deploy im Browser: **Admin → Deploy-Status** (read-only) und **Admin → DB-Skripte** (ausstehende Migrationen, Badges „Ausstehend“/„Angewendet“). Code-Updates weiter per SSH/Git, nicht über das Admin-Panel.
+
 - [ ] `react-dist/` gebaut (`cd frontend && npm run build`)
 - [ ] `.env.local` / Server-`.env` mit Produktions-URIs (keine Dev-Defaults)
 - [ ] `laravel/.env`: `APP_ENV=production`, `APP_DEBUG=false`, Handoff-URLs mit HTTPS
@@ -58,6 +60,8 @@ Offene Punkte vor Go-Live: Firewall (nur 80/443 öffentlich), Rate-Limits, Log-R
 - [ ] `APP_ENV=production`, `APP_ALLOW_DEV_DB_DEFAULTS=0`, explizite Mongo-URIs
 - [ ] `SESSION_SECURE=1`, `TRUSTED_PROXY_IPS` hinter TLS-Terminierung
 - [ ] `dbScripts/14_db_init_handoff_tokens.php` oder `15_db_init_security_baseline.php` (Handoff- + Security-Indizes)
+- [ ] `dbScripts/16_db_init_schema_migrations.php` (Migration-Tracking; einmalig oder via Master)
+- [ ] Admin **Deploy-Status**: keine roten Prüfungen; ausstehende Migrationen in **DB-Skripte** abarbeiten
 - [ ] Upload-Limits (PHP + nginx); **kein SVG** als Bild-Upload
 - [ ] `Referrer-Policy` / CSP aktiv (automatisch via `includes/security_headers.php`)
 - [ ] Smoke-Test: Login, Register mit Code, Handoff-Replay blockiert, Projekt, Admin DB-Skripte

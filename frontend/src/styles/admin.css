@@ -132,6 +132,72 @@
     border-color: var(--border-subtle);
   }
 
+  body.admin-page .script-list__title {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
+  body.admin-page .migration-badge {
+    @apply inline-block rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-wide;
+  }
+
+  body.admin-page .migration-badge--pending {
+    background: color-mix(in srgb, var(--warning-color, #ca8a04) 20%, transparent);
+    color: var(--warning-color, #ca8a04);
+  }
+
+  body.admin-page .migration-badge--applied {
+    background: color-mix(in srgb, var(--success-color, #16a34a) 20%, transparent);
+    color: var(--success-color, #16a34a);
+  }
+
+  body.admin-page .migration-badge--destructive {
+    background: color-mix(in srgb, var(--danger-color, #dc2626) 15%, transparent);
+    color: var(--danger-color, #dc2626);
+  }
+
+  body.admin-page .deploy-check-list {
+    @apply mt-4 grid gap-3;
+  }
+
+  body.admin-page .deploy-check h3 {
+    @apply m-0 flex flex-wrap items-center gap-2 text-base font-semibold;
+  }
+
+  body.admin-page .deploy-check__status {
+    @apply rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-wide;
+    background: var(--surface-hover);
+    color: var(--secondary-color);
+  }
+
+  body.admin-page .deploy-check--ok .deploy-check__status {
+    color: var(--success-color, #16a34a);
+  }
+
+  body.admin-page .deploy-check--warn .deploy-check__status {
+    color: var(--warning-color, #ca8a04);
+  }
+
+  body.admin-page .deploy-check--fail .deploy-check__status {
+    color: var(--danger-color, #dc2626);
+  }
+
+  body.admin-page .deploy-check__detail {
+    @apply break-words;
+    word-break: break-word;
+  }
+
+  body.admin-page .deploy-check--ok {
+    border-color: color-mix(in srgb, var(--success-color, #16a34a) 40%, var(--border-subtle));
+  }
+
+  body.admin-page .deploy-check--warn {
+    border-color: color-mix(in srgb, var(--warning-color, #ca8a04) 40%, var(--border-subtle));
+  }
+
+  body.admin-page .deploy-check--fail {
+    border-color: color-mix(in srgb, var(--danger-color, #dc2626) 40%, var(--border-subtle));
+  }
+
   body.admin-page .script-actions {
     @apply flex flex-wrap items-center gap-2;
   }

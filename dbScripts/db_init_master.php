@@ -6,6 +6,7 @@
 
 require __DIR__ . '/_guard.php';
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/schema_migrations.php';
 
 echo "<h1>🚀 MongoDB Master-Initialisierung</h1>";
 echo "<div style='font-family: monospace; background: #222; color: #0f0; padding: 20px; border-radius: 5px;'>";
@@ -35,6 +36,11 @@ try {
             
             // Hier nutzen wir include. Die Variablen $client und $db sind im $script verfügbar!
             include $script;
+
+            if (schema_migration_trackable($filename)) {
+                schema_migration_record($db, $filename, schema_migration_actor_for_run());
+                echo "📋 <code>schema_migrations</code>: $filename protokolliert.<br>";
+            }
             
             echo "<br>✅ $filename fertig.<br><br>";
         }

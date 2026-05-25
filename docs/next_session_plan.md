@@ -54,6 +54,7 @@ Kurzüberblick zum Weitermachen — Zielbild, erledigt, offen, Test.
 ### P5 — Infrastruktur & UI (2026-05-21, Teil)
 - ✅ `docker-compose.yml` + `make services-up` (MongoDB, MailHog).
 - ✅ `docs/deployment.md` (lokal + Entwurf Server/DynDNS).
+- ✅ Admin **Deploy-Status** (read-only) + `schema_migrations`-Tracking in DB-Skripte (`16_db_init_schema_migrations.php`).
 - ✅ Copy-UI Admin Einladungscodes (`CopyField` Abstand, `admin.css`).
 - **Nächstes:** Server-Deploy umsetzen (wenn entschieden); UI-Backlog Glass/Responsive/CSS-Split (`current_status.md`).
 

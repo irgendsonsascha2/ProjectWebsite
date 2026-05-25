@@ -108,6 +108,7 @@ if (!function_exists('admin_nav_html')) {
         if ($isAdmin) {
             $items['settings'] = ['href' => 'settings.php', 'label' => 'Einstellungen'];
             $items['db_scripts'] = ['href' => 'db_scripts.php', 'label' => 'DB-Skripte'];
+            $items['deploy_status'] = ['href' => 'deploy_status.php', 'label' => 'Deploy-Status'];
         }
 
         if ($canManageUsers) {

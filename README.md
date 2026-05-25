@@ -506,6 +506,9 @@ Der Admin-Bereich liegt unter `pages/admin/` und umfasst:
 - `db_scripts.php`
   - Ausführung und Einsicht der Datenbankskripte aus `dbScripts/`
   - Vor Ausführung: CSRF + **frische Admin-Bestätigung** (Passwort, bei aktivem 2FA zusätzlich TOTP; danach 15 Min. gültig — `includes/admin_reauth.php`)
+  - Nach erfolgreicher Ausführung trackbarer Skripte (ab `03_…`, nicht `00`–`02`): Eintrag in `schema_migrations` — auch wenn sie über `db_init_master.php` liefen (`includes/schema_migrations.php`)
+- `deploy_status.php`
+  - Read-only-Checkliste (Frontend-Build, effektive Mongo-URIs, Laravel-Env, **DB-Skript-Protokoll** mit „X von Y protokolliert“, Schreibrechte) — **kein** Code-Deploy aus dem Browser
 - `roles.php`
   - Rollen anlegen, bearbeiten und löschen
 - `permissions.php`
@@ -517,7 +520,7 @@ Zugriff ist für eingeloggte Nutzer mit Rolle `admin` vorgesehen; `home_profile.
 
 Die Admin-Seiten nutzen ein gemeinsames „Rahmen“-Layout in `pages/admin/_layout.php` (Theme-Bootstrap `data-theme`, Vite-Assets, Navigation). Inhaltseiten rendern ihren Body über `admin_render_page(...)`, damit Navigation/Grundstruktur nicht pro Datei dupliziert werden muss.
 
-- Menüpunkte: Dashboard, **Nutzer** (Suche, Timeout/Ban), **DB-Skripte**, Registrierungsanfragen, Rollen, Berechtigungen, Zur Hauptseite
+- Menüpunkte: Dashboard, **Nutzer** (Suche, Timeout/Ban), **DB-Skripte**, **Deploy-Status**, Registrierungsanfragen, Rollen, Berechtigungen, Zur Hauptseite
 - **Nutzer-Moderation:** `pages/admin/users.php` setzt `account_moderation` auf `users` (Timeout mit Ablauf, permanenter Ban, optionaler Grund für den Nutzer). Gesperrte Konten werden beim Login (`bridge_auth.php`), bei 2FA-Handoff (`bridge_auth_2fa.php`), Laravel-Login und Session-Sync (`includes/authz.php`) abgewiesen. Admin-Konten sind geschützt. Index: `dbScripts/13_db_init_users_moderation.php`.
 - Der aktive Menüpunkt wird hervorgehoben (CSS: `.admin-nav a.is-active`)
 - `index.php` zeigt **nur im Dashboard** die effektive DB-Konfiguration (laufender PHP‑Prozess) plus ein paar simple Metriken (z. B. Anzahl `users`/`projects`)
@@ -549,9 +552,10 @@ Die wichtigsten Initialisierungsskripte:
 - `dbScripts/11_db_init_users_two_factor.php`
   - Dokumentation der optionalen `two_factor_*`-Felder auf `users` + sparse Index
 - `dbScripts/13_db_init_users_moderation.php`
+  - Dokumentation von `account_moderation` (Timeout/Ban) auf `users` + sparse Index
 - `dbScripts/14_db_init_handoff_tokens.php` (TTL/Unique für Handoff-Nonces)
 - `dbScripts/15_db_init_security_baseline.php` (idempotent: Handoff- + Projekt- + Moderation-Indizes; beliebig wiederholbar)
-  - Dokumentation von `account_moderation` (Timeout/Ban) auf `users` + sparse Index
+- `dbScripts/16_db_init_schema_migrations.php` (idempotent: Collection `schema_migrations` + Unique-Index; im Admin optional Checkbox „Protokoll auffüllen“ für trackbare Skripte nach älterem Master-Lauf)
 - `dbScripts/db_init_master.php`
   - Führt die nummerierten Skripte gesammelt aus
 
