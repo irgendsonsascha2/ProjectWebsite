@@ -74,6 +74,8 @@ Damit die klassische PHP-Seite sichtbares Styling (Tailwind/React-Bundle aus `re
   - einfacher Router über `?page=...` (Standardseite: `home`)
 - `includes/bootstrap.php`
   - Session, MongoDB-Verbindung, Rollen/Rechte, Upload-Helfer
+- `includes/request.php` / `includes/input_validate.php`
+  - Whitelist-Validierung für HTTP-Eingaben (siehe `docs/input_validation.md`)
 - `pages/login.php` / `pages/register.php`
   - Login und Registrierung (Brücken `bridge_auth.php`, `bridge_register.php`)
 - `pages/account.php`
@@ -151,6 +153,19 @@ Wenn eine Änderung tiefergehende technische Erklärung braucht, soll zusätzlic
 - Änderungen an Interaktionen müssen auf Projektebene und Medienebene korrekt bleiben.
 - Neue nummerierte Dateien in `dbScripts/` sind Teil der Master-Initialisierung und müssen so geschrieben werden, dass sie bei Ausführung von `dbScripts/db_init_master.php` mitlaufen können.
 - Sensible Seed-Daten wie initiale Admin-Credentials oder MongoDB-Rollenpasswörter sollen nicht hart im Code stehen, wenn sie beim Ausführen sicher abgefragt werden können.
+
+### Eingabevalidierung (Pflicht bei User-Input)
+
+Neue **`pages/`**, POST-Handler und **`dbScripts/`**, die Formular- oder Request-Daten verarbeiten, **müssen** Whitelist-Validierung nutzen — **keine** rohen `$_POST`/`$_GET`-Strings in Mongo-Queries, Dateipfaden oder Shell.
+
+| Art | Verwenden |
+|-----|-----------|
+| Skalare, Länge, ObjectId | [`includes/request.php`](includes/request.php) (`req_post_string`, `req_get_objectid`, …) |
+| Text, E-Mail, Enums, Slugs, Script-Namen | [`includes/input_validate.php`](includes/input_validate.php) |
+| Bild/Video-Upload | [`validate_media_upload()`](includes/bootstrap.php) in `includes/bootstrap.php` |
+| dbScripts-Dialog (Passwörter, Parameter) | [`dbScripts/_script_input_helpers.php`](dbScripts/_script_input_helpers.php) (`db_script_resolve_password`, …) |
+
+Prinzip: **Whitelist** (erlaubte Zeichen/Längen/Werte), nicht Blacklist verbotener Symbole. Ausgabe weiter escapen (`htmlspecialchars`). Details: [`docs/input_validation.md`](docs/input_validation.md).
 
 ## Qualitätsmaßstab
 

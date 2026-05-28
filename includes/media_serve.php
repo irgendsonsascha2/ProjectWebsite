@@ -5,6 +5,7 @@
  */
 
 require_once __DIR__.'/authz.php';
+require_once __DIR__.'/mongo_collections.php';
 
 use MongoDB\BSON\ObjectId;
 
@@ -134,7 +135,7 @@ if (! function_exists('media_serve_find_project_for_url')) {
     function media_serve_find_project_for_url($db, string $relativePath): ?array
     {
         try {
-            $project = $db->projects->findOne([
+            $project = mongo_projects_for_read($db)->findOne([
                 '$or' => [
                     ['gallery.url' => $relativePath],
                     ['thumbnail' => $relativePath],
@@ -164,7 +165,7 @@ if (! function_exists('media_serve_find_project_by_id')) {
             return null;
         }
         try {
-            $project = $db->projects->findOne(['_id' => new ObjectId($projectIdHex)]);
+            $project = mongo_projects_for_read($db)->findOne(['_id' => new ObjectId($projectIdHex)]);
         } catch (Throwable $e) {
             return null;
         }

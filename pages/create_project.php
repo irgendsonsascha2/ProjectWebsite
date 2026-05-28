@@ -378,15 +378,9 @@ function has_error_message($message) {
 // --- LOGIK: PROJEKT ERSTELLEN ---
 if (isset($_POST['create_project'])) {
     $_SESSION['draft_publish_in_progress'] = '1';
-    $title = trim($_POST['title']);
-    $description = trim($_POST['description']);
-    $rawTags = [];
-    if (isset($_POST['tags'])) {
-        $rawTags = array_map('trim', explode(',', $_POST['tags']));
-    }
-    $tags = array_values(array_filter($rawTags, function ($tag) {
-        return $tag !== '';
-    }));
+    $title = input_project_title(req_post_string('title', ''));
+    $description = input_project_description(req_post_string('description', ''));
+    $tags = input_project_tags($_POST['tags'] ?? '');
     $gallery = [];
     $uploadedFiles = [];
     $uploadErrors = [];
@@ -398,7 +392,7 @@ if (isset($_POST['create_project'])) {
 
     // --- LOGIK: PROJEKT ERSTELLEN ---
     $hasError = has_error_message($message);
-    if (!$hasError && !empty($title)) {
+    if (!$hasError && $title !== null && $title !== '') {
         $now = new \MongoDB\BSON\UTCDateTime();
         $existingGallery = $draftProject ? normalize_gallery($draftProject['gallery'] ?? []) : [];
         if (!empty($gallery)) {

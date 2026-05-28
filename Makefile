@@ -25,7 +25,7 @@ help:
 	@echo "  make laravel        Laravel Test-Server (Port 8000)"
 	@echo "  make deploy-check   Deploy-Status-Prüfungen (CLI)"
 	@echo "  make prod-env-check Produktions-Overlay + deploy-check"
-	@echo "  make db-baseline    DB-Skripte 16/15/14 idempotent (CLI)"
+	@echo "  make db-baseline    DB-Skripte 17/16/15/14 idempotent (CLI)"
 	@echo "  make test-db        DB-Baseline + PHPUnit (wie CI legacy_db)"
 	@echo "  make deploy-server  Build + Composer (Server-Update)"
 	@echo ""

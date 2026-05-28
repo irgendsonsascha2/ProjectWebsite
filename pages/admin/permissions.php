@@ -44,11 +44,11 @@ try {
 if (isset($_POST['action'])) {
     $action = $_POST['action'];
     if ($action === 'create_permission') {
-        $permKey = normalize_perm_key($_POST['perm_key'] ?? '');
-        $permLabel = trim($_POST['perm_label'] ?? '');
-        $permDesc = trim($_POST['perm_desc'] ?? '');
+        $permKey = input_identifier_key(req_post_string('perm_key', ''), 2, 60) ?? '';
+        $permLabel = input_admin_label(req_post_string('perm_label', '')) ?? '';
+        $permDesc = input_admin_description(req_post_string('perm_desc', '')) ?? '';
 
-        if (!preg_match('/^[a-z0-9_-]{2,60}$/', $permKey)) {
+        if ($permKey === '') {
             $error = 'Berechtigungs-Schlüssel ist ungültig (2-60 Zeichen, a-z, 0-9, _ -).';
         } elseif ($db->permissions_config->findOne(['key' => $permKey])) {
             $error = 'Diese Berechtigung existiert bereits.';
@@ -67,11 +67,11 @@ if (isset($_POST['action'])) {
         } else {
             $adminReauthFresh = admin_reauth_is_fresh();
             $reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
-            $permKey = normalize_perm_key($_POST['perm_key'] ?? '');
-            $permLabel = trim($_POST['perm_label'] ?? '');
-            $permDesc = trim($_POST['perm_desc'] ?? '');
+            $permKey = input_identifier_key(req_post_string('perm_key', ''), 2, 60) ?? '';
+            $permLabel = input_admin_label(req_post_string('perm_label', '')) ?? '';
+            $permDesc = input_admin_description(req_post_string('perm_desc', '')) ?? '';
 
-            if (! $permKey) {
+            if ($permKey === '') {
                 $error = 'Berechtigung fehlt.';
             } else {
                 $db->permissions_config->updateOne(
@@ -88,8 +88,8 @@ if (isset($_POST['action'])) {
         } else {
             $adminReauthFresh = admin_reauth_is_fresh();
             $reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
-            $permKey = normalize_perm_key($_POST['perm_key'] ?? '');
-            $roleUsage = $db->roles_config->countDocuments(['permissions' => $permKey]);
+            $permKey = input_identifier_key(req_post_string('perm_key', ''), 2, 60) ?? '';
+            $roleUsage = $permKey !== '' ? $db->roles_config->countDocuments(['permissions' => $permKey]) : 0;
             if ($roleUsage > 0) {
                 $error = 'Berechtigung ist noch Rollen zugeordnet.';
             } else {

@@ -39,9 +39,9 @@ function normalize_permission_keys($keys) {
         if (!is_string($key)) {
             continue;
         }
-        $key = trim($key);
-        if ($key !== '' && !in_array($key, $filtered, true)) {
-            $filtered[] = $key;
+        $valid = input_identifier_key($key, 2, 60);
+        if ($valid !== null && ! in_array($valid, $filtered, true)) {
+            $filtered[] = $valid;
         }
     }
     return $filtered;
@@ -59,9 +59,9 @@ function normalize_role_keys($keys) {
         if (!is_string($key)) {
             continue;
         }
-        $key = trim($key);
-        if ($key !== '' && !in_array($key, $filtered, true)) {
-            $filtered[] = $key;
+        $valid = input_identifier_key($key, 2, 40);
+        if ($valid !== null && ! in_array($valid, $filtered, true)) {
+            $filtered[] = $valid;
         }
     }
     return $filtered;
@@ -79,16 +79,13 @@ try {
 if (isset($_POST['action'])) {
     $action = $_POST['action'];
     if ($action === 'create_role') {
-        $roleKey = strtolower(trim($_POST['role_key'] ?? ''));
-        $roleLabel = trim($_POST['role_label'] ?? '');
+        $roleKey = input_identifier_key(req_post_string('role_key', ''), 2, 40) ?? '';
+        $roleLabel = input_admin_label(req_post_string('role_label', '')) ?? '';
         $permissions = normalize_permission_keys($_POST['permissions'] ?? []);
         $commentDeleteRoles = normalize_role_keys($_POST['comment_delete_roles'] ?? []);
-        $commentLimit = isset($_POST['comment_limit']) ? (int)$_POST['comment_limit'] : 0;
-        if ($commentLimit < 0) {
-            $commentLimit = 0;
-        }
+        $commentLimit = input_clamped_int($_POST['comment_limit'] ?? 0, 0, 10000, 0);
 
-        if (!preg_match('/^[a-z0-9_-]{2,40}$/', $roleKey)) {
+        if ($roleKey === '') {
             $error = 'Rollen-Schlüssel ist ungültig (2-40 Zeichen, a-z, 0-9, _ -).';
         } elseif ($db->roles_config->findOne(['role' => $roleKey])) {
             $error = 'Diese Rolle existiert bereits.';
@@ -109,16 +106,13 @@ if (isset($_POST['action'])) {
         } else {
             $adminReauthFresh = admin_reauth_is_fresh();
             $reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
-            $roleKey = strtolower(trim($_POST['role_key'] ?? ''));
-            $roleLabel = trim($_POST['role_label'] ?? '');
+            $roleKey = input_identifier_key(req_post_string('role_key', ''), 2, 40) ?? '';
+            $roleLabel = input_admin_label(req_post_string('role_label', '')) ?? '';
             $permissions = normalize_permission_keys($_POST['permissions'] ?? []);
             $commentDeleteRoles = normalize_role_keys($_POST['comment_delete_roles'] ?? []);
-            $commentLimit = isset($_POST['comment_limit']) ? (int) $_POST['comment_limit'] : 0;
-            if ($commentLimit < 0) {
-                $commentLimit = 0;
-            }
+            $commentLimit = input_clamped_int($_POST['comment_limit'] ?? 0, 0, 10000, 0);
 
-            if (! $roleKey) {
+            if ($roleKey === '') {
                 $error = 'Rolle fehlt.';
             } else {
                 $db->roles_config->updateOne(
@@ -135,7 +129,7 @@ if (isset($_POST['action'])) {
         } else {
             $adminReauthFresh = admin_reauth_is_fresh();
             $reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
-        $roleKey = strtolower(trim($_POST['role_key'] ?? ''));
+        $roleKey = input_identifier_key(req_post_string('role_key', ''), 2, 40) ?? '';
         if ($roleKey === 'admin') {
             $error = 'Die Admin-Rolle kann nicht gelöscht werden.';
         } else {

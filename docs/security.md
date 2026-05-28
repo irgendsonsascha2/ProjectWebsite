@@ -32,6 +32,10 @@ Lokal: `make php` oder `./serve-php.sh` (beide nutzen `router.php`).
 - **Nicht** öffentlich: `logs/.htaccess` (Apache) und Block in `router.php` (PHP-Dev-Server).
 - Produktion: Document Root so wählen, dass `logs/` nicht erreichbar ist, oder explizit verweigern.
 
+## Eingabevalidierung
+
+Whitelist-orientierte Helfer in [`includes/request.php`](../includes/request.php) und [`includes/input_validate.php`](../includes/input_validate.php); Medien über `validate_media_upload()`. Details und Checkliste für neue Seiten/dbScripts: [input_validation.md](input_validation.md).
+
 ## HTTP-Härtung
 
 - **Security-Header:** `includes/security_headers.php` (Legacy), Laravel `SecurityHeaders`-Middleware.
@@ -82,6 +86,17 @@ Env (optional): `STRESS_AUTO_ENABLED`, `STRESS_AUTO_ACTIVATE_RPM`, `STRESS_AUTO_
 - Getrennte Mongo-URIs pro Rolle; Admin-Skripte nur über `ADMIN_DB_URI`.
 - `dbScripts/` nicht direkt per URL; Laufzeit-Guard + Admin-Pfad.
 - **`15_db_init_security_baseline.php`:** idempotent Handoff- + Projekt- + Moderation-Indizes (beliebig wiederholbar, auch in `db_init_master`).
+- **`17_db_init_mongo_read_views.php`:** View `projects_published` (nur veröffentlichte Projekte); `viewer`/`community_member` ohne `find` auf `projects`. App-Lesepfad: `includes/mongo_collections.php`. Allowlist: keine App-Rollen-Rechte auf `users`, `registration_codes`, `handoff_tokens`, `schema_migrations` (siehe `dbScripts/_mongo_role_privileges.php`).
+
+### Direkter MongoDB-Zugriff (Defense in Depth)
+
+| Mit leaked URI | Effekt |
+|----------------|--------|
+| `viewer` / `community_member` | Kein Lesen von `projects`-Entwürfen; nur `projects_published`. Kein Zugriff auf User/Handoff/Migrations-Collections. |
+| `content_manager` | Voller Zugriff auf `projects` inkl. aller Entwürfe (fachlich `edit_all`); Ownership weiter nur in PHP. |
+| `admin` | `dbOwner` — volle DB. |
+
+Rest-Risiko: `comments`/`likes` können bei bekannter `project_id` eines Entwurfs noch lesbar sein (kein View in diesem Schritt).
 
 ## Entwicklung vs. Produktion
 

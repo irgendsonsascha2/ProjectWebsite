@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/_layout.php';
 require_once __DIR__ . '/../../includes/db.php';
+require_once __DIR__ . '/../../includes/input_validate.php';
 require_once __DIR__ . '/../../includes/admin_reauth.php';
 require_once __DIR__ . '/../../includes/schema_migrations.php';
 
@@ -82,8 +83,36 @@ function admin_script_fields($scriptName) {
 }
 
 function admin_script_input($name, $default = '') {
-    $value = $_POST[$name] ?? $default;
-    return is_string($value) ? trim($value) : $default;
+    $raw = $_POST[$name] ?? $default;
+    if (! is_string($raw)) {
+        return $default;
+    }
+
+    return trim($raw);
+}
+
+function admin_script_email_input(string $name): string
+{
+    $raw = $_POST[$name] ?? null;
+
+    return input_email(is_string($raw) ? $raw : null) ?? '';
+}
+
+function admin_script_password_input(string $name): string
+{
+    $raw = $_POST[$name] ?? null;
+    if (! is_string($raw)) {
+        return '';
+    }
+
+    return input_password_secret($raw, 8) ?? '';
+}
+
+function admin_script_username_input(string $name): string
+{
+    $raw = $_POST[$name] ?? null;
+
+    return input_slug_key(is_string($raw) ? $raw : null, 64) ?? '';
 }
 
 function admin_script_checkbox($name) {
@@ -187,10 +216,14 @@ if (isset($_POST['run_script'])) {
     $adminReauthFresh = admin_reauth_is_fresh();
     $reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
 
-    $requestedScript = basename((string)($_POST['script_name'] ?? ''));
-    $scriptPath = __DIR__ . '/../../dbScripts/' . $requestedScript;
+    $requestedScript = input_db_script_basename(
+        is_string($_POST['script_name'] ?? null) ? $_POST['script_name'] : null
+    );
+    $scriptPath = $requestedScript !== null
+        ? __DIR__.'/../../dbScripts/'.$requestedScript
+        : '';
 
-    if (in_array($requestedScript, $allowedScriptNames, true) && file_exists($scriptPath)) {
+    if ($requestedScript !== null && in_array($requestedScript, $allowedScriptNames, true) && file_exists($scriptPath)) {
         ob_start();
         try {
             if (!defined('ALLOW_DB_SCRIPT_EXECUTION')) {
@@ -200,16 +233,31 @@ if (isset($_POST['run_script'])) {
             admin_script_require_destructive_allowed($requestedScript);
 
             $GLOBALS['dbScriptInput'] = [
-                'seed_admin_email' => admin_script_input('seed_admin_email'),
-                'seed_admin_username' => admin_script_input('seed_admin_username'),
-                'seed_admin_password' => admin_script_input('seed_admin_password'),
-                'mongo_viewer_db_password' => admin_script_input('mongo_viewer_db_password'),
-                'mongo_community_db_password' => admin_script_input('mongo_community_db_password'),
-                'mongo_content_manager_db_password' => admin_script_input('mongo_content_manager_db_password'),
-                'mongo_admin_db_password' => admin_script_input('mongo_admin_db_password'),
+                'seed_admin_email' => admin_script_email_input('seed_admin_email'),
+                'seed_admin_username' => admin_script_username_input('seed_admin_username'),
+                'seed_admin_password' => admin_script_password_input('seed_admin_password'),
+                'mongo_viewer_db_password' => admin_script_password_input('mongo_viewer_db_password'),
+                'mongo_community_db_password' => admin_script_password_input('mongo_community_db_password'),
+                'mongo_content_manager_db_password' => admin_script_password_input('mongo_content_manager_db_password'),
+                'mongo_admin_db_password' => admin_script_password_input('mongo_admin_db_password'),
                 'backfill_migration_log' => admin_script_checkbox('backfill_migration_log'),
                 'reset_site_settings_defaults' => admin_script_checkbox('reset_site_settings_defaults'),
             ];
+
+            if ($requestedScript === '00_db_init_accounts.php' || $requestedScript === 'db_init_master.php') {
+                if ($GLOBALS['dbScriptInput']['seed_admin_email'] === ''
+                    || $GLOBALS['dbScriptInput']['seed_admin_username'] === ''
+                    || $GLOBALS['dbScriptInput']['seed_admin_password'] === '') {
+                    throw new RuntimeException('Seed-Admin-Daten ungültig (E-Mail, Username, Passwort prüfen).');
+                }
+            }
+            if ($requestedScript === '03_db_init_mongo_roles.php' || $requestedScript === 'db_init_master.php') {
+                foreach (['mongo_viewer_db_password', 'mongo_community_db_password', 'mongo_content_manager_db_password', 'mongo_admin_db_password'] as $pwKey) {
+                    if (($GLOBALS['dbScriptInput'][$pwKey] ?? '') === '') {
+                        throw new RuntimeException('MongoDB-Passwort-Felder ungültig (min. 8 Zeichen, keine Steuerzeichen).');
+                    }
+                }
+            }
 
             $cfg = mongo_config();
             $adminUri = $cfg['admin_uri'];

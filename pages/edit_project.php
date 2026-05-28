@@ -292,23 +292,19 @@ if (isset($_POST['update_project'])) {
         $trimmedMessage = ltrim($message);
         $hasError = strpos($trimmedMessage, '❌') === 0;
     }
-    $rawTags = [];
-    if (isset($_POST['tags'])) {
-        $rawTags = array_map('trim', explode(',', $_POST['tags']));
-    }
-    $tags = array_values(array_filter($rawTags, function ($tag) {
-        return $tag !== '';
-    }));
+    $title = input_project_title(req_post_string('title', ''));
+    $description = input_project_description(req_post_string('description', ''));
+    $tags = input_project_tags($_POST['tags'] ?? '');
     $updateData = [
-        'title' => trim($_POST['title']),
-        'description' => trim($_POST['description']),
+        'title' => $title ?? '',
+        'description' => $description ?? '',
         // Tags sind im Schema nicht explizit als Pflichtfeld im Validator, 
         // aber wir behalten sie bei.
         'tags' => $tags,
         'updated_at' => new \MongoDB\BSON\UTCDateTime() // PFLICHT laut Schema
     ];
 
-    if (!$hasError && !empty($updateData['title'])) {
+    if (!$hasError && $title !== null && $title !== '') {
         $finalGallery = [];
         $workingGallery = ensure_media_ids($_SESSION[$sessionGalleryKey] ?? ($project['gallery'] ?? []));
         foreach ($workingGallery as $item) {

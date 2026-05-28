@@ -21,7 +21,7 @@ if ($projectObjectId === null) {
 $ajaxActionUrl = 'index.php?page=project_detail&id=' . urlencode((string) ($projectObjectId));
 
 try {
-    $project = $db->projects->findOne(['_id' => $projectObjectId]);
+    $project = mongo_projects_for_read($db)->findOne(['_id' => $projectObjectId]);
 
     if (!$project) {
         echo "Projekt existiert nicht.";
@@ -263,7 +263,23 @@ if (isset($_POST['interaction'])) {
         exit();
     }
     $userId = new ObjectId($_SESSION['user_id']);
-    $type = $_POST['interaction']; // 'like' or 'dislike'
+    $type = input_interaction_type(req_post_string('interaction', ''));
+    if ($type === null) {
+        if ($isAjax) {
+            if (ob_get_length()) {
+                ob_clean();
+            }
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'ok' => false,
+                'action' => 'interaction',
+                'message' => 'Ungültige Aktion.',
+            ]);
+            exit();
+        }
+        header('Location: '.$_SERVER['REQUEST_URI']);
+        exit();
+    }
     $mediaObjectId = parse_media_id($_POST['media_id'] ?? '');
 
     if (!$mediaObjectId) {
@@ -333,7 +349,7 @@ if (isset($_POST['delete_comment'])) {
     authz_require_login();
     authz_require_active_account();
     $userId = new ObjectId($_SESSION['user_id']);
-    $commentIdRaw = trim($_POST['comment_id'] ?? '');
+    $commentIdRaw = input_object_id_hex(req_post_string('comment_id', '')) ?? '';
     $mediaObjectId = parse_media_id($_POST['media_id'] ?? '');
     if (!$mediaObjectId) {
         if ($isAjax) {
@@ -502,9 +518,9 @@ if (isset($_POST['submit_comment'])) {
         exit();
     }
     $userId = new ObjectId($_SESSION['user_id']);
-    $commentText = trim($_POST['comment_text']);
     $commentLimit = defined('COMMENT_TEXT_MAX_LENGTH') ? COMMENT_TEXT_MAX_LENGTH : 400;
-    $parentCommentIdRaw = trim($_POST['parent_comment_id'] ?? '');
+    $commentText = input_comment_text(req_post_string('comment_text', ''), $commentLimit);
+    $parentCommentIdRaw = input_object_id_hex(req_post_string('parent_comment_id', '')) ?? '';
     $mediaObjectId = parse_media_id($_POST['media_id'] ?? '');
     if (!$mediaObjectId) {
         if ($isAjax) {
@@ -544,7 +560,7 @@ if (isset($_POST['submit_comment'])) {
         }
     }
 
-    if (empty($commentText)) {
+    if ($commentText === null || $commentText === '') {
         if ($isAjax) {
         if (ob_get_length()) {
             ob_clean();
@@ -555,23 +571,6 @@ if (isset($_POST['submit_comment'])) {
             'action' => 'comment',
             'message' => 'Kommentar darf nicht leer sein.'
         ]);
-            exit();
-        }
-        header("Location: " . $_SERVER['REQUEST_URI']);
-        exit();
-    }
-
-    if (mb_strlen($commentText) > $commentLimit) {
-        if ($isAjax) {
-            if (ob_get_length()) {
-                ob_clean();
-            }
-            header('Content-Type: application/json; charset=utf-8');
-            echo json_encode([
-                'ok' => false,
-                'action' => 'comment',
-                'message' => 'Keine Romane Schreiben bitte'
-            ]);
             exit();
         }
         header("Location: " . $_SERVER['REQUEST_URI']);

@@ -358,8 +358,9 @@ Empfohlene Zielarchitektur:
 - Wenn keine Env-Variablen gesetzt sind, bricht die App ab (keine stillen Default-Passwörter mehr). Für lokale Entwicklung: `.env.local` aus `.env.example` anlegen **oder** `APP_ALLOW_DEV_DB_DEFAULTS=1` setzen (dann weiterhin `*:0` wie früher).
 - `?debug=1` zeigt Fehler nur bei `APP_ENV=local` und Zugriff von `127.0.0.1` / `::1`.
 - Alle mutierenden POST-Requests der klassischen Website benötigen ein CSRF-Token (`includes/csrf.php`, `js/csrf-forms.js`). Logout nur per POST.
+- **Eingabevalidierung (Whitelist):** `includes/request.php` (Skalare/IDs), `includes/input_validate.php` (Text, Enums, Slugs), Uploads über `validate_media_upload()`. Checkliste für neue Seiten und dbScripts: [docs/input_validation.md](docs/input_validation.md).
 - Optional: `SESSION_SECURE=1`, `TRUSTED_PROXY_IPS` (kommagetrennt) für Betrieb hinter HTTPS/Reverse-Proxy — siehe `.env.example` im Projektroot.
-- Mongo-RBAC: App-Rollen (`viewer` usw.) lesen **keine** `users`- oder `registration_codes`-Collections mehr; Einladungen/Admin über `admin`. Nach Änderung an `03_db_init_mongo_roles.php` Skript im Admin ausführen. Kommentar-Anzeigenamen: `includes/user_db.php`.
+- Mongo-RBAC: App-Rollen (`viewer`, `community_member`) lesen veröffentlichte Projekte nur über die View `projects_published` (kein `find` auf `projects`); `users`, `registration_codes`, `handoff_tokens` und `schema_migrations` sind für App-Rollen gesperrt. Einladungen/Admin über `admin`. Nach Änderung an Rollen: `dbScripts/17_db_init_mongo_read_views.php` (idempotent, empfohlen) oder `03_db_init_mongo_roles.php` im Admin ausführen — **nach** Deploy von Code mit `includes/mongo_collections.php`. Lesepfad in der App: `mongo_projects_for_read()`. Kommentar-Anzeigenamen: `includes/user_db.php`.
 - Autorisierung: `includes/authz.php` erzwingt Rechte serverseitig. E-Mail-Nachweis nur im Registrierungs-Anfrage-Flow (`verify_registration_request`), nicht als Laravel-Login-Gate. Plan: `docs/next_session_plan.md`.
 
 ### Erste Initialisierung, wenn MongoDB noch keine Projektbenutzer hat
@@ -419,6 +420,8 @@ Die rollenbasierte Auswahl ist im Projekt bereits vorbereitet und wird zentral i
 ## Wichtiger Architekturhinweis
 
 MongoDB-Rollen sind grob und schützen primär auf Datenbank- oder Collection-Ebene.
+
+**Direkter DB-Zugriff (mongosh/Compass):** Mit `viewer`- oder `community_member`-Credentials sind Entwürfe (`is_draft: true`) in `projects` nicht lesbar; nur die View `projects_published`. Ownership („nur eigene Projekte“) und Entwürfe für `content_manager` bleiben in der Anwendung (`includes/authz.php`) bzw. beim technischen User `content_manager` voll zugreifbar.
 
 Das ist sinnvoll für technische Grenzen wie:
 
@@ -655,6 +658,7 @@ Die wichtigsten Initialisierungsskripte:
 - `dbScripts/14_db_init_handoff_tokens.php` (TTL/Unique für Handoff-Nonces)
 - `dbScripts/15_db_init_security_baseline.php` (idempotent: Handoff- + Projekt- + Moderation-Indizes; beliebig wiederholbar)
 - `dbScripts/16_db_init_schema_migrations.php` (idempotent: Collection `schema_migrations` + Unique-Index; im Admin optional Checkbox „Protokoll auffüllen“ für trackbare Skripte nach älterem Master-Lauf)
+- `dbScripts/17_db_init_mongo_read_views.php` (idempotent: View `projects_published` + verschärfte Custom-Roles für viewer/community; auch per `make db-baseline` / `php scripts/run-db-script.php 17_db_init_mongo_read_views.php`)
 - `dbScripts/db_init_master.php`
   - Führt die nummerierten Skripte gesammelt aus
 

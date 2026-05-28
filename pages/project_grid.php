@@ -60,7 +60,7 @@ if ($canViewProjects) {
         ];
     }
 
-    $projectsCursor = $db->projects->find(
+    $projectsCursor = mongo_projects_for_read($db)->find(
         $filter,
         ['sort' => ['created_at' => -1]]
     );

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /**
  * Idempotente DB-Baseline für Deploy (ohne Master/destruktive Skripte).
- * Führt nacheinander 16, 15, 14 aus, wenn noch nicht protokolliert.
+ * Führt nacheinander 17, 16, 15, 14 aus, wenn noch nicht protokolliert.
  */
 
 $root = realpath(__DIR__.'/..');
@@ -14,6 +14,7 @@ if ($root === false) {
 }
 
 $scripts = [
+    '17_db_init_mongo_read_views.php',
     '16_db_init_schema_migrations.php',
     '15_db_init_security_baseline.php',
     '14_db_init_handoff_tokens.php',
@@ -53,7 +54,7 @@ foreach ($scripts as $name) {
 }
 
 if ($ran === 0) {
-    echo "Baseline OK — keine ausstehenden Skripte unter 14/15/16.\n";
+    echo "Baseline OK — keine ausstehenden Skripte unter 14/15/16/17.\n";
 } else {
     echo "Baseline: {$ran} Skript(e) ausgeführt.\n";
 }

@@ -24,20 +24,24 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_site_settings') {
     $adminReauthFresh = admin_reauth_is_fresh();
     $reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
 
+    $siteName = input_bounded_text(req_post_string('site_name', ''), 120, false);
+    if ($siteName === null || $siteName === '') {
+        $error = 'Website-Name ist ungültig oder leer.';
+    } else {
     $input = [
-        'site_name' => (string) ($_POST['site_name'] ?? ''),
-        'max_image_mb' => (int) ($_POST['max_image_mb'] ?? 0),
-        'max_video_mb' => (int) ($_POST['max_video_mb'] ?? 0),
-        'max_image_width' => (int) ($_POST['max_image_width'] ?? 0),
-        'max_image_height' => (int) ($_POST['max_image_height'] ?? 0),
-        'max_files_per_upload' => (int) ($_POST['max_files_per_upload'] ?? 0),
-        'project_detail_media_limit' => (int) ($_POST['project_detail_media_limit'] ?? 0),
-        'comment_text_max_length' => (int) ($_POST['comment_text_max_length'] ?? 0),
+        'site_name' => $siteName,
+        'max_image_mb' => input_clamped_int($_POST['max_image_mb'] ?? 0, 1, 500, 10),
+        'max_video_mb' => input_clamped_int($_POST['max_video_mb'] ?? 0, 1, 5000, 100),
+        'max_image_width' => input_clamped_int($_POST['max_image_width'] ?? 0, 320, 8192, 3840),
+        'max_image_height' => input_clamped_int($_POST['max_image_height'] ?? 0, 320, 8192, 2160),
+        'max_files_per_upload' => input_clamped_int($_POST['max_files_per_upload'] ?? 0, 1, 100, 10),
+        'project_detail_media_limit' => input_clamped_int($_POST['project_detail_media_limit'] ?? 0, 1, 200, 20),
+        'comment_text_max_length' => input_clamped_int($_POST['comment_text_max_length'] ?? 0, 50, 2000, 400),
         'stress_mode_enabled' => isset($_POST['stress_mode_enabled']),
         'stress_auto_enabled' => isset($_POST['stress_auto_enabled']),
-        'stress_auto_activate_rpm' => (int) ($_POST['stress_auto_activate_rpm'] ?? 0),
-        'stress_auto_release_rpm' => (int) ($_POST['stress_auto_release_rpm'] ?? 0),
-        'stress_auto_hold_minutes' => (int) ($_POST['stress_auto_hold_minutes'] ?? 0),
+        'stress_auto_activate_rpm' => input_clamped_int($_POST['stress_auto_activate_rpm'] ?? 0, 10, 100000, 600),
+        'stress_auto_release_rpm' => input_clamped_int($_POST['stress_auto_release_rpm'] ?? 0, 10, 100000, 250),
+        'stress_auto_hold_minutes' => input_clamped_int($_POST['stress_auto_hold_minutes'] ?? 0, 1, 1440, 10),
     ];
     $settings = site_settings_normalize($input);
 
@@ -66,6 +70,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_site_settings') {
         $notice = 'Einstellungen gespeichert. Website-Name, Schutzmodus und Upload-Limits gelten ab dem nächsten Request.';
     } catch (Exception $e) {
         $error = 'Datenbankfehler: ' . $e->getMessage();
+    }
     }
     }
 }

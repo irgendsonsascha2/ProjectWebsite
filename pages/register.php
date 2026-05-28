@@ -2,6 +2,8 @@
 
 require_once __DIR__ . '/../includes/laravel_app_url.php';
 require_once __DIR__ . '/../includes/mail.php';
+require_once __DIR__ . '/../includes/request.php';
+require_once __DIR__ . '/../includes/input_validate.php';
 
 $message = '';
 $messageClass = 'alert';
@@ -74,12 +76,12 @@ $hasPrefilledCode = $prefilledCode !== '';
 
 // Invite-Code anfragen (ohne reg_token Navigation)
 if (isset($_POST['request_registration_code'])) {
-        $email = trim((string)($_POST['request_email'] ?? ''));
+        $email = input_email(req_post_string('request_email', ''));
         $privacyOk = isset($_POST['privacy_consent']) && (string)$_POST['privacy_consent'] === '1';
         if (!$privacyOk) {
             $message = '❌ Bitte bestätige den Datenschutz-Hinweis, um fortzufahren.';
             $messageClass = 'alert alert--error';
-        } elseif ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        } elseif ($email === null || $email === '') {
             $message = '❌ Bitte eine gültige E-Mail-Adresse angeben.';
             $messageClass = 'alert alert--error';
         } elseif (! rate_limit_registration_code_request_allow()) {

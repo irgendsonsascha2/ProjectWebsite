@@ -26,6 +26,12 @@ Diese Checkliste ist dafür gedacht, nach jeder Etappe kurz zu verifizieren, das
   - Ein Projektbild/video über `content/images/...` oder `content/videos/...` lädt (403/404 wäre ein Bug).
   - Im Edit-Flow: temp Media unter `content/tmp/...` lädt (für Projekt-Editoren).
 
+### Mongo Read-Views (nach `17_db_init_mongo_read_views.php`)
+
+- [ ] **viewer** in `mongosh` (URI aus `.env.local`): `db.projects.find()` → Unauthorized; `db.projects_published.find()` → nur ohne `is_draft: true`.
+- [ ] **content_manager**: `db.projects.find({ is_draft: true })` → weiterhin möglich (bekannte Grenze).
+- [ ] Website: Grid/Detail/Medien für veröffentlichte Projekte OK; Entwurf nur als Autor mit `content_manager`/`admin`.
+
 ### Security-Probes (nach Etappe 1/2)
 
 - **NoSQL/Regex Injection-Probe (soll harmlos bleiben)**

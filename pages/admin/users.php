@@ -33,27 +33,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $adminReauthFresh = admin_reauth_is_fresh();
     $reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
 
-    $action = (string) ($_POST['action'] ?? '');
-    $userId = trim((string) ($_POST['user_id'] ?? ''));
+    $action = input_enum(req_post_string('action', ''), ['clear_moderation', 'apply_moderation']);
+    $userId = input_object_id_hex(req_post_string('user_id', '')) ?? '';
 
     try {
+        if ($userId === '') {
+            throw new InvalidArgumentException('Ungültige Nutzer-ID.');
+        }
         if ($action === 'clear_moderation') {
             user_moderation_clear($db, $userId, $adminUsername);
             $message = '✅ Sperre aufgehoben.';
             $messageClass = 'alert';
         } elseif ($action === 'apply_moderation') {
-            $status = (string) ($_POST['moderation_status'] ?? '');
+            $status = input_enum(req_post_string('moderation_status', ''), ['active', 'suspended', 'banned']);
+            if ($status === null) {
+                throw new InvalidArgumentException('Ungültiger Moderation-Status.');
+            }
             if ($status === 'active') {
                 user_moderation_clear($db, $userId, $adminUsername);
                 $message = '✅ Nutzer ist wieder aktiv.';
             } else {
+                $durationPreset = input_enum(
+                    req_post_string('duration_preset', ''),
+                    ['1h', '24h', '7d', '30d', 'custom']
+                ) ?? '';
+                $reasonKey = input_enum(
+                    req_post_string('reason_key', ''),
+                    array_keys(user_moderation_reason_options())
+                );
+                if ($reasonKey === null) {
+                    throw new InvalidArgumentException('Ungültiger Grund.');
+                }
+                $reasonCustom = input_bounded_text(req_post_string('reason_custom', ''), 500, true) ?? '';
                 user_moderation_apply($db, $userId, [
                     'status' => $status,
-                    'duration_preset' => (string) ($_POST['duration_preset'] ?? ''),
-                    'until_custom' => (string) ($_POST['until_custom'] ?? ''),
-                    'reason_key' => (string) ($_POST['reason_key'] ?? ''),
-                    'reason_custom' => (string) ($_POST['reason_custom'] ?? ''),
-                    'show_reason' => ! empty($_POST['show_reason']),
+                    'duration_preset' => $durationPreset,
+                    'until_custom' => req_post_string('until_custom', '', 32, false),
+                    'reason_key' => $reasonKey,
+                    'reason_custom' => $reasonCustom,
+                    'show_reason' => req_post_bool('show_reason'),
                 ], $adminUsername);
                 $message = $status === 'banned'
                     ? '✅ Ban gesetzt.'
