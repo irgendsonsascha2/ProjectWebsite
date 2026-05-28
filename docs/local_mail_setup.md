@@ -7,7 +7,7 @@ Ein Posteingang für **klassische PHP-App** und **Laravel** in der Testumgebung.
 | PHP (Registrierung, Invite) | Projektroot `.env.local` | `MAIL_SMTP_HOST`, `MAIL_SMTP_PORT` |
 | Laravel (Passwort vergessen) | `laravel/.env` | `MAIL_MAILER=smtp`, `MAIL_HOST`, `MAIL_PORT` |
 
-Vorlagen: [`.env.local.example`](../.env.local.example), [`.env.example`](../.env.example), [`laravel/.env.example`](../laravel/.env.example).
+Vorlagen: [`.env.local.example`](../.env.local.example) (Projektroot), [`laravel/.env.example`](../laravel/.env.example).
 
 ## 1. MailHog starten
 

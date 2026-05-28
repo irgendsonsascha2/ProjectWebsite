@@ -1,22 +1,15 @@
 # Security Roadmap
 
+## Offen
+
+- **Deployment (Server/DynDNS):** Entwurf [deployment.md](deployment.md); Smoke [smoke_test.md](smoke_test.md).
+- **Optional:** Admin-`onclick` durch `data-confirm` ersetzen (CSP `script-src-attr`); weitere zentrale Datenzugriffs-Migration (Schritt 3 Rest).
+
 ## Aktueller Stand (Kurz)
 
-**Stand 2026:** **Schritt 1** (kein direkter öffentlicher Webzugriff auf `dbScripts/`, Laufzeit-Guards) und **Schritt 2** (getrennte Mongo-URIs pro Rolle, Admin-Skripte nur über `ADMIN_DB_URI` / Admin-Pfad) sind in der laufenden App umgesetzt. Details: `docs/current_status.md`.
+**Schritte 1–7** (DB-Guards, Mongo-URIs, AuthZ, optionales TOTP, Admin-CSRF/Re-Auth, Medien-Proxy, Rate-Limits, Upload-Härtung) sind umgesetzt. Details: [current_status.md](current_status.md), Session-Plan [next_session_plan.md](next_session_plan.md).
 
-Offen: Deployment (Server). UI/CSP-Aufräumen (2026-05-21): erledigt — `docs/next_session_plan.md`.
-
-**Lokale Security-Iteration (2026-05):** Medien-Proxy, CSP ohne `script-src-attr`, erweiterte Admin-Re-Auth, `manage_users`-Gates, Rate-Limits Likes/Upload, Upload-Härtung — siehe `docs/security.md` und abhakbare Tests in `docs/security_local_checklist.md`.
-
-**Security Follow-up (2026-05):** Tmp-Medien über `media_serve` (`content/tmp/`), Block `/logs`, Skript `15_db_init_security_baseline.php`, Re-Auth auf weiteren Admin-Seiten (Dialog-UX). Manuell abgehakt: Checkliste Phasen 8–11.
-
-**Ergänzung (Sprint 1, 2026-05):** CSRF für Legacy-POSTs, gehärtete Session-Cookies, Handoff `session_regenerate`, POST-Logout, eingeschränktes `?debug=1`, keine stillen Mongo-Default-URIs ohne `APP_ALLOW_DEV_DB_DEFAULTS` — Details `docs/current_status.md`.
-
-**Ergänzung (Sprint 2, 2026-05):** Mongo-RBAC ohne `users`/`registration_codes` für App-Rollen; `registration_code_requests` für Gäste; `includes/user_db.php`; `10_db_init_projects_indexes.php` — Details `docs/current_status.md`. Schritt 2 (URIs) war bereits umgesetzt; RBAC-Verfeinerung ist der Sprint-2-Teil.
-
-**Ergänzung (Sprint 3, 2026-05):** Zentrale Legacy-Autorisierung (`includes/authz.php`), Session-Sync aus DB, POST-Guards auf Projektseiten, IP-Rate-Limit für Code-Anfragen. **Kein** Laravel-`/verify-email`-Zwang mehr; Invite-Registrierung setzt `email_verified_at`. Schritt 3 weitgehend umgesetzt; optional 2FA = Schritt 4 (neu, siehe unten).
-
-**Ergänzung (Sprint 5, 2026-05):** Admin-Nutzer-Moderation (`pages/admin/users.php`, `includes/user_moderation.php`): Timeout/Ban mit optional sichtbarem Grund; Durchsetzung über Brücken, Handoff und Session-Sync. `registration_codes`-Schreibzugriff nur über Admin-Mongo-URI.
+**Lokale Tests:** [security.md](security.md), abhakbar [security_local_checklist.md](security_local_checklist.md).
 
 ## Ausgangslage (früherer Ist-Stand, teilweise inzwischen adressiert)
 
@@ -246,21 +239,10 @@ Bestätigte Entscheidungen (Stand 2026-05, Zielbild):
 
 Abweichung vom früheren Plan: Schritt 5–6 der Roadmap (verpflichtende 2FA + Laravel-Verify) werden durch obiges Zielbild ersetzt.
 
-## Ergänzung (Aufräumen + Security-Pass, 2026-05)
+## Erledigt (Archiv, 2026-05)
 
-Umgesetzt in einer Session (Code + Härtung):
+Kompakte Liste abgeschlossener Härtung (Historie in Git):
 
-- Toter Code entfernt (`js/theme-toggle.js`, `pages/account.php` Code-Generator, ungenutzte `authz`-Stubs, React `Card`/Imports).
-- `includes/registration_codes.php`, `legacy_index_url()` für Invite-Links.
-- **SVG** aus Upload-Typen entfernt (`includes/bootstrap.php`).
-- **Handoff:** Einmal-Nonce (`handoff_tokens`, `dbScripts/14_db_init_handoff_tokens.php`, HMAC `uid|exp|nonce`).
-- **Security-Header** (`includes/security_headers.php`, Laravel `SecurityHeaders`-Middleware).
-- **Rate-Limits:** Kommentare (`comment_post`), fehlgeschlagene Handoffs (`handoff_fail`).
-- **Output:** `$message` überwiegend mit `htmlspecialchars` (Moderation-HTML nur explizit).
-- **Laravel slim:** Verify-Email, Dashboard, Profil entfernt; Hybrid behält Reset + Brücken.
-- **Docker:** Mongo/MailHog nur `127.0.0.1`.
-- Dependency-Audit: siehe `docs/current_status.md` (Abschnitt Dependency-Audit).
-
-## Einordnung: Code-Aufräumen vor Security-Fixing
-
-**Vor** weiterer tiefer Security-Arbeit war vorgesehen, **Code-Aufräumen** zu betreiben — der obige Pass deckt den Großteil ab. Optional offen: technische Schulden reduzieren, Struktur und Duplikate verkleinern, Konfiguration und Abgrenzung zwischen Laravel- und Legacy-Teil klarer ziehen, lesbare Grenzen und Tests dort festziehen, wo es Security später erleichtert. Ziel ist, die Security-Änderungen auf einer **stabileren, nachvollziehbareren Basis** zu machen und unnötige Merge-Konflikte / Seiteneffekte zu vermeiden. (Details, was genau in welcher Reihenfolge aufgeräumt wird, wird in der praktischen Planung mit dem Codebestand festgelegt; nicht zuletzt überschneidet sich das mit `docs/current_status.md` → Frontend-/CSS-Struktur.)
+- Sprints 1–5: CSRF, Session, Mongo RBAC, `authz.php`, TOTP-2FA, Nutzer-Moderation — siehe [current_status.md](current_status.md).
+- Aufräumen/Security-Pass: `registration_codes.php`, Handoff-Nonce (`14_*`), Security-Header, Rate-Limits, SVG blockiert, Laravel Hybrid verschlankt, `15_db_init_security_baseline.php`, Docker nur localhost.
+- UI/CSP: Admin-Dialoge externalisiert, Glass-Utilities, responsive Admin — [next_session_plan.md](next_session_plan.md).
