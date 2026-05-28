@@ -27,6 +27,9 @@ content/tmp/**
 ## PHPUnit
 .phpunit.cache/
 
+## PHPStan
+.phpstan-cache/
+
 ## OS/editor
 .DS_Store
 .idea/

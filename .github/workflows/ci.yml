@@ -208,7 +208,7 @@ jobs:
         run: composer install --no-interaction --no-progress --prefer-dist
 
       - name: PHPStan (legacy)
-        run: vendor/bin/phpstan analyse -c phpstan.neon
+        run: vendor/bin/phpstan analyse -c phpstan.neon --memory-limit=512M
 
   laravel_style:
     name: Laravel style (Pint) [non-blocking]

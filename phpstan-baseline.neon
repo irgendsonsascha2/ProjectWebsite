@@ -1,0 +1,205 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Call to static method check\(\) on an unknown class Illuminate\\Support\\Facades\\Hash\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/admin_reauth.php
+
+		-
+			message: '#^Class Illuminate\\Contracts\\Console\\Kernel not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/admin_reauth.php
+
+		-
+			message: '#^Constant MEDIA_UPLOAD_MAX_IMAGE_BYTES not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/bootstrap.php
+
+		-
+			message: '#^Constant MEDIA_UPLOAD_MAX_IMAGE_HEIGHT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/bootstrap.php
+
+		-
+			message: '#^Constant MEDIA_UPLOAD_MAX_IMAGE_WIDTH not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/bootstrap.php
+
+		-
+			message: '#^Constant MEDIA_UPLOAD_MAX_VIDEO_BYTES not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/bootstrap.php
+
+		-
+			message: '#^Variable \$count on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: includes/db.php
+
+		-
+			message: '#^Variable \$count2 on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: includes/db.php
+
+		-
+			message: '#^Access to an undefined property MongoDB\\Database\:\:\$handoff_tokens\.$#'
+			identifier: property.notFound
+			count: 4
+			path: includes/handoff_tokens.php
+
+		-
+			message: '#^Access to an undefined property MongoDB\\Database\:\:\$registration_codes\.$#'
+			identifier: property.notFound
+			count: 2
+			path: includes/registration_codes.php
+
+		-
+			message: '#^Function db_script_checkbox not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: includes/site_settings.php
+
+		-
+			message: '#^Access to an undefined property MongoDB\\Database\:\:\$users\.$#'
+			identifier: property.notFound
+			count: 1
+			path: includes/user_db.php
+
+		-
+			message: '#^Variable \$page might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: pages/404.php
+
+		-
+			message: '#^Anonymous function has an unused use \$portraitUrl\.$#'
+			identifier: closure.unusedUse
+			count: 1
+			path: pages/admin/home_profile.php
+
+		-
+			message: '#^Variable \$db might not be defined\.$#'
+			identifier: variable.undefined
+			count: 3
+			path: pages/admin/home_profile.php
+
+		-
+			message: '#^Variable \$db might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: pages/admin/index.php
+
+		-
+			message: '#^Variable \$db might not be defined\.$#'
+			identifier: variable.undefined
+			count: 3
+			path: pages/admin/invite_codes.php
+
+		-
+			message: '#^Variable \$db might not be defined\.$#'
+			identifier: variable.undefined
+			count: 3
+			path: pages/admin/legal_page_edit.php
+
+		-
+			message: '#^Variable \$db might not be defined\.$#'
+			identifier: variable.undefined
+			count: 10
+			path: pages/admin/permissions.php
+
+		-
+			message: '#^File ends with a trailing whitespace\. This may cause problems when running the code in the web browser\. Remove the closing \?\> mark or remove the whitespace\.$#'
+			identifier: whitespace.fileEnd
+			count: 1
+			path: pages/admin/registration_requests.php
+
+		-
+			message: '#^Variable \$db might not be defined\.$#'
+			identifier: variable.undefined
+			count: 5
+			path: pages/admin/registration_requests.php
+
+		-
+			message: '#^Variable \$db might not be defined\.$#'
+			identifier: variable.undefined
+			count: 12
+			path: pages/admin/roles.php
+
+		-
+			message: '#^Variable \$db might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: pages/admin/settings.php
+
+		-
+			message: '#^Variable \$db might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: pages/admin/users.php
+
+		-
+			message: '#^Constant MEDIA_UPLOAD_MAX_FILES not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/create_project.php
+
+		-
+			message: '#^Variable \$db might not be defined\.$#'
+			identifier: variable.undefined
+			count: 12
+			path: pages/create_project.php
+
+		-
+			message: '#^Constant MEDIA_UPLOAD_MAX_FILES not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/edit_project.php
+
+		-
+			message: '#^Variable \$db might not be defined\.$#'
+			identifier: variable.undefined
+			count: 5
+			path: pages/edit_project.php
+
+		-
+			message: '#^Variable \$canDeleteOthers might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: pages/project_detail.php
+
+		-
+			message: '#^Variable \$db might not be defined\.$#'
+			identifier: variable.undefined
+			count: 39
+			path: pages/project_detail.php
+
+		-
+			message: '#^File ends with a trailing whitespace\. This may cause problems when running the code in the web browser\. Remove the closing \?\> mark or remove the whitespace\.$#'
+			identifier: whitespace.fileEnd
+			count: 1
+			path: pages/project_grid.php
+
+		-
+			message: '#^Variable \$db might not be defined\.$#'
+			identifier: variable.undefined
+			count: 5
+			path: pages/project_grid.php
+
+		-
+			message: '#^Variable \$db might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: pages/register.php
+
+		-
+			message: '#^Variable \$db might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: pages/verify_registration_request.php
