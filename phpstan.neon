@@ -1,0 +1,19 @@
+parameters:
+  level: 2
+
+  paths:
+    - includes
+    - pages
+    - scripts
+
+  excludePaths:
+    analyse:
+      - laravel
+      - vendor
+      - frontend
+      - react-dist
+      - content
+      - logs
+
+  tmpDir: .phpstan-cache
+

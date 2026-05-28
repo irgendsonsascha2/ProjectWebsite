@@ -1,4 +1,7 @@
 {
+    "require-dev": {
+        "phpstan/phpstan": "^2.1"
+    },
     "require": {
         "mongodb/mongodb": "^2.1"
     }

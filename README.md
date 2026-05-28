@@ -140,6 +140,19 @@ MongoDB ohne Replica Set unterstützt keine DB-Transaktionen wie Laravels `Refre
 
 Bis auf Weiteres wird **ausschließlich lokal** entwickelt und getestet. Ein Einsatz auf einem entfernten Server (Produktion oder Staging) erfolgt **erst**, wenn dafür ausdrücklich entschieden wurde; vorher fokussieren sich Setup, Konfiguration und Features auf die lokale Umgebung.
 
+## CI (GitHub Actions)
+
+Unter `.github/workflows/ci.yml` laufen bei Push und Pull Requests die wichtigsten Checks:
+
+- **Frontend build:** `cd frontend && npm ci && npm run build`
+- **Legacy PHP:** `composer install` (Projektroot) + PHP-Syntaxcheck (`php -l`) für alle versionierten `*.php`
+- **Legacy PHP (static):** `composer install` (Projektroot) + `vendor/bin/phpstan analyse -c phpstan.neon` (non-blocking in CI)
+- **Laravel:** PHPUnit/Feature-Tests gegen eine MongoDB (`mongo:7`) über `php artisan migrate --force` und `php artisan test`
+- **Laravel style:** `cd laravel && composer install && vendor/bin/pint --test` (non-blocking in CI)
+- **Audits:** Composer + npm Audits (non-blocking in CI)
+
+Hinweis: In CI ist **kein automatisches Deployment** konfiguriert.
+
 ## Installation und Start
 
 1. Abhängigkeiten installieren:
