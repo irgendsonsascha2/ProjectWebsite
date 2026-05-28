@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
+use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Models\RegistrationCode;
 use App\Models\RegistrationCodeRequest;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
@@ -13,10 +15,10 @@ use Illuminate\Validation\ValidationException;
 class RegisterInvitedUser
 {
     /**
-     * Invite-only Registrierung (gleiche Regeln wie {@see \App\Http\Controllers\Auth\RegisteredUserController::store}).
+     * Invite-only Registrierung (gleiche Regeln wie {@see RegisteredUserController::store}).
      *
      * @param  array<string, mixed>  $input
-     *         Erwartete Keys: registration_code, username, email, password, password_confirmation
+     *                                       Erwartete Keys: registration_code, username, email, password, password_confirmation
      *
      * @throws ValidationException
      */
@@ -79,7 +81,7 @@ class RegisterInvitedUser
      * - Reiner Admin-/Invite-Code (nicht an eine Anfrage gebunden): immer gesetzt.
      * - Code aus dem Anfrage-Flow: nur wenn E-Mail zu einer verifizierten Anfrage passt.
      */
-    private function resolveEmailVerifiedAt(string $email, string $code): ?\Illuminate\Support\Carbon
+    private function resolveEmailVerifiedAt(string $email, string $code): ?Carbon
     {
         $email = strtolower(trim($email));
         $code = strtoupper(trim($code));

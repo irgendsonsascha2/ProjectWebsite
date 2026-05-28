@@ -12,6 +12,9 @@ use Illuminate\Support\Str;
  */
 class UserFactory extends Factory
 {
+    /** Klartext für Tests; erfüllt die App-Passwort-Policy (siehe AppServiceProvider). */
+    public const DEFAULT_PASSWORD = 'Password1!';
+
     /**
      * The current password being used by the factory.
      */
@@ -30,7 +33,7 @@ class UserFactory extends Factory
             'username' => $username,
             'email' => fake()->unique()->safeEmail(),
             'role' => 'community_member',
-            'password' => static::$password ??= Hash::make('password'),
+            'password' => static::$password ??= Hash::make(self::DEFAULT_PASSWORD),
             'remember_token' => Str::random(10),
             'created_at' => now(),
             'email_verified_at' => now(),

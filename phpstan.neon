@@ -11,7 +11,7 @@ parameters:
       - laravel
       - vendor
       - frontend
-      - react-dist
+      - react-dist (?)
       - content
       - logs
 

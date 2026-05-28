@@ -205,7 +205,8 @@ cd laravel && composer install && php artisan test   # Laravel-Auth gegen portfo
 |---------|---------|--------|
 | Mongo nicht erreichbar (lokal) | Docker/Mongo aus | `make services-up` |
 | `vendor/bin/phpunit` fehlt | Kein `composer install` im Root | `composer install` |
-| Laravel-Tests rot | Keine Migration / falsche `.env` | `cd laravel && cp .env.example .env && php artisan migrate` |
+| Laravel-Tests rot | Keine Migration / falsche `.env` / fehlendes `tests/Unit` | `cd laravel && cp .env.example .env && php artisan migrate`; PHPUnit 12 braucht `laravel/tests/Unit/` (auch leer). Feature-Tests nutzen `UserFactory::DEFAULT_PASSWORD` und `content_responsibility_consent` wie die App-Validierung. |
+| PHPStan (CI) bricht sofort ab | `react-dist/` fehlt im Checkout | In `phpstan.neon` ist `react-dist` optional (`(?)`); lokal trotzdem `npm run build` für die Website. |
 | Frontend build rot | Lockfile/Node | `cd frontend && npm ci && npm run build` |
 
 **Deployment:** CI deployt nicht auf euren Server. Produktion bleibt manuell — siehe [`docs/deployment.md`](docs/deployment.md).

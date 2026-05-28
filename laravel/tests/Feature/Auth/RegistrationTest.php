@@ -3,6 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\RegistrationCode;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -30,15 +31,16 @@ class RegistrationTest extends TestCase
             'registration_code' => 'abcdef01',
             'username' => 'newuser',
             'email' => 'newuser@example.com',
-            'password' => 'password',
-            'password_confirmation' => 'password',
+            'password' => self::VALID_PASSWORD,
+            'password_confirmation' => self::VALID_PASSWORD,
+            'content_responsibility_consent' => '1',
         ]);
 
         $this->assertAuthenticated();
         $response->assertRedirect('/');
 
         $this->assertTrue(
-            \App\Models\User::query()->where('email', 'newuser@example.com')->where('username', 'newuser')->exists()
+            User::query()->where('email', 'newuser@example.com')->where('username', 'newuser')->exists()
         );
     }
 }
