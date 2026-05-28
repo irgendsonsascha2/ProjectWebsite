@@ -12,8 +12,8 @@ use Illuminate\Support\Str;
  */
 class UserFactory extends Factory
 {
-    /** Klartext für Tests; erfüllt die App-Passwort-Policy (siehe AppServiceProvider). */
-    public const DEFAULT_PASSWORD = 'Password1!';
+    /** Klartext für Tests; erfüllt die App-Passwort-Policy (min. 12 Zeichen, siehe AppServiceProvider). */
+    public const DEFAULT_PASSWORD = 'secure-test-passphrase';
 
     /**
      * The current password being used by the factory.

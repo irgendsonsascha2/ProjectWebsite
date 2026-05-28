@@ -3,7 +3,7 @@ require_once __DIR__ . '/../includes/bootstrap.php';
 
 use MongoDB\BSON\UTCDateTime;
 
-$token = isset($_GET['token']) ? trim((string) $_GET['token']) : '';
+$token = req_get_token_hex('token', 64) ?? '';
 $ok = false;
 $message = '';
 $messageClass = 'alert';

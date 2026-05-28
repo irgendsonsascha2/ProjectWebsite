@@ -2,6 +2,7 @@
 require_once __DIR__ . '/_layout.php';
 require_once __DIR__ . '/../../includes/svg_icons.php';
 require_once __DIR__ . '/../../includes/admin_reauth.php';
+require_once __DIR__ . '/../../includes/permissions_defaults.php';
 
 admin_require_manage_users();
 
@@ -11,78 +12,24 @@ $adminReauthFresh = admin_reauth_is_fresh();
 $adminReauthNeeds2fa = admin_reauth_user_has_2fa();
 $reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
 
-$defaultPermissions = [
-    ['key' => 'view_projects', 'label' => 'Projekte ansehen', 'description' => 'Projekte im Frontend ansehen'],
-    ['key' => 'view_comments', 'label' => 'Kommentare ansehen', 'description' => 'Kommentare lesen'],
-    ['key' => 'view_likes', 'label' => 'Likes/Dislikes ansehen', 'description' => 'Like/Dislike-Zahlen anzeigen'],
-    ['key' => 'create_project', 'label' => 'Projekt erstellen', 'description' => 'Neue Projekte anlegen'],
-    ['key' => 'edit_all', 'label' => 'Alle Projekte bearbeiten', 'description' => 'Beliebige Projekte bearbeiten'],
-    ['key' => 'edit_own', 'label' => 'Eigene Projekte bearbeiten', 'description' => 'Nur eigene Projekte bearbeiten'],
-    ['key' => 'delete_all', 'label' => 'Projekte löschen', 'description' => 'Projekte löschen (inkl. Kommentare/Likes)'],
-    ['key' => 'delete_comments', 'label' => 'Kommentare löschen', 'description' => 'Kommentare anderer Nutzer löschen (Rollenzuordnung)'],
-    ['key' => 'comment_limit', 'label' => 'Kommentar-Limit', 'description' => 'Kommentar-Anzahl pro Rolle begrenzen'],
-    ['key' => 'manage_users', 'label' => 'Benutzer verwalten', 'description' => 'Admin-Funktionen für Benutzer/Einladungen'],
-    ['key' => 'generate_codes', 'label' => 'Einladungscodes erzeugen', 'description' => 'Registrierungs-Codes erstellen'],
-    ['key' => 'comment', 'label' => 'Kommentieren', 'description' => 'Kommentare erstellen/bearbeiten'],
-    ['key' => 'like_dislike', 'label' => 'Likes/Dislikes', 'description' => 'Likes und Dislikes vergeben']
-];
-
-function normalize_permission_keys($keys) {
-    if ($keys instanceof Traversable) {
-        $keys = iterator_to_array($keys);
-    }
-    if (!is_array($keys)) {
-        return [];
-    }
-    $filtered = [];
-    foreach ($keys as $key) {
-        if (!is_string($key)) {
-            continue;
-        }
-        $valid = input_identifier_key($key, 2, 60);
-        if ($valid !== null && ! in_array($valid, $filtered, true)) {
-            $filtered[] = $valid;
-        }
-    }
-    return $filtered;
-}
-
-function normalize_role_keys($keys) {
-    if ($keys instanceof Traversable) {
-        $keys = iterator_to_array($keys);
-    }
-    if (!is_array($keys)) {
-        return [];
-    }
-    $filtered = [];
-    foreach ($keys as $key) {
-        if (!is_string($key)) {
-            continue;
-        }
-        $valid = input_identifier_key($key, 2, 40);
-        if ($valid !== null && ! in_array($valid, $filtered, true)) {
-            $filtered[] = $valid;
-        }
-    }
-    return $filtered;
-}
-
 try {
-    if ($db->permissions_config->countDocuments() === 0) {
-        $db->permissions_config->insertMany($defaultPermissions);
-        $db->permissions_config->createIndex(['key' => 1], ['unique' => true]);
-    }
+    permissions_ensure_seeded($db);
 } catch (Exception $e) {
     $error = 'Berechtigungen konnten nicht geladen werden.';
 }
 
-if (isset($_POST['action'])) {
-    $action = $_POST['action'];
+$allowedPermKeys = permissions_config_allowed_keys($db);
+$allowedRoleKeys = roles_config_allowed_keys($db);
+
+$rolePostActions = ['create_role', 'update_role', 'delete_role'];
+$action = req_post_action('action', $rolePostActions);
+
+if ($action !== null) {
     if ($action === 'create_role') {
         $roleKey = input_identifier_key(req_post_string('role_key', ''), 2, 40) ?? '';
         $roleLabel = input_admin_label(req_post_string('role_label', '')) ?? '';
-        $permissions = normalize_permission_keys($_POST['permissions'] ?? []);
-        $commentDeleteRoles = normalize_role_keys($_POST['comment_delete_roles'] ?? []);
+        $permissions = normalize_permission_keys($_POST['permissions'] ?? [], $allowedPermKeys);
+        $commentDeleteRoles = normalize_role_keys_list($_POST['comment_delete_roles'] ?? [], $allowedRoleKeys);
         $commentLimit = input_clamped_int($_POST['comment_limit'] ?? 0, 0, 10000, 0);
 
         if ($roleKey === '') {
@@ -108,8 +55,8 @@ if (isset($_POST['action'])) {
             $reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
             $roleKey = input_identifier_key(req_post_string('role_key', ''), 2, 40) ?? '';
             $roleLabel = input_admin_label(req_post_string('role_label', '')) ?? '';
-            $permissions = normalize_permission_keys($_POST['permissions'] ?? []);
-            $commentDeleteRoles = normalize_role_keys($_POST['comment_delete_roles'] ?? []);
+            $permissions = normalize_permission_keys($_POST['permissions'] ?? [], $allowedPermKeys);
+            $commentDeleteRoles = normalize_role_keys_list($_POST['comment_delete_roles'] ?? [], $allowedRoleKeys);
             $commentLimit = input_clamped_int($_POST['comment_limit'] ?? 0, 0, 10000, 0);
 
             if ($roleKey === '') {
@@ -335,9 +282,9 @@ try {
                 }
                 $roleLabel = $role['label'] ?? $roleKey;
                 $rolePermissions = $role['permissions'] ?? [];
-                $rolePermissions = normalize_permission_keys($rolePermissions);
+                $rolePermissions = normalize_permission_keys($rolePermissions, $allowedPermKeys);
                 $roleDeleteRoles = $role['comment_delete_roles'] ?? [];
-                $roleDeleteRoles = normalize_role_keys($roleDeleteRoles);
+                $roleDeleteRoles = normalize_role_keys_list($roleDeleteRoles, $allowedRoleKeys);
                 $roleCommentLimit = isset($role['comment_limit']) ? (int)$role['comment_limit'] : 0;
                 $userCount = $roleCounts[$roleKey] ?? 0;
             ?>

@@ -267,27 +267,52 @@ if (!function_exists('input_db_script_basename')) {
     }
 }
 
-if (!function_exists('input_password_secret')) {
+if (! function_exists('input_user_password')) {
     /**
-     * Whitelist: druckbare ASCII ohne Steuerzeichen (kein Newline).
+     * End-user account password: length bounds only, no trim, Unicode allowed.
      */
-    function input_password_secret(?string $raw, int $minLen = 8, int $maxLen = 256): ?string
+    function input_user_password(?string $raw, int $minLen = 12, int $maxLen = 512): ?string
     {
-        if ($raw === null) {
-            return null;
-        }
         if (! is_string($raw)) {
             return null;
         }
-        if (preg_match('/[\x00-\x1F\x7F]/', $raw)) {
-            return null;
-        }
-        $len = strlen($raw);
-        if ($len < $minLen || ($maxLen > 0 && $len > $maxLen)) {
+        $len = mb_strlen($raw, 'UTF-8');
+        if ($len < $minLen || $len > $maxLen) {
             return null;
         }
 
         return $raw;
+    }
+}
+
+if (! function_exists('input_secret_password')) {
+    /**
+     * Operational passwords (MongoDB users, seed admin): length bounds, reject NUL only.
+     */
+    function input_secret_password(?string $raw, int $minLen = 8, int $maxLen = 512): ?string
+    {
+        if (! is_string($raw)) {
+            return null;
+        }
+        if (str_contains($raw, "\0")) {
+            return null;
+        }
+        $len = mb_strlen($raw, 'UTF-8');
+        if ($len < $minLen || $len > $maxLen) {
+            return null;
+        }
+
+        return $raw;
+    }
+}
+
+if (!function_exists('input_password_secret')) {
+    /**
+     * @deprecated Use input_secret_password() — kept as alias for dbScripts/admin paths.
+     */
+    function input_password_secret(?string $raw, int $minLen = 8, int $maxLen = 512): ?string
+    {
+        return input_secret_password($raw, $minLen, $maxLen);
     }
 }
 

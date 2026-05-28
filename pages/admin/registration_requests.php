@@ -1,49 +1,10 @@
 <?php
 require_once __DIR__ . '/../../includes/mail.php';
+require_once __DIR__ . '/../../includes/registration_codes.php';
 require_once __DIR__ . '/_layout.php';
 require_once __DIR__ . '/../../includes/admin_reauth.php';
 
 use MongoDB\BSON\UTCDateTime;
-
-function admin_site_base_url(): string {
-    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-    $host = (string)($_SERVER['HTTP_HOST'] ?? 'localhost');
-    // /pages/admin/registration_requests.php -> base is ''
-    $scriptDir = (string)dirname($_SERVER['SCRIPT_NAME'] ?? '/pages/admin/registration_requests.php');
-    $basePath = preg_replace('#/pages/admin$#', '', $scriptDir);
-    $basePath = rtrim((string)$basePath, '/');
-    return $scheme . '://' . $host . ($basePath !== '' ? $basePath : '');
-}
-
-function generate_unique_code($db, int $maxAttempts = 10): ?string {
-    try {
-        $db->registration_codes->createIndex(['code' => 1], ['unique' => true]);
-    } catch (Exception $e) {
-        // ignore
-    }
-    for ($i = 0; $i < $maxAttempts; $i++) {
-        $candidate = strtoupper(bin2hex(random_bytes(8)));
-        try {
-            $db->registration_codes->insertOne([
-                'code' => $candidate,
-                'role' => 'viewer',
-                'is_used' => false,
-                'created_at' => new UTCDateTime()
-            ]);
-            return $candidate;
-        } catch (\MongoDB\Driver\Exception\BulkWriteException $e) {
-            $wr = $e->getWriteResult();
-            $wes = $wr ? $wr->getWriteErrors() : [];
-            foreach ($wes as $we) {
-                if (method_exists($we, 'getCode') && (int)$we->getCode() === 11000) {
-                    continue 2;
-                }
-            }
-            throw $e;
-        }
-    }
-    return null;
-}
 
 admin_require_manage_users();
 
@@ -61,9 +22,12 @@ if (isset($_POST['approve_request_id'])) {
     } else {
         $adminReauthFresh = admin_reauth_is_fresh();
         $reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
-    $id = (string)($_POST['approve_request_id'] ?? '');
+    $idHex = input_object_id_hex(req_post_string('approve_request_id', '', 24, false));
     try {
-        $oid = new \MongoDB\BSON\ObjectId($id);
+        if ($idHex === null) {
+            throw new InvalidArgumentException('invalid id');
+        }
+        $oid = new \MongoDB\BSON\ObjectId($idHex);
         $req = $db->registration_code_requests->findOne(['_id' => $oid]);
         if (!$req) {
             $message = '❌ Anfrage nicht gefunden.';
@@ -75,13 +39,12 @@ if (isset($_POST['approve_request_id'])) {
             $message = 'ℹ️ Anfrage wurde bereits freigegeben.';
             $messageClass = 'alert';
         } else {
-            $code = generate_unique_code($db);
+            $code = registration_code_create($db, 'viewer');
             if ($code === null) {
                 $message = '❌ Konnte keinen Code erzeugen. Bitte erneut versuchen.';
                 $messageClass = 'alert alert--error';
             } else {
-                $base = admin_site_base_url();
-                $link = $base . '/index.php?page=register&reg_token=' . rawurlencode($code) . '#register-section';
+                $link = registration_code_register_link($code);
                 $email = (string)($req['email'] ?? '');
                 $body = "Hallo!\n\nDein Registrierungscode ist:\n\n{$code}\n\nDirekt-Link:\n{$link}\n\n";
                 $mailOk = send_plain_mail($email, 'Dein Registrierungscode', $body);
@@ -186,4 +149,3 @@ $verifiedPending = iterator_to_array(
         </div>
     </dialog>
 <?php }, ['admin'], ['admin-reauth-approve.js']); ?>
-

@@ -2,7 +2,7 @@
 
 **Hinweis (Arbeitsweise):** Es wird vorerst **nur lokal** weiterentwickelt; ein Deployment auf einen Server steht an, sobald dafür ausdrücklich entschieden wurde (siehe auch `README.md` → *Entwicklung und Deployment (Arbeitsweise)*).
 
-## Stand vom 2026-04-01 (Aktualisierungen: siehe unten, z. B. Vite-Loader 2026-04-26)
+## Stand vom 2026-05-28 (Details: Abschnitte unten; Session-Plan: `docs/next_session_plan.md`)
 
 Aktueller Blocker bei der Sicherheits- und MongoDB-Umstellung:
 
@@ -21,48 +21,29 @@ Früher blockierte `03_db_init_mongo_roles.php` mit `not authorized` oder `Authe
 
 **Lokal (2026-05-21):** Admin-Ping und Custom-Rollen OK; Indizes `11`/`13` per CLI erfolgreich. Nach Passwort-Änderung weiterhin `03` im Admin ausführen und PHP-Server neu starten, damit der Prozess die URIs aus `.env.local` lädt.
 
-## Sprint 1 Sicherheit (2026-05, Repo)
+## Sicherheit Sprints 1–5 (2026-05, zusammengefasst)
 
-Umgesetzt in der Codebasis (lokal testbar):
+Umgesetzt (Details in [security.md](security.md), Tests [security_local_checklist.md](security_local_checklist.md)):
 
-- Zentraler CSRF-Schutz für Legacy-POSTs (`includes/csrf.php`, Prüfung in `includes/bootstrap.php`, `js/csrf-forms.js`).
-- Session-Cookies: `HttpOnly`, `SameSite=Strict`, `Secure` bei HTTPS/`SESSION_SECURE=1`.
-- `session_regenerate` nach Laravel-Handoff (`laravel_handoff.php`).
-- Logout nur POST (`pages/account.php`).
-- `?debug=1` nur `APP_ENV=local` + Loopback.
-- Mongo-URIs ohne `.env.local`: Abbruch, außer `APP_ALLOW_DEV_DB_DEFAULTS=1` (siehe `.env.example`).
-- `BridgeRateLimiter`: `X-Forwarded-For` nur mit `TRUSTED_PROXY_IPS`.
+- CSRF, Session-Cookies, Handoff `session_regenerate`, POST-Logout, eingeschränktes `?debug=1`, Mongo-URIs ohne `.env.local` nur mit `APP_ALLOW_DEV_DB_DEFAULTS`.
+- Mongo RBAC, `user_db.php`, Projekt-Indizes; Handoff nur über `ADMIN_DB_URI`.
+- `authz.php`, Rate-Limits, kein Laravel-E-Mail-Gate; Admin-CSRF; optionales TOTP-2FA; Nutzer-Moderation.
 
-## Sprint 2 Sicherheit (2026-05, Repo)
+**Nach Pull:** `03_db_init_mongo_roles.php` im Admin (oder Master), optional `10_db_init_projects_indexes.php`.
 
-- `dbScripts/03_db_init_mongo_roles.php`: kein `find` mehr auf `users` / `registration_codes` für App-Rollen; `registration_code_requests` mit find/insert/update für Gäste.
-- `includes/user_db.php`: öffentliche User-Felder, Kommentar-`author_*` Snapshot, Admin-Fallback für alte Kommentare.
-- `dbScripts/10_db_init_projects_indexes.php`: Indizes auf `projects`.
-- Handoff lädt User nur über `ADMIN_DB_URI`.
+### Input- und NoSQL-Härtung (2026-05-28)
 
-**Nach Pull:** `03_db_init_mongo_roles.php` im Admin-Panel ausführen (oder Master), optional `10_db_init_projects_indexes.php`.
+- Neue Schicht [`includes/mongo_input_guard.php`](../includes/mongo_input_guard.php): sichere POST-Listen, Operator-Keys (`$`, `.`), `req_get_token_hex`, `req_post_objectid_list`, Rollen-Permissions aus Checkbox-**Werten** mit DB-Whitelist.
+- Passwörter (Register/Reset): Laravel `min(12)` / `max(512)`, Unicode ohne Symbol-Zwang; klassisches Register mit `password_confirmation`. Seed/Mongo-Passwörter: `input_secret_password` in `dbScripts` (u. a. `00_db_init_accounts.php` via `db_script_resolve_password`).
+- Doku: [input_validation.md](input_validation.md), [security_input.md](security_input.md), `README.md` (Passwort-Policy).
 
-## Sprint 3 Sicherheit (2026-05, Repo)
+Offen: Produktions-Server/DynDNS ([deployment.md](deployment.md)); optional Admin-`onclick` → `data-confirm` (CSP). Lokal: `make services-up`.
 
-- `includes/authz.php`: Login-/Rechte-Guards, Projekt- und Kommentar-Regeln, Session-Sync aus DB (Rolle/Rechte/`email_verified_at`).
-- `includes/rate_limit.php`: IP-Limit für Registrierungscode-Anfragen (5/h).
-- POST-Guards in `create_project`, `edit_project`, `project_grid`, `project_detail`.
-- **Kein Laravel-E-Mail-Gate** mehr; Account-Seite ohne `/verify-email`-Hinweis.
-- Invite-Registrierung: `email_verified_at` via `RegisterInvitedUser::resolveEmailVerifiedAt()` (Admin-Code oder Anfrage-Flow mit verifizierter E-Mail).
-- Admin: CSRF auf allen POST-Formularen (inkl. Rollen, Berechtigungen, Einstellungen, Home-Profil, Legal); CSRF-Redirect zurück auf Admin-URL.
-- Laravel `User`: kein `MustVerifyEmail`; `email_verified_at` wird bei Registrierung gesetzt.
+## Session-Handoff
 
-- Optionales TOTP-2FA: `pages/two_factor.php` (Auto-Start QR-Einrichtung, Verwaltung); Login nur `step=2fa`; Account/2FA: `?`-Hilfe als Modal; Backup-Codes kopierbar.
-- Rechtstext-/Startseiten-Platzhalter (`includes/site_pages.php`): `site_page_legal_defaults()` / `site_page_home_profile_defaults()`; Init über `dbScripts/05`–`08` (Replace pro Datensatz; Master `05` droppt `site_pages`).
-- Admin **Nutzer** (`pages/admin/users.php`): Suche, Timeout/Ban mit Grund-Dropdown (+ Custom), Toggle „Grund anzeigen“; Durchsetzung Login/Handoff/Session (`account_moderation` auf `users`).
+**Start:** [next_session_plan.md](next_session_plan.md) (offen/erledigt, Smoke: [smoke_test.md](smoke_test.md)).
 
-Offen: Produktions-Server/DynDNS (Entwurf in `docs/deployment.md`); optional Admin-`onclick` durch `data-confirm` ersetzen (CSP `script-src-attr`). Lokal: `docker compose up -d` / `make services-up`.
-
-## Session-Handoff (neue Cursor-Session)
-
-**Start hier:** `docs/next_session_plan.md` (Zielbild Auth, erledigt, P1–P4, lokaler Test).
-
-## Bereits umgesetzte Änderungen
+## Bereits umgesetzte Änderungen (Auswahl)
 
 - Direkter Browserzugriff auf `dbScripts/` ist gesperrt.
 - `dbScripts/`-Skripte haben einen Laufzeit-Guard.

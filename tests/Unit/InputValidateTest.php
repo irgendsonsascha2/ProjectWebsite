@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 
 require_once dirname(__DIR__, 2).'/includes/request.php';
 require_once dirname(__DIR__, 2).'/includes/input_validate.php';
+require_once dirname(__DIR__, 2).'/includes/mongo_input_guard.php';
 
 final class InputValidateTest extends TestCase
 {
@@ -63,10 +64,35 @@ final class InputValidateTest extends TestCase
         $this->assertNull(input_db_script_basename('../03_db_init_mongo_roles.php'));
     }
 
-    public function test_password_secret_rejects_newlines(): void
+    public function test_secret_password_rejects_nul(): void
     {
-        $this->assertNull(input_password_secret("pass\nword", 8));
-        $this->assertSame('password1', input_password_secret('password1', 8));
+        $this->assertNull(input_secret_password("pass\x00word", 8));
+        $this->assertSame('password1', input_secret_password('password1', 8));
+    }
+
+    public function test_user_password_allows_unicode_without_trim(): void
+    {
+        $pw = '  🔒über-lang-unicode-pass  ';
+        $this->assertSame($pw, input_user_password($pw, 12, 512));
+        $this->assertNull(input_user_password(str_repeat('a', 513), 12, 512));
+    }
+
+    public function test_normalize_permission_keys_uses_values_not_assoc_keys(): void
+    {
+        $allowed = ['view_projects', 'delete_all'];
+        // Legacy attack shape: permission names as array keys — must not grant rights.
+        $crafted = ['delete_all' => '1', 'view_projects' => 'on'];
+        $this->assertSame([], normalize_permission_keys($crafted, $allowed));
+
+        $fromCheckbox = normalize_permission_keys(['view_projects', 'delete_all'], $allowed);
+        $this->assertSame(['view_projects', 'delete_all'], $fromCheckbox);
+    }
+
+    public function test_mongo_guard_is_safe_key(): void
+    {
+        $this->assertFalse(mongo_guard_is_safe_key('$gt'));
+        $this->assertFalse(mongo_guard_is_safe_key('a.b'));
+        $this->assertTrue(mongo_guard_is_safe_key('role_key'));
     }
 
     public function test_object_id_hex(): void

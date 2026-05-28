@@ -264,8 +264,8 @@ if ($draftObjectId && isset($_POST['delete_media']) && isset($_POST['media_index
     }
 }
 
-if ($draftObjectId && isset($_POST['reorder_media']) && isset($_POST['order']) && is_array($_POST['order'])) {
-    $order = array_map('intval', $_POST['order']);
+if ($draftObjectId && isset($_POST['reorder_media']) && isset($_POST['order'])) {
+    $order = input_post_int_index_list($_POST['order']);
     $gallery = normalize_gallery($draftProject['gallery'] ?? []);
     $reordered = [];
     foreach ($order as $idx) {

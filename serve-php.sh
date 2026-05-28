@@ -11,6 +11,7 @@ exec php \
   -d post_max_size=2100M \
   -d max_execution_time=600 \
   -d max_input_time=600 \
+  -d max_input_vars=1000 \
   -S 127.0.0.1:8080 \
   -t . \
   router.php

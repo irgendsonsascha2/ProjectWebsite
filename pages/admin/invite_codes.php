@@ -24,29 +24,7 @@ if (isset($_GET['err']) && (string) $_GET['err'] === 'reauth') {
     $messageClass = 'alert alert--error';
 }
 
-// --- LOGIK: CODE GENERIEREN ---
-if (isset($_POST['generate_code'])) {
-    $reauth = admin_reauth_require_fresh_or_post();
-    if (! $reauth['ok']) {
-        header('Location: invite_codes.php?err=reauth');
-        exit;
-    }
-    $adminReauthFresh = admin_reauth_is_fresh();
-    $reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
-
-    $targetRole = (string) ($_POST['target_role'] ?? '');
-    $newCode = registration_code_create($db, $targetRole);
-
-    if ($newCode === null) {
-        $message = '❌ Konnte keinen eindeutigen Code generieren (bitte erneut versuchen).';
-        $messageClass = 'alert error';
-    } else {
-        $message = '✅ Neuer Code generiert: <code>'.htmlspecialchars($newCode, ENT_QUOTES, 'UTF-8').'</code>';
-        $messageClass = 'alert success';
-    }
-}
-
-// Rollen (ohne viewer) für Dropdown
+// Rollen (ohne viewer) für Dropdown — vor POST-Handler für Whitelist
 $roleOptions = [];
 try {
     $roleOptions = iterator_to_array($db->roles_config->find([], ['sort' => ['role' => 1]]));
@@ -57,6 +35,40 @@ if (count($roleOptions) > 0) {
     $roleOptions = array_values(array_filter($roleOptions, function ($roleOption) {
         return isset($roleOption['role']) && $roleOption['role'] !== 'viewer';
     }));
+}
+$allowedInviteRoles = [];
+foreach ($roleOptions as $roleOption) {
+    $rk = $roleOption['role'] ?? null;
+    if (is_string($rk) && $rk !== '') {
+        $allowedInviteRoles[] = $rk;
+    }
+}
+
+// --- LOGIK: CODE GENERIEREN ---
+if (isset($_POST['generate_code'])) {
+    $reauth = admin_reauth_require_fresh_or_post();
+    if (! $reauth['ok']) {
+        header('Location: invite_codes.php?err=reauth');
+        exit;
+    }
+    $adminReauthFresh = admin_reauth_is_fresh();
+    $reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
+
+    $targetRole = input_enum(req_post_string('target_role', '', 40, true), $allowedInviteRoles);
+    if ($targetRole === null) {
+        $message = '❌ Ungültige Zielrolle.';
+        $messageClass = 'alert alert--error';
+    } else {
+    $newCode = registration_code_create($db, $targetRole);
+
+    if ($newCode === null) {
+        $message = '❌ Konnte keinen eindeutigen Code generieren (bitte erneut versuchen).';
+        $messageClass = 'alert error';
+    } else {
+        $message = '✅ Neuer Code generiert: <code>'.htmlspecialchars($newCode, ENT_QUOTES, 'UTF-8').'</code>';
+        $messageClass = 'alert success';
+    }
+    }
 }
 
 $inviteCodesData = [];

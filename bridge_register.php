@@ -54,7 +54,7 @@ $data = [
     'username' => (string) ($_POST['username'] ?? ''),
     'email' => (string) ($_POST['email'] ?? ''),
     'password' => (string) ($_POST['password'] ?? ''),
-    'password_confirmation' => (string) ($_POST['password_confirmation'] ?? $_POST['password'] ?? ''),
+    'password_confirmation' => (string) ($_POST['password_confirmation'] ?? ''),
     'content_responsibility_consent' => true,
 ];
 

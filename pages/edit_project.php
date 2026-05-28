@@ -7,12 +7,13 @@ $isLoggedIn = authz_is_logged_in();
 // --- DATENBANK & PROJEKT LADEN ---
 use MongoDB\BSON\ObjectId;
 
-$projectId = $_GET['id'] ?? null;
-if (!$projectId) {
+$projectObjectId = req_get_objectid('id');
+if ($projectObjectId === null) {
     die("Projekt nicht gefunden.");
 }
+$projectId = (string) $projectObjectId;
 
-$defaultReturnTo = 'index.php?page=project_detail&id='.preg_replace('/[^a-fA-F0-9]/', '', (string) $projectId);
+$defaultReturnTo = 'index.php?page=project_detail&id='.preg_replace('/[^a-fA-F0-9]/', '', $projectId);
 $returnTo = $defaultReturnTo;
 if (!empty($_POST['return_to'])) {
     $returnTo = project_safe_return_to((string) $_POST['return_to'], $defaultReturnTo);
@@ -21,7 +22,6 @@ if (!empty($_POST['return_to'])) {
 }
 
 try {
-    $projectObjectId = new ObjectId($projectId);
     // Die $db Variable wird von der index.php bereitgestellt
     $project = $db->projects->findOne(['_id' => $projectObjectId]);
 
@@ -191,8 +191,8 @@ if (isset($_POST['delete_media']) && isset($_POST['media_index'])) {
     }
 }
 
-if (isset($_POST['reorder_media']) && isset($_POST['order']) && is_array($_POST['order'])) {
-    $order = array_map('intval', $_POST['order']);
+if (isset($_POST['reorder_media']) && isset($_POST['order'])) {
+    $order = input_post_int_index_list($_POST['order']);
     $gallery = $workingGallery;
     $reordered = [];
     foreach ($order as $idx) {

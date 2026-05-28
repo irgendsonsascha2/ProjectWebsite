@@ -25,7 +25,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Password::defaults(function () {
-            return Password::min(8)->mixedCase()->numbers()->symbols();
+            return Password::min(12)->max(512);
         });
 
         $displayName = MailDisplayName::sanitize(app(SiteDisplayName::class)->resolve());

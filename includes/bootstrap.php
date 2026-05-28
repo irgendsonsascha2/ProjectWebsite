@@ -47,6 +47,7 @@ if (app_debug_enabled()) {
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/request.php';
 require_once __DIR__ . '/input_validate.php';
+require_once __DIR__ . '/mongo_input_guard.php';
 require_once __DIR__ . '/mongo_collections.php';
 require_once __DIR__ . '/user_db.php';
 require_once __DIR__ . '/authz.php';

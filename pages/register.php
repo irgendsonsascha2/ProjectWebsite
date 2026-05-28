@@ -161,6 +161,8 @@ $autoOpenRequestDialog = $message !== '' && str_contains($message, 'Postfach');
             <small class="field-hint">3–20 Zeichen: a–z, 0–9, . _ -</small>
             <input type="email" id="reg_email" name="email" placeholder="E-Mail Adresse" autocomplete="email" required>
             <input type="password" id="reg_password" name="password" placeholder="Passwort wählen" autocomplete="new-password" required>
+            <input type="password" id="reg_password_confirmation" name="password_confirmation" placeholder="Passwort wiederholen" autocomplete="new-password" required>
+            <small class="field-hint">Mindestens 12 Zeichen, beliebige Zeichen (inkl. Unicode).</small>
             <label class="privacy-consent">
                 <input type="checkbox" name="privacy_consent_register" value="1" required>
                 <span class="privacy-consent__text">

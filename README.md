@@ -54,6 +54,8 @@ Parallel zur klassischen PHP-App liegt eine **Laravel-13-Anwendung** mit **Mongo
 
 **Nach Laravel-Login zur klassischen Website:** **`laravel_handoff.php`** validiert HMAC + **Einmal-Nonce** (`handoff_tokens`, Index: `dbScripts/14_db_init_handoff_tokens.php`), setzt `$_SESSION` und leitet auf **`index.php?page=…`** weiter (Standard: `home`, `LEGACY_AFTER_LOGIN_PAGE`). **`HANDOFF_SECRET`** und **`LEGACY_SITE_URL`** in **`laravel/.env`** erforderlich.
 
+**Passwort-Regeln:** Mindestens 12 Zeichen, maximal 512, Unicode und Sonderzeichen erlaubt (keine Symbol-Whitelist). Siehe auch Abschnitt „Sicherheit / Konfiguration“.
+
 **Passwort vergessen / neues Passwort (Laravel):** Auf der **Anmeldeseite** (`index.php?page=login`) verweist der Link **Passwort vergessen** auf **`{APP_URL}/forgot-password`** (typ. `http://127.0.0.1:8000`, Wert aus `laravel/.env`). Der Link in der E-Mail setzt das Passwort in Laravel; **nach erfolgreichem Speichern** folgt derselbe **Handoff** wie nach Login, sofern `HANDOFF_SECRET` / `LEGACY_SITE_URL` gesetzt sind. Dafür muss die Collection/Tabelle für Reset-Tokens existieren: einmal **`cd laravel && php artisan migrate`** (u. a. `password_reset_tokens`). **E-Mail lokal:** empfohlen **MailHog** für PHP (`.env.local`) und Laravel (`MAIL_MAILER=smtp`) — ein Posteingang, siehe **`docs/local_mail_setup.md`** (`make services-up`, `make mailhog-check`). Alternative nur Laravel: `MAIL_MAILER=log` → Reset-Link in `laravel/storage/logs/laravel.log`, nicht in MailHog.
 
 **Brücken (Rate-Limiting):** **`bridge_auth.php`** und **`bridge_register.php`** drosseln zu viele Anfragen pro IP (Laravel `RateLimiter`, **~10/60s** Login, **~5/60s** Registrierung) und leiten mit `?err=throttle` zur Login- bzw. Register-Seite um.
@@ -355,11 +357,12 @@ Empfohlene Zielarchitektur:
 - `COMMUNITY_DB_URI` wird für `community_member` verwendet.
 - `CONTENT_MANAGER_DB_URI` wird für `content_manager` verwendet.
 - `ADMIN_DB_URI` wird für `admin` sowie DB-Initialisierung und Wartung verwendet.
-- Wenn keine Env-Variablen gesetzt sind, bricht die App ab (keine stillen Default-Passwörter mehr). Für lokale Entwicklung: `.env.local` aus `.env.example` anlegen **oder** `APP_ALLOW_DEV_DB_DEFAULTS=1` setzen (dann weiterhin `*:0` wie früher).
+- Wenn keine Env-Variablen gesetzt sind, bricht die App ab (keine stillen Default-Passwörter mehr). Für lokale Entwicklung: `cp .env.local.example .env.local` anlegen **oder** `APP_ALLOW_DEV_DB_DEFAULTS=1` setzen (dann weiterhin `*:0` wie früher).
 - `?debug=1` zeigt Fehler nur bei `APP_ENV=local` und Zugriff von `127.0.0.1` / `::1`.
 - Alle mutierenden POST-Requests der klassischen Website benötigen ein CSRF-Token (`includes/csrf.php`, `js/csrf-forms.js`). Logout nur per POST.
-- **Eingabevalidierung (Whitelist):** `includes/request.php` (Skalare/IDs), `includes/input_validate.php` (Text, Enums, Slugs), Uploads über `validate_media_upload()`. Checkliste für neue Seiten und dbScripts: [docs/input_validation.md](docs/input_validation.md).
-- Optional: `SESSION_SECURE=1`, `TRUSTED_PROXY_IPS` (kommagetrennt) für Betrieb hinter HTTPS/Reverse-Proxy — siehe `.env.example` im Projektroot.
+- **Eingabevalidierung (Whitelist):** `includes/request.php` (Skalare/IDs), `includes/input_validate.php` (Text, Enums, Passwörter), `includes/mongo_input_guard.php` (Listen/Operator-Keys, Rollen-Permissions), Uploads über `validate_media_upload()`. Checkliste: [docs/input_validation.md](docs/input_validation.md), Audit-Überblick: [docs/security_input.md](docs/security_input.md).
+- **Passwort-Policy (Nutzerkonten):** Register/Reset über Laravel: min. **12**, max. **512** Zeichen, **beliebige Unicode-Zeichen** (kein erzwungenes Sonderzeichen/Mischung). Kein automatisches Trim. Login prüft nur Hash. **Hinweis:** Standard-Hash (bcrypt) berücksichtigt nur die ersten **72 Bytes** des Passworts — längere Passwörter sind für die Anmeldung dennoch erlaubt, wirken aber wie eine 72-Byte-Präfix-Policy. Optional später: `HASH_DRIVER=argon2id` in `laravel/.env`. Klassische Registrierung: Feld **Passwort wiederholen** (`password_confirmation`) ist Pflicht.
+- Optional: `SESSION_SECURE=1`, `TRUSTED_PROXY_IPS` (kommagetrennt) für Betrieb hinter HTTPS/Reverse-Proxy — siehe `.env.local.example` im Projektroot.
 - Mongo-RBAC: App-Rollen (`viewer`, `community_member`) lesen veröffentlichte Projekte nur über die View `projects_published` (kein `find` auf `projects`); `users`, `registration_codes`, `handoff_tokens` und `schema_migrations` sind für App-Rollen gesperrt. Einladungen/Admin über `admin`. Nach Änderung an Rollen: `dbScripts/17_db_init_mongo_read_views.php` (idempotent, empfohlen) oder `03_db_init_mongo_roles.php` im Admin ausführen — **nach** Deploy von Code mit `includes/mongo_collections.php`. Lesepfad in der App: `mongo_projects_for_read()`. Kommentar-Anzeigenamen: `includes/user_db.php`.
 - Autorisierung: `includes/authz.php` erzwingt Rechte serverseitig. E-Mail-Nachweis nur im Registrierungs-Anfrage-Flow (`verify_registration_request`), nicht als Laravel-Login-Gate. Plan: `docs/next_session_plan.md`.
 
@@ -664,6 +667,8 @@ Die wichtigsten Initialisierungsskripte:
 
 Hinweis: Die Skripte droppen Collections und setzen Daten neu auf. Sie sind daher destruktiv.
 Direkter Browserzugriff auf `dbScripts/` ist gesperrt. Die Ausführung soll nur über den Admin-Bereich erfolgen.
+
+**Destruktive Skripte im Admin:** In `.env.local` `ALLOW_DESTRUCTIVE_DB_SCRIPTS=1` setzen (Vorlage: `.env.local.example`), danach den **PHP-Server neu starten** (`make php` / `./serve-php.sh`). Ohne diese Variable blockiert das Admin-Panel Skripte wie `00_*`–`02_*` und `db_init_master.php`. **Nie in Produktion** setzen.
 Normale Seiten verwenden die App-Datenbankverbindung, DB-Initialisierung und Wartung verwenden eine getrennte Admin-Verbindung.
 Alle nummerierten Dateien in `dbScripts/` werden von `dbScripts/db_init_master.php` automatisch mit ausgeführt.
 
@@ -707,5 +712,6 @@ Falls das Projekt weiter wächst, wären diese Ergänzungen sinnvoll:
 - `docs/database.md` für Collections und Felder
 - `docs/deployment.md` für lokale Docker-Dienste und Entwurf Server/DynDNS
 - `docs/security.md` für Invite-System, Medien-Proxy, Uploads und Härtung
-- `docs/security_local_checklist.md` für iterative lokale Security-Tests (abhackbar)
-- `docs/current_status.md` für aktuelle Blocker und den letzten technischen Zwischenstand
+- `docs/smoke_test.md` — kurzer manueller Flow (Login, Registrierung, Projekt, Admin)
+- `docs/security_local_checklist.md` — iterative Security-Phasen (abhackbar)
+- `docs/current_status.md` — Blocker und technischer Zwischenstand

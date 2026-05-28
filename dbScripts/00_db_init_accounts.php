@@ -145,7 +145,7 @@ try {
 
     $seedAdminEmail = db_script_input_value('seed_admin_email');
     $seedAdminUsername = db_script_input_value('seed_admin_username');
-    $seedAdminPassword = db_script_input_value('seed_admin_password');
+    $seedAdminPassword = db_script_resolve_password('seed_admin_password', 'SEED_ADMIN_PASSWORD');
 
     if ($seedAdminEmail === '' || $seedAdminUsername === '' || $seedAdminPassword === '') {
         throw new RuntimeException('Seed-Admin-E-Mail, Username und Passwort müssen beim Ausführen angegeben werden.');

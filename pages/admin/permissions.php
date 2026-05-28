@@ -2,6 +2,7 @@
 require_once __DIR__ . '/_layout.php';
 require_once __DIR__ . '/../../includes/svg_icons.php';
 require_once __DIR__ . '/../../includes/admin_reauth.php';
+require_once __DIR__ . '/../../includes/permissions_defaults.php';
 
 admin_require_manage_users();
 
@@ -11,38 +12,21 @@ $adminReauthFresh = admin_reauth_is_fresh();
 $adminReauthNeeds2fa = admin_reauth_user_has_2fa();
 $reauthMinutesLeft = $adminReauthFresh ? (int) ceil(admin_reauth_seconds_remaining() / 60) : 0;
 
-$defaultPermissions = [
-    ['key' => 'view_projects', 'label' => 'Projekte ansehen', 'description' => 'Projekte im Frontend ansehen'],
-    ['key' => 'view_comments', 'label' => 'Kommentare ansehen', 'description' => 'Kommentare lesen'],
-    ['key' => 'view_likes', 'label' => 'Likes/Dislikes ansehen', 'description' => 'Like/Dislike-Zahlen anzeigen'],
-    ['key' => 'create_project', 'label' => 'Projekt erstellen', 'description' => 'Neue Projekte anlegen'],
-    ['key' => 'edit_all', 'label' => 'Alle Projekte bearbeiten', 'description' => 'Beliebige Projekte bearbeiten'],
-    ['key' => 'edit_own', 'label' => 'Eigene Projekte bearbeiten', 'description' => 'Nur eigene Projekte bearbeiten'],
-    ['key' => 'delete_all', 'label' => 'Projekte löschen', 'description' => 'Projekte löschen (inkl. Kommentare/Likes)'],
-    ['key' => 'delete_comments', 'label' => 'Kommentare löschen', 'description' => 'Kommentare anderer Nutzer löschen (Rollenzuordnung)'],
-    ['key' => 'comment_limit', 'label' => 'Kommentar-Limit', 'description' => 'Kommentar-Anzahl pro Rolle begrenzen'],
-    ['key' => 'manage_users', 'label' => 'Benutzer verwalten', 'description' => 'Admin-Funktionen für Benutzer/Einladungen'],
-    ['key' => 'generate_codes', 'label' => 'Einladungscodes erzeugen', 'description' => 'Registrierungs-Codes erstellen'],
-    ['key' => 'comment', 'label' => 'Kommentieren', 'description' => 'Kommentare erstellen/bearbeiten'],
-    ['key' => 'like_dislike', 'label' => 'Likes/Dislikes', 'description' => 'Likes und Dislikes vergeben']
-];
-
 function normalize_perm_key($key) {
     $key = strtolower(trim((string)$key));
     return $key;
 }
 
 try {
-    if ($db->permissions_config->countDocuments() === 0) {
-        $db->permissions_config->insertMany($defaultPermissions);
-        $db->permissions_config->createIndex(['key' => 1], ['unique' => true]);
-    }
+    permissions_ensure_seeded($db);
 } catch (Exception $e) {
     $error = 'Berechtigungen konnten nicht geladen werden.';
 }
 
-if (isset($_POST['action'])) {
-    $action = $_POST['action'];
+$permPostActions = ['create_permission', 'update_permission', 'delete_permission'];
+$action = req_post_action('action', $permPostActions);
+
+if ($action !== null) {
     if ($action === 'create_permission') {
         $permKey = input_identifier_key(req_post_string('perm_key', ''), 2, 60) ?? '';
         $permLabel = input_admin_label(req_post_string('perm_label', '')) ?? '';

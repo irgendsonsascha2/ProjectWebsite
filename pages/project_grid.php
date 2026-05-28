@@ -19,30 +19,18 @@ function delete_project_files($project) {
     }
 }
 
-if (isset($_POST['delete_projects']) && isset($_POST['project_ids']) && is_array($_POST['project_ids'])) {
+if (isset($_POST['delete_projects'])) {
     authz_require_can('delete_all');
     authz_require_login();
-    $ids = array_values(array_filter($_POST['project_ids'], function ($id) {
-        return is_string($id) && $id !== '';
-    }));
-    if (!empty($ids)) {
-        $objectIds = [];
-        foreach ($ids as $id) {
-            try {
-                $objectIds[] = new \MongoDB\BSON\ObjectId($id);
-            } catch (Exception $e) {
-                continue;
-            }
+    $objectIds = req_post_objectid_list('project_ids', 100);
+    if (!empty($objectIds)) {
+        $projectsToDelete = iterator_to_array($db->projects->find(['_id' => ['$in' => $objectIds]]));
+        foreach ($projectsToDelete as $project) {
+            delete_project_files($project);
         }
-        if (!empty($objectIds)) {
-            $projectsToDelete = iterator_to_array($db->projects->find(['_id' => ['$in' => $objectIds]]));
-            foreach ($projectsToDelete as $project) {
-                delete_project_files($project);
-            }
-            $db->projects->deleteMany(['_id' => ['$in' => $objectIds]]);
-            $db->likes->deleteMany(['project_id' => ['$in' => $objectIds]]);
-            $db->comments->deleteMany(['project_id' => ['$in' => $objectIds]]);
-        }
+        $db->projects->deleteMany(['_id' => ['$in' => $objectIds]]);
+        $db->likes->deleteMany(['project_id' => ['$in' => $objectIds]]);
+        $db->comments->deleteMany(['project_id' => ['$in' => $objectIds]]);
     }
 }
 
