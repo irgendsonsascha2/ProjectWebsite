@@ -39,7 +39,7 @@ if (!function_exists('db_script_input_password')) {
         $validated = input_password_secret($raw, $minLen);
         if ($validated === null) {
             throw new RuntimeException(
-                'Passwort für '.$key.' ungültig (min. '.$minLen.' Zeichen, keine Steuerzeichen/Zeilenumbrüche).'
+                'Passwort für '.$key.' ungültig (min. '.$minLen.' Zeichen).'
             );
         }
 

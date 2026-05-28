@@ -108,6 +108,187 @@ function admin_script_password_input(string $name): string
     return input_password_secret($raw, 8) ?? '';
 }
 
+/**
+ * Grund, warum ein Betriebspasswort (Seed-Admin, Mongo-Rollen) abgelehnt wurde; null = gültig.
+ */
+function admin_script_secret_password_failure_reason(?string $raw, int $minLen = 8): ?string
+{
+    if (! is_string($raw) || $raw === '') {
+        return 'fehlt';
+    }
+    if (str_contains($raw, "\0")) {
+        return 'enthält ungültige Zeichen (NUL)';
+    }
+    $len = mb_strlen($raw, 'UTF-8');
+    if ($len < $minLen) {
+        return 'mindestens '.$minLen.' Zeichen (eingegeben: '.$len.')';
+    }
+    if ($len > 512) {
+        return 'maximal 512 Zeichen';
+    }
+
+    return null;
+}
+
+function admin_script_seed_email_failure_reason(?string $raw): ?string
+{
+    if (! is_string($raw) || trim($raw) === '') {
+        return 'fehlt';
+    }
+    if (input_email($raw) !== null) {
+        return null;
+    }
+
+    return 'keine gültige E-Mail-Adresse';
+}
+
+function admin_script_seed_username_failure_reason(?string $raw): ?string
+{
+    if (! is_string($raw) || trim($raw) === '') {
+        return 'fehlt';
+    }
+    if (input_slug_key($raw, 64) !== null) {
+        return null;
+    }
+
+    return '2–64 Zeichen, Kleinbuchstaben a–z, Ziffern und Unterstrich, beginnt mit Buchstabe';
+}
+
+function admin_script_mongo_ping_uri(string $uri): bool
+{
+    try {
+        [, $db] = create_mongo_connection($uri);
+        $db->command(['ping' => 1]);
+
+        return true;
+    } catch (Throwable) {
+        return false;
+    }
+}
+
+function admin_script_mongo_bootstrap_uri(string $uri): ?string
+{
+    if (! function_exists('app_environment') || app_environment() !== 'local') {
+        return null;
+    }
+    $cfg = mongo_config();
+    $parsed = parse_url($uri);
+    $host = $parsed['host'] ?? '127.0.0.1';
+    $port = isset($parsed['port']) ? ':'.$parsed['port'] : '';
+    $dbName = $cfg['db_name'];
+    if (isset($parsed['path']) && is_string($parsed['path']) && $parsed['path'] !== '' && $parsed['path'] !== '/') {
+        $dbName = ltrim($parsed['path'], '/');
+    }
+
+    return 'mongodb://'.$host.$port.'/'.$dbName;
+}
+
+/**
+ * Master-Lauf: Formular setzt Mongo-Passwörter erst in 03_* — Verbindung für 00–02 braucht bestehende Credentials.
+ *
+ * @return array{0: string, 1: string} [uri, source: form|env|bootstrap_no_auth|unverified]
+ */
+function admin_script_resolve_master_admin_uri(string $adminUri, string $formAdminPass): array
+{
+    if ($formAdminPass !== '') {
+        $withForm = mongo_uri_with_password($adminUri, $formAdminPass);
+        if (admin_script_mongo_ping_uri($withForm)) {
+            return [$withForm, 'form'];
+        }
+    }
+    if (admin_script_mongo_ping_uri($adminUri)) {
+        return [$adminUri, 'env'];
+    }
+    $bootstrap = admin_script_mongo_bootstrap_uri($adminUri);
+    if ($bootstrap !== null && admin_script_mongo_ping_uri($bootstrap)) {
+        return [$bootstrap, 'bootstrap_no_auth'];
+    }
+
+    $fallback = $formAdminPass !== ''
+        ? mongo_uri_with_password($adminUri, $formAdminPass)
+        : $adminUri;
+
+    return [$fallback, 'unverified'];
+}
+
+/** @return array<string, string> POST key => Kurzlabel für Fehlermeldungen */
+function admin_script_mongo_password_field_labels(): array
+{
+    return [
+        'mongo_viewer_db_password' => 'viewer',
+        'mongo_community_db_password' => 'community_member',
+        'mongo_content_manager_db_password' => 'content_manager',
+        'mongo_admin_db_password' => 'admin',
+    ];
+}
+
+function admin_script_require_mongo_passwords(): void
+{
+    $labels = admin_script_mongo_password_field_labels();
+    $missing = [];
+    $invalid = [];
+    foreach ($labels as $key => $label) {
+        if (($GLOBALS['dbScriptInput'][$key] ?? '') !== '') {
+            continue;
+        }
+        $raw = $_POST[$key] ?? null;
+        $reason = admin_script_secret_password_failure_reason(is_string($raw) ? $raw : null);
+        if ($reason === 'fehlt') {
+            $missing[] = $label;
+        } elseif ($reason !== null) {
+            $invalid[] = $label.' ('.$reason.')';
+        }
+    }
+    if ($missing === [] && $invalid === []) {
+        return;
+    }
+    $parts = [];
+    if ($missing !== []) {
+        $parts[] = 'nicht ausgefüllt: '.implode(', ', $missing);
+    }
+    if ($invalid !== []) {
+        $parts[] = 'ungültig: '.implode(', ', $invalid);
+    }
+    throw new RuntimeException(
+        'MongoDB-Passwörter — '.implode('; ', $parts)
+        .'. Alle vier Rollen-Felder sind Pflicht (dasselbe Passwort in jedes Feld ist erlaubt).'
+    );
+}
+
+function admin_script_require_seed_admin(): void
+{
+    $checks = [
+        'seed_admin_email' => [
+            'value' => $GLOBALS['dbScriptInput']['seed_admin_email'] ?? '',
+            'label' => 'E-Mail',
+            'reason' => static fn (?string $raw) => admin_script_seed_email_failure_reason($raw),
+        ],
+        'seed_admin_username' => [
+            'value' => $GLOBALS['dbScriptInput']['seed_admin_username'] ?? '',
+            'label' => 'Username',
+            'reason' => static fn (?string $raw) => admin_script_seed_username_failure_reason($raw),
+        ],
+        'seed_admin_password' => [
+            'value' => $GLOBALS['dbScriptInput']['seed_admin_password'] ?? '',
+            'label' => 'Passwort',
+            'reason' => static fn (?string $raw) => admin_script_secret_password_failure_reason($raw, 8),
+        ],
+    ];
+    $bad = [];
+    foreach ($checks as $key => $meta) {
+        if ($meta['value'] !== '') {
+            continue;
+        }
+        $raw = $_POST[$key] ?? null;
+        $reason = ($meta['reason'])(is_string($raw) ? $raw : null);
+        $bad[] = $meta['label'].' ('.($reason ?? 'ungültig').')';
+    }
+    if ($bad === []) {
+        return;
+    }
+    throw new RuntimeException('Seed-Admin-Daten prüfen: '.implode(', ', $bad).'.');
+}
+
 function admin_script_username_input(string $name): string
 {
     $raw = $_POST[$name] ?? null;
@@ -245,24 +426,27 @@ if (isset($_POST['run_script'])) {
             ];
 
             if ($requestedScript === '00_db_init_accounts.php' || $requestedScript === 'db_init_master.php') {
-                if ($GLOBALS['dbScriptInput']['seed_admin_email'] === ''
-                    || $GLOBALS['dbScriptInput']['seed_admin_username'] === ''
-                    || $GLOBALS['dbScriptInput']['seed_admin_password'] === '') {
-                    throw new RuntimeException('Seed-Admin-Daten ungültig (E-Mail, Username, Passwort prüfen).');
-                }
+                admin_script_require_seed_admin();
             }
             if ($requestedScript === '03_db_init_mongo_roles.php' || $requestedScript === 'db_init_master.php') {
-                foreach (['mongo_viewer_db_password', 'mongo_community_db_password', 'mongo_content_manager_db_password', 'mongo_admin_db_password'] as $pwKey) {
-                    if (($GLOBALS['dbScriptInput'][$pwKey] ?? '') === '') {
-                        throw new RuntimeException('MongoDB-Passwort-Felder ungültig (min. 8 Zeichen, keine Steuerzeichen).');
-                    }
-                }
+                admin_script_require_mongo_passwords();
             }
 
             $cfg = mongo_config();
             $adminUri = $cfg['admin_uri'];
             $adminPass = $GLOBALS['dbScriptInput']['mongo_admin_db_password'] ?? '';
-            $adminUri = mongo_uri_with_password($adminUri, $adminPass);
+            $masterConnSource = 'form_inject';
+            if ($requestedScript === 'db_init_master.php') {
+                [$adminUri, $masterConnSource] = admin_script_resolve_master_admin_uri($adminUri, $adminPass);
+            } else {
+                $adminUri = mongo_uri_with_password($adminUri, $adminPass);
+            }
+
+            if ($requestedScript === 'db_init_master.php' && $masterConnSource === 'env') {
+                echo '<p><i>ℹ️ Master-Verbindung nutzt <code>ADMIN_DB_URI</code> aus .env.local — die Mongo-Passwörter aus dem Formular werden in <code>03_db_init_mongo_roles.php</code> gesetzt.</i></p>';
+            } elseif ($requestedScript === 'db_init_master.php' && $masterConnSource === 'bootstrap_no_auth') {
+                echo '<p><i>ℹ️ Master-Verbindung ohne MongoDB-Auth (Erst-Initialisierung).</i></p>';
+            }
 
             [$client, $db] = create_mongo_connection($adminUri);
             include $scriptPath;

@@ -79,6 +79,8 @@ cd laravel
 
 **Umgebung:** In `laravel/.env` müssen `MONGODB_URI` und `MONGODB_DATABASE` zur Datenbank passen. Nach **dbScripts**-Init heißt die DB in der Regel **`portfolio_db`** (wie `APP_DB_NAME` in `includes/db.php`). Für **Registrierung** und Brücken braucht Laravel **Schreibrecht** auf `users` und `registration_codes` — dafür ist typisch die **Admin-**URI (siehe `laravel/.env.example`); der reine **Viewer-**User reicht dafür oft nicht. Für Tests nutzt `laravel/phpunit.xml` die eigene DB `portfolio_db_test` — bei Bedarf anpassen.
 
+**Nach `03_db_init_mongo_roles` / `db_init_master`:** Das Admin-Panel kann `.env.local` aktualisieren; **Laravel liest nur `laravel/.env`**. `MONGODB_URI` dort muss dasselbe Admin-Passwort wie `ADMIN_DB_URI` in `.env.local` haben (sonst `Authentication failed` in `bridge_auth.php`). CLI-Master: `php scripts/run-db-init-master-cli.php` passt beide Dateien an; bei manuellem Lauf im Admin `MONGODB_URI` in `laravel/.env` von Hand nachziehen und `php artisan serve` neu starten.
+
 **Frontend bauen (einmalig bzw. nach Änderungen an JS/CSS):**
 
 ```bash
@@ -382,6 +384,8 @@ export APP_DB_NAME='portfolio_db'
 ```
 
 Erst danach können die Skripte die Collections anlegen und in Schritt `03_*` die MongoDB-Benutzer mit den gewählten Passwörtern erstellen. **Anschließend** kannst du die Shell-Variablen entfernen und die Standard-URIs aus `includes/db.php` nutzen (Passwort `0`), oder die Variablen auf die authentifizierten URIs aus dem Abschnitt „Optional konfigurierbare Umgebungsvariablen“ setzen.
+
+**Admin-Panel, `db_init_master.php`:** Die vier Mongo-Passwort-Felder gelten für Schritt `03_*` (neue Passwörter anlegen). Für die Verbindung in `00_*`–`02_*` versucht die App zuerst das Formular-Passwort für `admin`; schlägt das fehl (typisch: neues Passwort eingegeben, Mongo hat noch das alte aus `.env.local`), wird `ADMIN_DB_URI` aus `.env.local` genutzt, lokal ggf. ohne Auth. Nach dem Lauf optional `.env.local` aktualisieren (Checkbox bei `03_*` oder CLI `scripts/run-db-init-master-cli.php`).
 
 **Erster Lauf ohne Admin-Account:** Das Admin-Dashboard (`pages/admin/index.php`) ist nur für eingeloggte Admins erreichbar. Für die allererste Initialisierung eignet sich die Ausführung per PHP-CLI: `ALLOW_DB_SCRIPT_EXECUTION` auf `true` setzen, `$GLOBALS['dbScriptInput']` mit Seed-Admin und Mongo-Passwörtern füllen und `dbScripts/db_init_master.php` einbinden (analog zum Admin-Dialog).
 
