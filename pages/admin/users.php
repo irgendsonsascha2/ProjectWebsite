@@ -4,6 +4,7 @@ require_once __DIR__ . '/_layout.php';
 require_once __DIR__ . '/../../includes/svg_icons.php';
 require_once __DIR__ . '/../../includes/user_moderation.php';
 require_once __DIR__ . '/../../includes/admin_reauth.php';
+require_once __DIR__ . '/../../includes/request.php';
 
 use MongoDB\BSON\UTCDateTime;
 
@@ -12,7 +13,7 @@ admin_require_manage_users();
 $message = '';
 $messageClass = 'alert';
 $adminUsername = (string) ($_SESSION['username'] ?? $_SESSION['email'] ?? 'admin');
-$searchQuery = trim((string) ($_GET['q'] ?? ''));
+$searchQuery = req_get_string('q', '', 80, true);
 $reasonOptions = user_moderation_reason_options();
 $adminReauthFresh = admin_reauth_is_fresh();
 $adminReauthNeeds2fa = admin_reauth_user_has_2fa();

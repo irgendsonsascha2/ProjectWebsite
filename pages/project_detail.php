@@ -3,6 +3,7 @@ if (!headers_sent()) {
     ob_start();
 }
 require_once __DIR__ . '/../includes/bootstrap.php';
+require_once __DIR__ . '/../includes/request.php';
 
 $commentTextMaxLength = defined('COMMENT_TEXT_MAX_LENGTH') ? (int) COMMENT_TEXT_MAX_LENGTH : 400;
 
@@ -12,15 +13,14 @@ $isLoggedIn = isset($_SESSION['user_id']);
 use MongoDB\BSON\ObjectId;
 use MongoDB\BSON\UTCDateTime;
 
-$projectId = $_GET['id'] ?? null;
-if (!$projectId) {
+$projectObjectId = req_get_objectid('id');
+if ($projectObjectId === null) {
     echo "Projekt nicht gefunden.";
     return;
 }
-$ajaxActionUrl = 'index.php?page=project_detail&id=' . urlencode($projectId);
+$ajaxActionUrl = 'index.php?page=project_detail&id=' . urlencode((string) ($projectObjectId));
 
 try {
-    $projectObjectId = new ObjectId($projectId);
     $project = $db->projects->findOne(['_id' => $projectObjectId]);
 
     if (!$project) {
@@ -48,7 +48,7 @@ if (! authz_can_view_project($project)) {
     echo 'Du hast keine Berechtigung, dieses Projekt anzusehen.';
     return;
 }
-if (isset($_POST['ajax']) && $_POST['ajax'] === '1') {
+if (req_post_bool('ajax')) {
     $isAjax = true;
 } elseif (isset($_SERVER['HTTP_X_REQUESTED_WITH'])) {
     $isAjax = in_array(strtolower($_SERVER['HTTP_X_REQUESTED_WITH']), ['xmlhttprequest', 'fetch'], true);
@@ -57,15 +57,7 @@ if (isset($_POST['ajax']) && $_POST['ajax'] === '1') {
 }
 
 function parse_media_id($raw) {
-    $raw = trim((string)$raw);
-    if ($raw === '') {
-        return null;
-    }
-    try {
-        return new ObjectId($raw);
-    } catch (Exception $e) {
-        return null;
-    }
+    return req_objectid_from_scalar($raw);
 }
 
 function fetch_comments_with_users($db, $projectObjectId, $mediaObjectId) {
@@ -435,6 +427,7 @@ if (isset($_POST['delete_comment'])) {
     }
 
     $db->comments->deleteMany([
+        'project_id' => $projectObjectId,
         'media_id' => $mediaObjectId,
         '$or' => [
             ['_id' => $commentId],

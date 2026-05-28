@@ -50,7 +50,21 @@ if (!function_exists('schema_migration_is_destructive')) {
             return true;
         }
 
-        return (bool) preg_match('/^0[0-2]_/', $basename);
+        return (bool) preg_match('/^0[0-2]_/', $basename)
+            || $basename === '05_db_init_site_pages.php';
+    }
+}
+
+if (!function_exists('schema_migration_destructive_allowed')) {
+    function schema_migration_destructive_allowed(): bool
+    {
+        $v = getenv('ALLOW_DESTRUCTIVE_DB_SCRIPTS');
+        if ($v === false) {
+            return false;
+        }
+        $v = strtolower(trim((string) $v));
+
+        return $v === '1' || $v === 'true' || $v === 'yes' || $v === 'on';
     }
 }
 

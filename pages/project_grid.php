@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/bootstrap.php';
+require_once __DIR__ . '/../includes/request.php';
 
 $canDeleteProjects = can('delete_all');
 
@@ -47,17 +48,12 @@ if (isset($_POST['delete_projects']) && isset($_POST['project_ids']) && is_array
 
 $canViewProjects = can('view_projects');
 if ($canViewProjects) {
-    $q = '';
-    if (isset($_GET['q']) && is_string($_GET['q'])) {
-        $q = trim($_GET['q']);
-    }
+    $rx = req_get_search_regex('q', 80, 2);
 
     $filter = ['is_draft' => ['$ne' => true]];
-    if ($q !== '') {
+    if ($rx !== null) {
         // Search by title OR tags (case-insensitive).
         // In MongoDB, regex against an array field matches any element.
-        $escaped = preg_quote($q, '/');
-        $rx = new Regex($escaped, 'i');
         $filter['$or'] = [
             ['title' => $rx],
             ['tags' => $rx],

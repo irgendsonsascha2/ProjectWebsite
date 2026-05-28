@@ -429,6 +429,7 @@ if (!function_exists('user_moderation_search')) {
         $filter = [];
         $query = trim($query);
         if ($query !== '') {
+            $query = substr($query, 0, 80);
             $escaped = preg_quote($query, '/');
             $filter['$or'] = [
                 ['email' => ['$regex' => $escaped, '$options' => 'i']],

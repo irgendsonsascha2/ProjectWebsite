@@ -5,6 +5,7 @@ PHP_PORT ?= 8080
 VITE_PORT ?= 5173
 MAILHOG_UI_PORT ?= 8025
 MAILHOG_SMTP_PORT ?= 1025
+MONGO_PORT ?= 27017
 PHP_UPLOAD_MAX ?= 2048M
 PHP_POST_MAX ?= 2100M
 
@@ -30,6 +31,7 @@ help:
 	@echo "Variablen (optional überschreiben):"
 	@echo "  HOST=$(HOST)  PHP_PORT=$(PHP_PORT)  VITE_PORT=$(VITE_PORT)"
 	@echo "  MAILHOG_SMTP_PORT=$(MAILHOG_SMTP_PORT)  MAILHOG_UI_PORT=$(MAILHOG_UI_PORT)"
+	@echo "  MONGO_PORT=$(MONGO_PORT)"
 	@echo ""
 	@echo "URLs (Default):"
 	@echo "  PHP:     http://$(HOST):$(PHP_PORT)/"
@@ -74,10 +76,10 @@ mailhog-check:
 
 services-up:
 	@echo ""
-	@echo "MongoDB: mongodb://$(HOST):27017"
+	@echo "MongoDB: mongodb://$(HOST):$(MONGO_PORT)"
 	@echo "MailHog: http://$(HOST):$(MAILHOG_UI_PORT)/  SMTP $(HOST):$(MAILHOG_SMTP_PORT)"
 	@echo ""
-	docker compose up -d
+	MONGO_PORT=$(MONGO_PORT) docker compose up -d
 
 services-down:
 	docker compose down

@@ -33,6 +33,12 @@ if (!function_exists('load_simple_env_file')) {
                 $last = $value[strlen($value) - 1];
                 if (($first === '"' && $last === '"') || ($first === "'" && $last === "'")) {
                     $value = substr($value, 1, -1);
+                    // Minimal unescape for double-quoted values (so we can safely persist secrets with quotes/backslashes).
+                    // - \" -> "
+                    // - \\ -> \
+                    if ($first === '"') {
+                        $value = str_replace(['\\\\', '\\"'], ['\\', '"'], $value);
+                    }
                 }
             }
             // Don't override real environment.

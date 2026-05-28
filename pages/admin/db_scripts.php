@@ -21,6 +21,7 @@ function list_admin_db_scripts() {
 }
 
 function admin_script_fields($scriptName) {
+    $isDestructive = schema_migration_is_destructive($scriptName);
     if ($scriptName === 'db_init_master.php') {
         return [
             ['name' => 'seed_admin_email', 'label' => 'Seed Admin E-Mail', 'type' => 'email', 'required' => true, 'placeholder' => 'admin@example.com'],
@@ -90,9 +91,31 @@ function admin_script_checkbox($name) {
     return $v === '1' || $v === 1 || $v === true || $v === 'on';
 }
 
+function admin_script_require_destructive_allowed(string $scriptName): void
+{
+    if (!schema_migration_is_destructive($scriptName)) {
+        return;
+    }
+    if (!schema_migration_destructive_allowed()) {
+        throw new RuntimeException('Destruktive Skripte sind deaktiviert. Setze ALLOW_DESTRUCTIVE_DB_SCRIPTS=1 (nur lokal) um fortzufahren.');
+    }
+}
+
 function update_env_local_file($updates) {
     if (!is_array($updates) || count($updates) === 0) {
         return;
+    }
+
+    foreach ($updates as $k => $v) {
+        if (!is_string($k) || $k === '') {
+            throw new RuntimeException('Ungültiger Env-Key.');
+        }
+        if (!is_string($v)) {
+            throw new RuntimeException('Ungültiger Env-Value für '.$k.'.');
+        }
+        if (preg_match('/[\\x00-\\x1F\\x7F]/', $v)) {
+            throw new RuntimeException('Ungültige Zeichen im Wert für '.$k.' (Control-Characters).');
+        }
     }
 
     $root = realpath(__DIR__ . '/../../');
@@ -125,7 +148,7 @@ function update_env_local_file($updates) {
         }
         if (array_key_exists($key, $updates)) {
             $seen[$key] = true;
-            $out[] = $key . '=' . $updates[$key];
+            $out[] = $key . '=' . '"' . addcslashes($updates[$key], "\\\"") . '"';
         } else {
             $out[] = $line;
         }
@@ -133,7 +156,7 @@ function update_env_local_file($updates) {
 
     foreach ($updates as $k => $v) {
         if (!isset($seen[$k])) {
-            $out[] = $k . '=' . $v;
+            $out[] = $k . '=' . '"' . addcslashes($v, "\\\"") . '"';
         }
     }
 
@@ -173,6 +196,8 @@ if (isset($_POST['run_script'])) {
             if (!defined('ALLOW_DB_SCRIPT_EXECUTION')) {
                 define('ALLOW_DB_SCRIPT_EXECUTION', true);
             }
+
+            admin_script_require_destructive_allowed($requestedScript);
 
             $GLOBALS['dbScriptInput'] = [
                 'seed_admin_email' => admin_script_input('seed_admin_email'),

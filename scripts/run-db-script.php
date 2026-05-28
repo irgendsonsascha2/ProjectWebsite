@@ -39,6 +39,11 @@ require_once $root.'/includes/schema_migrations.php';
 
 echo "=== {$name} ===\n";
 
+if (schema_migration_is_destructive($name) && ! schema_migration_destructive_allowed()) {
+    fwrite(STDERR, "Destruktives Skript blockiert (ALLOW_DESTRUCTIVE_DB_SCRIPTS=1 setzen um lokal auszuführen): {$name}\n");
+    exit(2);
+}
+
 ob_start();
 include $path;
 $output = (string) ob_get_clean();
