@@ -156,7 +156,7 @@ Unter [`.github/workflows/ci.yml`](.github/workflows/ci.yml) laufen bei **jedem 
 | **Laravel style (Pint)** | nein | Code-Style (non-blocking) |
 | **Audits** | nein | Composer/npm Security-Audits (non-blocking) |
 
-Hinweis: In CI ist **kein automatisches Deployment** konfiguriert.
+Hinweis: In CI ist **kein automatisches Deployment** konfiguriert. PHP-Jobs nutzen **8.4** (entspricht `laravel/composer.lock` / Symfony 8).
 
 ### Lokal dieselben DB-Checks wie CI
 
@@ -209,6 +209,30 @@ cd laravel && composer install && php artisan test   # Laravel-Auth gegen portfo
 | Frontend build rot | Lockfile/Node | `cd frontend && npm ci && npm run build` |
 
 **Deployment:** CI deployt nicht auf euren Server. Produktion bleibt manuell — siehe [`docs/deployment.md`](docs/deployment.md).
+
+### GitHub CLI (`gh`) — CI-Logs lokal lesen
+
+Für Status **und** fehlgeschlagene Log-Zeilen aus der Pipeline (ohne Browser):
+
+1. **Installation:** Systemweit: `sudo pacman -S github-cli` (Arch/CachyOS). Alternativ liegt eine User-Installation unter `~/.local/bin/gh` (ohne sudo).
+2. **PATH:** In `~/.zshrc` sollte `export PATH="$HOME/.local/bin:$PATH"` stehen — danach `source ~/.zshrc` oder neues Terminal.
+3. **Einmalig anmelden** (öffnet Browser / Device-Code):
+
+```bash
+gh auth login -h github.com -p https -w -s repo,workflow,read:org
+```
+
+4. **Prüfen:** `gh auth status`
+
+**Nützliche Befehle** (im Projektroot, Repo ist bereits per `git remote` verbunden):
+
+```bash
+gh run list --limit 5
+gh run view --log-failed          # letzter Lauf, nur Fehler
+gh run view 12345678 --log-failed # konkrete Run-ID von „Actions“
+```
+
+Ohne `gh` gehen weiterhin Status und Job-Namen über die GitHub-Website oder die öffentliche API; **Log-Inhalt** der Steps braucht Login.
 
 ## Installation und Start
 
