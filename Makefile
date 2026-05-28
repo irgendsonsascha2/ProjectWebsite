@@ -1,4 +1,4 @@
-.PHONY: help dev php frontend-build frontend-dev mailhog mailhog-check laravel services-up services-down services-logs deploy-check prod-env-check db-baseline deploy-server
+.PHONY: help dev php frontend-build frontend-dev mailhog mailhog-check laravel services-up services-down services-logs deploy-check prod-env-check db-baseline test-db deploy-server
 
 HOST ?= 127.0.0.1
 PHP_PORT ?= 8080
@@ -26,6 +26,7 @@ help:
 	@echo "  make deploy-check   Deploy-Status-Prüfungen (CLI)"
 	@echo "  make prod-env-check Produktions-Overlay + deploy-check"
 	@echo "  make db-baseline    DB-Skripte 16/15/14 idempotent (CLI)"
+	@echo "  make test-db        DB-Baseline + PHPUnit (wie CI legacy_db)"
 	@echo "  make deploy-server  Build + Composer (Server-Update)"
 	@echo ""
 	@echo "Variablen (optional überschreiben):"
@@ -98,6 +99,9 @@ prod-env-check:
 
 db-baseline:
 	php scripts/ensure-db-baseline.php
+
+test-db:
+	php scripts/ensure-db-baseline.php && vendor/bin/phpunit -c phpunit.xml.dist
 
 deploy-server: frontend-build
 	composer install --no-dev --optimize-autoloader

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache"
+>
+    <testsuites>
+        <testsuite name="Integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
+    </testsuites>
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <env name="APP_DB_NAME" value="portfolio_db_ci"/>
+        <env name="APP_DB_URI" value="mongodb://127.0.0.1:27017"/>
+        <env name="VIEWER_DB_URI" value="mongodb://127.0.0.1:27017"/>
+        <env name="COMMUNITY_DB_URI" value="mongodb://127.0.0.1:27017"/>
+        <env name="CONTENT_MANAGER_DB_URI" value="mongodb://127.0.0.1:27017"/>
+        <env name="ADMIN_DB_URI" value="mongodb://127.0.0.1:27017"/>
+    </php>
+</phpunit>

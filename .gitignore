@@ -24,6 +24,9 @@ content/tmp/**
 .env.local
 .env
 
+## PHPUnit
+.phpunit.cache/
+
 ## OS/editor
 .DS_Store
 .idea/

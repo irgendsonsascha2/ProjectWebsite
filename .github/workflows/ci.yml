@@ -116,6 +116,67 @@ jobs:
             php -l "$f" >/dev/null
           done < <(git ls-files '*.php')
 
+  legacy_db:
+    name: Legacy PHP (MongoDB baseline + tests)
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval \"db.adminCommand('ping')\""
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mongodb
+          coverage: none
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-root-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-root-
+
+      - name: Install Composer deps (root)
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Run DB baseline (idempotent 14/15/16)
+        env:
+          APP_ENV: testing
+          APP_DB_NAME: portfolio_db_ci
+          APP_DB_URI: mongodb://127.0.0.1:27017
+          VIEWER_DB_URI: mongodb://127.0.0.1:27017
+          COMMUNITY_DB_URI: mongodb://127.0.0.1:27017
+          CONTENT_MANAGER_DB_URI: mongodb://127.0.0.1:27017
+          ADMIN_DB_URI: mongodb://127.0.0.1:27017
+        run: php scripts/ensure-db-baseline.php
+
+      - name: Run integration tests
+        env:
+          APP_ENV: testing
+          APP_DB_NAME: portfolio_db_ci
+          APP_DB_URI: mongodb://127.0.0.1:27017
+          VIEWER_DB_URI: mongodb://127.0.0.1:27017
+          COMMUNITY_DB_URI: mongodb://127.0.0.1:27017
+          CONTENT_MANAGER_DB_URI: mongodb://127.0.0.1:27017
+          ADMIN_DB_URI: mongodb://127.0.0.1:27017
+        run: vendor/bin/phpunit --configuration phpunit.xml.dist
+
   phpstan_legacy:
     name: Legacy PHP (PHPStan) [non-blocking]
     runs-on: ubuntu-latest

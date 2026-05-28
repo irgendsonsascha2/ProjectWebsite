@@ -8,5 +8,7 @@ $baseDir = dirname($vendorDir);
 return array(
     'Symfony\\Polyfill\\Php85\\' => array($vendorDir . '/symfony/polyfill-php85'),
     'Psr\\Log\\' => array($vendorDir . '/psr/log/src'),
+    'PhpParser\\' => array($vendorDir . '/nikic/php-parser/lib/PhpParser'),
     'MongoDB\\' => array($vendorDir . '/mongodb/mongodb/src'),
+    'DeepCopy\\' => array($vendorDir . '/myclabs/deep-copy/src/DeepCopy'),
 );

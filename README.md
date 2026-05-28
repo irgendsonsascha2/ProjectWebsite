@@ -142,16 +142,73 @@ Bis auf Weiteres wird **ausschließlich lokal** entwickelt und getestet. Ein Ein
 
 ## CI (GitHub Actions)
 
-Unter `.github/workflows/ci.yml` laufen bei Push und Pull Requests die wichtigsten Checks:
+Unter [`.github/workflows/ci.yml`](.github/workflows/ci.yml) laufen bei **jedem Push** und bei **Pull Requests** automatische Prüfungen.
 
-- **Frontend build:** `cd frontend && npm ci && npm run build`
-- **Legacy PHP:** `composer install` (Projektroot) + PHP-Syntaxcheck (`php -l`) für alle versionierten `*.php`
-- **Legacy PHP (static):** `composer install` (Projektroot) + `vendor/bin/phpstan analyse -c phpstan.neon` (non-blocking in CI)
-- **Laravel:** PHPUnit/Feature-Tests gegen eine MongoDB (`mongo:7`) über `php artisan migrate --force` und `php artisan test`
-- **Laravel style:** `cd laravel && composer install && vendor/bin/pint --test` (non-blocking in CI)
-- **Audits:** Composer + npm Audits (non-blocking in CI)
+### Jobs (Überblick)
+
+| Job | Pflicht? | Inhalt |
+|-----|----------|--------|
+| **Frontend build** | ja | `npm ci` + `npm run build` |
+| **Legacy PHP** | ja | Composer + PHP-Syntax (`php -l`) |
+| **Legacy PHP (MongoDB baseline + tests)** | ja | MongoDB `mongo:7`, idempotente Skripte 14/15/16, PHPUnit unter `tests/Integration/` |
+| **Laravel** | ja | `php artisan migrate` + `php artisan test` gegen `portfolio_db_test` |
+| **Legacy PHP (PHPStan)** | nein | Statische Analyse (non-blocking) |
+| **Laravel style (Pint)** | nein | Code-Style (non-blocking) |
+| **Audits** | nein | Composer/npm Security-Audits (non-blocking) |
 
 Hinweis: In CI ist **kein automatisches Deployment** konfiguriert.
+
+### Lokal dieselben DB-Checks wie CI
+
+MongoDB muss laufen (`make services-up` oder eigene Instanz auf Port 27017):
+
+```bash
+composer install          # Projektroot (PHPUnit + MongoDB-Lib)
+make test-db              # = ensure-db-baseline + vendor/bin/phpunit
+```
+
+Einzeln:
+
+```bash
+php scripts/ensure-db-baseline.php
+vendor/bin/phpunit -c phpunit.xml.dist
+```
+
+Die Tests nutzen die Datenbank **`portfolio_db_ci`** (ohne Auth, nur für CI/lokale Tests). Destruktive `dbScripts` (`00`–`02`, Master) laufen in CI **nicht**.
+
+Weitere Checks vor einem Push:
+
+```bash
+cd frontend && npm ci && npm run build
+cd laravel && composer install && php artisan test   # Laravel-Auth gegen portfolio_db_test
+```
+
+### CI für Einsteiger
+
+**Was ist CI hier?** GitHub Actions führt nach jedem Push/PR euren Workflow aus: Code auschecken, Abhängigkeiten installieren, Tests und Builds starten. Du siehst das unter **Actions** im GitHub-Repo oder als **Checks** auf einem Pull Request.
+
+**Wann läuft es?** Bei jedem Push auf einen Branch und bei jedem Pull Request. Mehrere Läufe derselben Branch überschreiben ältere (`concurrency: cancel-in-progress`).
+
+**Was bedeutet „grün“?** Die **Pflicht-Jobs** in der Tabelle oben müssen erfolgreich sein (Häkchen). Optional markierte Jobs (`non-blocking`) können rot sein, blockieren den Merge je nach Repo-Einstellung aber nicht zwingend — Fehler dort trotzdem lesen (Sicherheits-Audits, PHPStan).
+
+**Empfohlener Ablauf:**
+
+1. Änderungen lokal testen (`make test-db`, ggf. Laravel-Tests, Frontend-Build).
+2. Commit + Push auf einen Feature-Branch.
+3. Pull Request öffnen → Tab **Checks** / **Actions** beobachten.
+4. Bei rotem Job: Job anklicken → fehlgeschlagener **Step** → Log-Zeile mit Fehlermeldung.
+5. Fix committen und pushen — CI startet neu.
+
+**Typische Fehler:**
+
+| Symptom | Ursache | Lösung |
+|---------|---------|--------|
+| Mongo nicht erreichbar (lokal) | Docker/Mongo aus | `make services-up` |
+| `vendor/bin/phpunit` fehlt | Kein `composer install` im Root | `composer install` |
+| Laravel-Tests rot | Keine Migration / falsche `.env` | `cd laravel && cp .env.example .env && php artisan migrate` |
+| Frontend build rot | Lockfile/Node | `cd frontend && npm ci && npm run build` |
+
+**Deployment:** CI deployt nicht auf euren Server. Produktion bleibt manuell — siehe [`docs/deployment.md`](docs/deployment.md).
 
 ## Installation und Start
 
