@@ -11,12 +11,12 @@
   },
   "dependencies": {
     "qrcode": "^1.5.4",
-    "react": "^19.1.1",
+    "react": "^19.2.6",
     "react-dom": "^19.1.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.4",
-    "@types/react": "^19.1.12",
+    "@types/react": "^19.2.15",
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^5.0.2",
     "autoprefixer": "^10.5.0",
