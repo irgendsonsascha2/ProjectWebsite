@@ -90,6 +90,17 @@ make deploy-check
 php scripts/ensure-db-baseline.php
 ```
 
+Zusätzlich kann das Projekt per GitHub Actions auf `main` automatisch deployt werden, wenn die Secrets `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY` und `DEPLOY_PATH` gesetzt sind. Die Workflow-Datei heißt `.github/workflows/deploy.yml` und führt auf dem Zielhost folgende Schritte aus:
+
+- Repo auf den aktuellen `main`-Stand bringen
+- Composer-Installationen und Optimierungen ausführen
+- Frontend-Assets bauen
+- Laravel-Cache konfigurieren
+- DB-Baseline prüfen (`scripts/ensure-db-baseline.php`)
+- Deploy-Checks ausführen (`scripts/deploy-check.php`)
+
+Optional kann `REMOTE_RESTART_COMMAND` auf dem Runner gesetzt werden, um einen Webserver- oder PHP-FPM-Reload auf dem Zielhost auszuführen.
+
 Danach im Browser: **Admin → Deploy-Status**, ausstehende **DB-Skripte** (Re-Auth). `03_db_init_mongo_roles.php` nur mit **Prod-Passwörtern** und nie `db_init_master` auf bestehender DB ohne Freigabe.
 
 ## Betrieb (Firewall, Backups, Logs)
@@ -113,6 +124,7 @@ Danach im Browser: **Admin → Deploy-Status**, ausstehende **DB-Skripte** (Re-A
 - [ ] `cd laravel && php artisan migrate`
 - [ ] Mail: `MAIL_SMTP_ENCRYPTION=tls` (PHP) und/oder Laravel SMTP mit TLS
 - [ ] `make deploy-check` und Admin **Deploy-Status** ohne Fehler
+- [ ] GitHub Actions Deploy-Workflow `.github/workflows/deploy.yml` und Zielhost-Secrets (`SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `DEPLOY_PATH`) konfiguriert
 - [ ] Smoke-Test: [docs/smoke_test.md](smoke_test.md)
 
 Weitere Sicherheit: [security_roadmap.md](security_roadmap.md), [next_session_plan.md](next_session_plan.md).

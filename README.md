@@ -215,7 +215,7 @@ cd laravel && composer install && php artisan test   # Laravel-Auth gegen portfo
 | `.phpstan-cache/` versehentlich committed | Lokaler PHPStan-Cache | Ordner in `.gitignore`; nicht committen. Baseline liegt in `phpstan-baseline.neon`. |
 | Frontend build rot | Lockfile/Node | `cd frontend && npm ci && npm run build` |
 
-**Deployment:** CI deployt nicht auf euren Server. Produktion bleibt manuell — siehe [`docs/deployment.md`](docs/deployment.md).
+**Deployment:** CI prüft den Code; zusätzlich ermöglicht `.github/workflows/deploy.yml` ein automatisches Deployment auf `main` nach einem erfolgreichen CI-Lauf. Siehe [`docs/deployment.md`](docs/deployment.md) für die Konfiguration der Zielhost-Secrets.
 
 ### GitHub CLI (`gh`) — CI-Logs lokal lesen
 
