@@ -1,6 +1,6 @@
 # Current Status
 
-**Hinweis (Arbeitsweise):** Es wird vorerst **nur lokal** weiterentwickelt; ein Deployment auf einen Server steht an, sobald dafür ausdrücklich entschieden wurde (siehe auch `README.md` → *Entwicklung und Deployment (Arbeitsweise)*).
+**Hinweis (Arbeitsweise):** Die aktuelle Entwicklung und Validierung erfolgt lokal, während das Projekt gleichzeitig für externes Hosting vorbereitet wird. Ein produktiver Server-Rollout erfolgt, sobald die Zielumgebung eingerichtet ist (siehe auch `README.md` → *Entwicklung und Deployment (Arbeitsweise)*).
 
 ## Stand vom 2026-05-28 (Details: Abschnitte unten; Session-Plan: `docs/next_session_plan.md`)
 

@@ -142,7 +142,7 @@ MongoDB ohne Replica Set unterstützt keine DB-Transaktionen wie Laravels `Refre
 
 ## Entwicklung und Deployment (Arbeitsweise)
 
-Bis auf Weiteres wird **ausschließlich lokal** entwickelt und getestet. Ein Einsatz auf einem entfernten Server (Produktion oder Staging) erfolgt **erst**, wenn dafür ausdrücklich entschieden wurde; vorher fokussieren sich Setup, Konfiguration und Features auf die lokale Umgebung.
+Die Anwendung ist lokal entwickelbar und testbar, aber der tatsächliche Zielbetrieb ist inzwischen ein extern gehosteter Server. Lokale Docker- und MailHog-Setups bleiben als Entwickler- und Testumgebung erhalten, während Produktionsreleases auf HTTPS, Reverse-Proxy und sichere MongoDB-Verbindungen zielen.
 
 ## CI (GitHub Actions)
 
@@ -703,7 +703,7 @@ index.php?page=project_grid&debug=1
 
 ## Bekannte Eigenschaften des aktuellen Stands
 
-- Die Anwendung ist stark auf lokale Entwicklung mit einer lokalen MongoDB-Instanz ausgelegt.
+- Die Anwendung ist für lokale Entwicklung und extern gehosteten Betrieb vorbereitet; Deployment-bezogene Konfigurationen sind dokumentiert in `.env.production.example` und `docs/deployment.md`.
 - Konfiguration wie Datenbank-URI oder Admin-Seed ist derzeit im Code fest hinterlegt.
 - Produktions-Vorlage: [`.env.production.example`](.env.production.example) (auf dem Server als `.env.local`); Deploy-Hilfen: `make deploy-check`, `make deploy-server`, [docs/deployment.md](docs/deployment.md).
 - Die Anwendung nutzt kein Framework und keine API-Schicht; Rendering und Logik liegen direkt in den PHP-Seiten.

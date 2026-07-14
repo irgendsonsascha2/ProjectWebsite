@@ -1,6 +1,6 @@
 # Deployment
 
-Lokale Infrastruktur (Docker) und Anleitung für Server/Staging. Vor dem ersten externen Setup: [smoke_test.md](smoke_test.md), `make prod-env-check`, Checkliste unten.
+Dieses Dokument beschreibt lokale Infrastruktur für Entwicklung und Tests sowie den Weg zum extern gehosteten Produktionsbetrieb. Vor dem ersten externen Setup: [smoke_test.md](smoke_test.md), `make prod-env-check`, Checkliste unten.
 
 ## Lokal: Docker-Dienste
 
@@ -17,7 +17,7 @@ docker compose up -d
 | MailHog SMTP | 127.0.0.1:1025 | `MAIL_SMTP_HOST=127.0.0.1`, `MAIL_SMTP_PORT=1025` (ohne TLS) |
 | MailHog UI   | 127.0.0.1:8025 | http://127.0.0.1:8025/ |
 
-**PHP + Laravel auf MailHog:** [local_mail_setup.md](local_mail_setup.md) (zwei Env-Dateien, `make mailhog-check`).
+**PHP + Laravel auf MailHog:** [local_mail_setup.md](local_mail_setup.md) (zwei Env-Dateien, `make mailhog-check`). Diese lokalen Dienste sind für Entwicklung und Tests gedacht; für externes Hosting verwenden Produktion und Staging eigene SMTP- und DB-Verbindungen.
 
 ```bash
 make frontend-build
@@ -63,10 +63,16 @@ Laravel (Passwort-Reset): `laravel/.env` mit `MAIL_MAILER=smtp`, `MAIL_ENCRYPTIO
 - [deploy/nginx.example.conf](../deploy/nginx.example.conf) — TLS, `client_max_body_size`, Block für `/content/`, `/logs/`, `/dbScripts/`
 - [deploy/Caddyfile.example](../deploy/Caddyfile.example) — automatisches TLS, gleiche Block-Regeln
 
+Für externes Hosting gilt:
+
+- öffentlicher Zugriff nur über HTTPS
+- die Anwendung hinter einem Reverse-Proxy betreiben
+- die MongoDB nicht direkt aus dem Internet erreichbar machen
+
 Nach dem Proxy:
 
 - `SESSION_SECURE=1` im Projektroot-`.env.local`
-- `TRUSTED_PROXY_IPS` = IP des Reverse-Proxys (z. B. `127.0.0.1`)
+- `TRUSTED_PROXY_IPS` = IP des Reverse-Proxys (z. B. `127.0.0.1` oder interne Proxy-IP)
 - `LEGACY_SITE_URL` / `APP_URL` in `laravel/.env` mit **HTTPS** und korrektem Host/Port
 
 ## Server-Update (Code)
