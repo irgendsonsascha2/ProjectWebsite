@@ -719,3 +719,10 @@ Falls das Projekt weiter wächst, wären diese Ergänzungen sinnvoll:
 - `docs/smoke_test.md` — kurzer manueller Flow (Login, Registrierung, Projekt, Admin)
 - `docs/security_local_checklist.md` — iterative Security-Phasen (abhackbar)
 - `docs/current_status.md` — Blocker und technischer Zwischenstand
+
+
+### Empfohlenes externes Hosting und automatische Deployments
+
+Die konkrete Zielarchitektur und die einmalige Einrichtung stehen in [`docs/deployment_plan.md`](docs/deployment_plan.md). Kurzfassung: Hetzner Cloud für PHP/Laravel, MongoDB Atlas für die Datenbank, persistentes Server-Volume für Medien und GitHub Actions für CI/CD.
+
+Pull Requests führen die vollständige CI aus, deployen aber nicht direkt in Produktion. Nach Merge oder direktem Push auf `main` deployt ein erfolgreicher CI-Lauf exakt den geprüften Commit automatisch. Produktions-Secrets liegen im geschützten GitHub-Environment `production`, nicht im Repository.

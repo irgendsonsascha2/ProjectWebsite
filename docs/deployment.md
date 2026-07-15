@@ -90,16 +90,16 @@ make deploy-check
 php scripts/ensure-db-baseline.php
 ```
 
-Zusätzlich kann das Projekt per GitHub Actions auf `main` automatisch deployt werden, wenn die Secrets `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY` und `DEPLOY_PATH` gesetzt sind. Die Workflow-Datei heißt `.github/workflows/deploy.yml` und führt auf dem Zielhost folgende Schritte aus:
+Zusätzlich kann das Projekt per GitHub Actions auf `main` automatisch deployt werden, wenn das GitHub-Environment `production` eingerichtet ist. Secrets: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `SSH_KNOWN_HOSTS`, `DEPLOY_PATH`; Variablen: `PRODUCTION_URL` und optional `PHP_FPM_SERVICE`. Die Workflow-Datei heißt `.github/workflows/deploy.yml` und führt auf dem Zielhost folgende Schritte aus:
 
-- Repo auf den aktuellen `main`-Stand bringen
+- exakt den zuvor von CI geprüften `main`-Commit auschecken
 - Composer-Installationen und Optimierungen ausführen
 - Frontend-Assets bauen
-- Laravel-Cache konfigurieren
+- Laravel-Migrationen ausführen und Cache konfigurieren
 - DB-Baseline prüfen (`scripts/ensure-db-baseline.php`)
 - Deploy-Checks ausführen (`scripts/deploy-check.php`)
 
-Optional kann `REMOTE_RESTART_COMMAND` auf dem Runner gesetzt werden, um einen Webserver- oder PHP-FPM-Reload auf dem Zielhost auszuführen.
+Optional lädt `PHP_FPM_SERVICE` (zum Beispiel `php8.4-fpm`) PHP-FPM nach erfolgreichem Deploy neu; beliebige Shell-Kommandos aus Secrets werden nicht ausgeführt.
 
 Danach im Browser: **Admin → Deploy-Status**, ausstehende **DB-Skripte** (Re-Auth). `03_db_init_mongo_roles.php` nur mit **Prod-Passwörtern** und nie `db_init_master` auf bestehender DB ohne Freigabe.
 
@@ -124,7 +124,7 @@ Danach im Browser: **Admin → Deploy-Status**, ausstehende **DB-Skripte** (Re-A
 - [ ] `cd laravel && php artisan migrate`
 - [ ] Mail: `MAIL_SMTP_ENCRYPTION=tls` (PHP) und/oder Laravel SMTP mit TLS
 - [ ] `make deploy-check` und Admin **Deploy-Status** ohne Fehler
-- [ ] GitHub Actions Deploy-Workflow `.github/workflows/deploy.yml` und Zielhost-Secrets (`SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `DEPLOY_PATH`) konfiguriert
+- [ ] GitHub-Environment `production`, Deploy-Workflow und Zielhost-Secrets/Variablen gemäß `docs/deployment_plan.md` konfiguriert
 - [ ] Smoke-Test: [docs/smoke_test.md](smoke_test.md)
 
 Weitere Sicherheit: [security_roadmap.md](security_roadmap.md), [next_session_plan.md](next_session_plan.md).

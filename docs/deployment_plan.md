@@ -1,75 +1,54 @@
-# Deployment-Plan für externes Hosting mit CI/CD
+# Deployment-Plan: externes Hosting und CI/CD
 
-Dieser Plan beschreibt den schnellstmöglichen Weg, um die Anwendung auf einem externen Hosting-Anbieter mit automatischer CI/CD-gestützter Auslieferung zu bringen.
+## Empfehlung
 
-## 1. Bereinigen und Repo sauber halten
+Für den aktuellen Stack ist ein kleiner Hetzner-Cloud-Server in Deutschland plus MongoDB Atlas die pragmatischste Lösung.
 
-- Entferne lokale Artefakte aus dem Repository:
-  - `composer.phar`
-  - `version.txt`
-- Achte darauf, dass folgende Dateien nur lokal bleiben und nicht committed werden:
-  - `.env.local`, `.env`
-  - `logs/`
-  - `content/tmp/`
-  - `react-dist/`
-  - `frontend/node_modules/`
-  - `.phpunit.cache/`, `.phpstan-cache/`
-  - `.cursor/`
+- **Web/App:** Hetzner Cloud, Ubuntu LTS, mindestens 2 vCPU / 4 GB RAM
+- **Datenbank:** MongoDB Atlas in einer EU-/Deutschland-Region; Produktionszugriff nur von der festen Server-IP
+- **Webserver:** Caddy oder nginx mit PHP-FPM 8.4
+- **Mail:** Transaktionaler SMTP-Anbieter mit TLS
+- **DNS/TLS:** eigene Domain; TLS über Caddy oder Let's Encrypt
+- **Medien:** zunächst persistentes Server-Volume für `content/images` und `content/videos`
+- **Backups:** Atlas-Backup plus tägliches verschlüsseltes Medien-Backup in getrennten Object Storage
 
-## 2. CI/CD-Workflow aufsetzen
+Ein reines PaaS ist für diese Anwendung derzeit unpassend: Die klassische PHP-App und Laravel laufen gemeinsam, Uploads werden lokal gespeichert und einzelne Uploads dürfen sehr groß sein. Ein VPS bildet diese Voraussetzungen ohne vorherigen Storage-Umbau ab.
 
-Bereits erstellt im Repo:
+## Deploy-Regel
 
-- `.github/workflows/deploy.yml`
-- `scripts/remote-deploy.sh`
+- Jeder Pull Request und jeder Branch-Push führt `.github/workflows/ci.yml` aus.
+- Nur ein erfolgreicher CI-Lauf für `main` startet das Produktions-Deployment.
+- Ein gemergter Pull Request ist ein Push auf `main` und wird daher automatisch deployed.
+- Pull-Request-Code wird nicht vor dem Merge in Produktion deployed.
+- Ein manueller Produktionslauf ist über `workflow_dispatch` möglich.
+- Das Deployment verwendet exakt den von CI geprüften Commit-SHA.
 
-Diese Komponenten sollen sicherstellen, dass ein erfolgreicher GitHub-Action-Lauf auf `main` den Code automatisch zum Host überträgt.
+## Einmalige Einrichtung
 
-## 3. GitHub-Secrets konfigurieren
+1. Hetzner-Server und optional separates Volume anlegen.
+2. Nicht-root Deploy-Benutzer, SSH-Key, Firewall (22 eingeschränkt, 80/443 öffentlich) und automatische Security-Updates konfigurieren.
+3. PHP 8.4 mit MongoDB-Erweiterung, Composer, Node.js 20+, npm, Git, Caddy/nginx und PHP-FPM installieren.
+4. Repository nach `DEPLOY_PATH` klonen; serverseitige `.env.local` und `laravel/.env` anlegen.
+5. Runtime-Daten außerhalb des Git-Checkout anlegen, zum Beispiel unter `/var/lib/projectwebsite/`; `content/images`, `content/videos`, `content/tmp` und `logs` als Symlinks dorthin einbinden und für PHP schreibbar machen.
+6. MongoDB-Atlas-Cluster anlegen, Netzwerkzugriff auf die Server-IP begrenzen, DB-Benutzer/Rollen einrichten und die vorhandenen Daten importieren.
+7. GitHub-Environment `production` anlegen und auf Branch `main` begrenzen.
+8. GitHub-Environment-Secrets setzen: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `SSH_KNOWN_HOSTS`, `DEPLOY_PATH`.
+9. GitHub-Environment-Variablen setzen: `PRODUCTION_URL`, optional `PHP_FPM_SERVICE=php8.4-fpm`.
+10. Dem Deploy-Benutzer ausschließlich den Reload des angegebenen PHP-FPM-Service per sudo erlauben.
 
-Im Repository müssen folgende Secrets gesetzt werden:
+## Erstübertragung der Daten
 
-- `SSH_HOST`
-- `SSH_USER`
-- `SSH_PRIVATE_KEY`
-- `DEPLOY_PATH`
-- optional: `SSH_KNOWN_HOSTS`
-- optional: `REMOTE_RESTART_COMMAND`
+1. Vor dem Export Schreibzugriffe lokal kurz sperren.
+2. MongoDB mit `mongodump` exportieren und in Atlas mit `mongorestore` importieren.
+3. `content/images` und `content/videos` per `rsync` auf das persistente Server-Volume kopieren.
+4. DB-Baseline und Laravel-Migrationen ausführen.
+5. `make deploy-check` und den Smoke-Test aus `docs/smoke_test.md` durchführen.
+6. Erst danach DNS auf den neuen Server umstellen.
 
-## 4. Zielhost vorbereiten
+## Betrieb
 
-Der Zielserver muss bereit sein für das Deployment:
-
-- Git-Repository im `DEPLOY_PATH`
-- `php` installiert
-- `composer` installiert
-- `node` und `npm` installiert
-- `bash` verfügbar
-- Produktions-Umgebungsdateien:
-  - `/.env.local` aus `.env.production.example`
-  - `laravel/.env` mit:
-    - `APP_ENV=production`
-    - `APP_DEBUG=false`
-    - `APP_URL=https://<host>`
-    - `LEGACY_SITE_URL=https://<host>`
-    - `HANDOFF_SECRET`
-    - `SESSION_SECURE=1`
-    - `TRUSTED_PROXY_IPS`
-
-## 5. Testlauf und Validierung
-
-1. Lokale Validierung:
-   - `make prod-env-check`
-   - `make deploy-check`
-2. Testdeploy per GitHub Actions:
-   - `workflow_dispatch` oder Push auf `main`
-3. Nach Deploy prüfen:
-   - HTTPS-Zugriff auf die Website
-   - `Admin → Deploy-Status`
-   - Hybrid-Login/Brücke testen
-
-## 6. Weiteres Vorgehen
-
-- Falls der Server kein `bash` hat, alternativ ein reines SSH-/Shell-Skript anpassen.
-- Bei Bedarf später Staging als separaten Branch oder Zielhost einrichten.
-- Deployment-Logik in `.github/workflows/deploy.yml` und `scripts/remote-deploy.sh` bei Bedarf enger auf die Zielumgebung abstimmen.
+- Täglich Medien und Konfiguration verschlüsselt extern sichern; Restore regelmäßig testen.
+- Atlas-Backups aktivieren. Der Free-Tier allein ersetzt kein Produktionsbackup.
+- Uptime, Zertifikatsablauf, Speicherplatz, PHP-Fehler und Backup-Erfolg überwachen.
+- Deployments werden serialisiert; ein fehlgeschlagenes Deployment stoppt vor dem Service-Reload.
+- Nächster Architektur-Schritt bei wachsendem Medienvolumen: Medienzugriff auf S3-kompatiblen Object Storage umstellen. Das braucht zuerst eine Storage-Abstraktion im PHP-Code und ist nicht nur eine Deploy-Konfiguration.

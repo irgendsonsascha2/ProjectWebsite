@@ -9,15 +9,18 @@ if [ ! -d .git ]; then
   exit 1
 fi
 
-CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-DEPLOY_BRANCH="${DEPLOY_BRANCH:-$CURRENT_BRANCH}"
+: "${DEPLOY_SHA:?DEPLOY_SHA must contain the commit validated by CI}"
 
-echo "Deploy-Branch: $DEPLOY_BRANCH"
+if [[ ! "$DEPLOY_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+  echo "Error: DEPLOY_SHA is not a full Git commit SHA."
+  exit 1
+fi
+
+echo "Deploy commit: $DEPLOY_SHA"
 
 git fetch origin --prune
-
-git checkout -B "$DEPLOY_BRANCH" "origin/$DEPLOY_BRANCH"
-git reset --hard "origin/$DEPLOY_BRANCH"
+git cat-file -e "${DEPLOY_SHA}^{commit}"
+git checkout --detach "$DEPLOY_SHA"
 
 if [ -f composer.json ]; then
   echo "Composer install (legacy root)"
@@ -43,9 +46,12 @@ fi
 php scripts/ensure-db-baseline.php
 php scripts/deploy-check.php
 
-if [ -n "${REMOTE_RESTART_COMMAND:-}" ]; then
-  echo "Running restart command: $REMOTE_RESTART_COMMAND"
-  eval "$REMOTE_RESTART_COMMAND"
+if [ -n "${PHP_FPM_SERVICE:-}" ]; then
+  if [[ ! "$PHP_FPM_SERVICE" =~ ^php[0-9]+\.[0-9]+-fpm$ ]]; then
+    echo "Error: PHP_FPM_SERVICE must look like php8.4-fpm."
+    exit 1
+  fi
+  sudo systemctl reload "$PHP_FPM_SERVICE"
 fi
 
 echo "Remote deploy finished."
