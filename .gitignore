@@ -30,6 +30,12 @@ content/tmp/**
 ## PHPStan
 .phpstan-cache/
 
+## Composer dependencies
+vendor/
+
+## Local editor automation
+.cursor/
+
 ## OS/editor
 .DS_Store
 .idea/
